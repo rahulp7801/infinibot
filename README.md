@@ -1,4 +1,4 @@
-# infinibot
+# InfiniBot
 InfiniBot is a Discord Bot which boasts (as of now) more than 50 commands in all genres, including:
 * Moderation
 * LastFM integration

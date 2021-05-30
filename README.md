@@ -21,7 +21,7 @@ InfiniBot is a Discord Bot which boasts (as of now) more than 50 commands in all
 * Polls (with buttons!)
 * YouTube search!
 * AND MUCH MORE!!
-Visit www.infinibot.net to access your information on a dashboard and learn more about the bot and its features!
+Visit www.infinibot.xyz to access your information on a dashboard and learn more about the bot and its features!
 
 Join our support server!
 https://discord.gg/4VnUA8ZXyH

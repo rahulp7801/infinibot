@@ -54,6 +54,8 @@ class Buttons(commands.Cog):
         descarr = []
         components = []
         for i in args:
+            if args.count(i) > 1:
+                return await ctx.send(f"It looks like you mentioned {args.count(i)} of the same arguments!")
             descarr.append(f'{i.strip()}: 0')
             components.append(Button(style=ButtonStyle.blue, label = i.strip()))
         r = '\n'.join(descarr)

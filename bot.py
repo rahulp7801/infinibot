@@ -29,7 +29,7 @@ async def on_ready():
 async def hi(ctx):
     return await ctx.send('hey')
 
-with open('testbot.txt.txt', 'r') as f:
+with open('testbot.txt', 'r') as f:
     token = f.read()
 
 client.run(token)

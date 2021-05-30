@@ -90,23 +90,28 @@ class Buttons(commands.Cog):
                                     break
                                 else:
                                     continue
-                            arr.update({res.author.id: i[:-2]})
-                            nums = int(i[-1])
-                            nums += 1
-                            desc = f"{i[:-2]} {nums}"
-                            tst = realdesc.index(i)
-                            realdesc[tst] = desc
-                            desc = "\n".join(realdesc)
-                            embed = discord.Embed(title=title.strip(), description=f"```{desc}```",
-                                                  color=discord.Color.green())
-                            embed.set_footer(text=f"Requested by {ctx.author.name}#{ctx.author.discriminator}",
-                                             icon_url=ctx.author.avatar_url)
-                            await msg.edit(embed=embed)
-                            await res.respond(
-                                type=InteractionType.ChannelMessageWithSource,
-                                content=f'You changed your mind and chose `{res.component.label}`!'
-                            )
-                            break
+                            try:
+                                arr.update({res.author.id: i[:-2]})
+                                nums = int(i[-1])
+                                nums += 1
+                                desc = f"{i[:-2]} {nums}"
+                                tst = realdesc.index(i)
+                                realdesc[tst] = desc
+                                desc = "\n".join(realdesc)
+                                embed = discord.Embed(title=title.strip(), description=f"```{desc}```",
+                                                      color=discord.Color.green())
+                                embed.set_footer(text=f"Requested by {ctx.author.name}#{ctx.author.discriminator}",
+                                                 icon_url=ctx.author.avatar_url)
+                                await msg.edit(embed=embed)
+                                await res.respond(
+                                    type=InteractionType.ChannelMessageWithSource,
+                                    content=f'You changed your mind and chose `{res.component.label}`!'
+                                )
+                                break
+                            except ValueError:
+                                await res.respond(type=InteractionType.ChannelMessageWithSource,
+                                    content=f'You already chose `{res.component.label}`!')
+                                break
                         except KeyError:
                             arr.__setitem__(res.author.id, i[:-2])
                             nums = int(i[-1])

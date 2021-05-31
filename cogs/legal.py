@@ -206,7 +206,7 @@ class Legal(commands.Cog):
     async def privacy(self, ctx):
         desc = f"{self.client.user.name}'s Privacy Policy\n" \
                f"\n**What data we collect**\n" \
-               f"We collect information such as your server's ID, the name of your server, your configuration settings (such as welcomerole), " \
+               f"We collect information such as your server's ID, your server's icon, your username, your profile picture, the name of your server, your configuration settings (such as welcomerole), " \
                f"number of ghost pings, how many messages have been sent, and how many minutes people have been in Voice Channels.\n" \
                f"\n**How your data is protected**\n" \
                f"All of {self.client.user.name}'s data is stored in an encrypted and password-protected MongoDB instance. Only two, yes TWO, " \

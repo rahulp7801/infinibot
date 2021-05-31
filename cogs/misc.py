@@ -5,7 +5,17 @@ import random
 import aiohttp
 import asyncio
 import wikipedia
+import string
 from googletrans import Translator
+import pyfiglet
+from pymongo import MongoClient
+
+with open('mongourl.txt', 'r') as file:
+    url = file.read()
+
+mongo_url = url.strip()
+cluster = MongoClient(mongo_url)
+
 
 translator = Translator()
 class Misc(commands.Cog):
@@ -257,6 +267,79 @@ class Misc(commands.Cog):
         except Exception as e:
             if str(e).strip() == 'Invite is invalid or expired.':
                 return await ctx.reply(e, mention_author=False)
+
+    @commands.command(aliases=['passwordgen', 'passgen', 'passwordgenerate'])
+    # add to help menu
+    @commands.cooldown(2, 15, commands.BucketType.user)
+    async def passwordgenerator(self, ctx, lent=10):
+        lower = string.ascii_lowercase
+        upper = string.ascii_uppercase
+        num = string.digits
+        symbols = string.punctuation
+        if lent > 20:
+            await ctx.send(f"Since your specified value was greater than 20 characters, we are shortening it to 20.")
+        combined = lower + upper + num + symbols
+        temp = random.sample(combined, lent)
+        channel = ctx.channel
+        desc = f'{"".join(temp)}'
+        desc2 = f"\nYou requested this in {channel.mention} in the server **{ctx.guild.name}**"
+        await ctx.message.add_reaction('✅')
+        embed = discord.Embed(description=f"```{desc}```{desc2}", color=discord.Color.green())
+        embed.set_author(name=f"{ctx.author.name}'s randomly generated password", icon_url=ctx.author.avatar_url)
+        embed.set_footer(text="InfiniBot Password Generator")
+        await ctx.author.send(embed=embed)
+
+    @commands.command()
+    async def asciitext(self, ctx, *, text="Next time put text you want converted lol"):
+        if len(text) > 2000:
+            await ctx.send("Your message was too long!")
+            return
+        result = pyfiglet.figlet_format(f"{text}")
+        await ctx.send(f"```{result}```")
+
+    @commands.command()
+    # helpmenu addition !!!
+    async def servericon(self, ctx):
+        embed = discord.Embed(color=discord.Color.green())
+        embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
+        embed.set_image(url=ctx.icon_url)
+        embed.set_footer(text=f"{ctx.name} Server Icon | Requested by {ctx.author.name}")
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    async def emojify(self, ctx, *, text):
+        if len(text) > 2000:
+            await ctx.send("Keep your message under 2000 characters.")
+            return
+        try:
+            new = []
+            for i in str(text):
+                if i == " ":
+                    new.append("         ")
+                    continue
+                if not i.isalpha():
+                    continue
+                else:
+                    new.append(f":regional_indicator_{i.lower()}:")
+                    continue
+
+            await ctx.send("".join(new))
+        except:
+            await ctx.send("Something went wrong, next time make sure to use only letters.")
+
+    @emojify.error
+    async def emojify_err(self, ctx, error):
+        name = f"GUILD{ctx.guild.id}"
+        db = cluster[name]
+        collection = db['config']
+        results = collection.find({'_id': ctx.guild.id})
+        for i in results:
+            prefix = i['prefix']
+        if isinstance(error, commands.MissingRequiredArgument):
+            desc = f"```{prefix}emojify [text]```"
+            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
+            embed.set_footer(text="Parameters in [] are required and () are optional")
+            return await ctx.send(embed=embed)
 
 def setup(client):
     client.add_cog(Misc(client))

@@ -216,6 +216,33 @@ class Misc(commands.Cog):
         except ValueError:
             await ctx.reply(f"You didn\'t mention the language you would like to translate to, or it was an invalid language!\n", mention_author = False)
 
+    @commands.command()
+    async def define(self, ctx, *, term = "hello"):
+        async with aiohttp.ClientSession() as session:
+            url = f'https://api.dictionaryapi.dev/api/v2/entries/en_US/{term.strip()}'
+            async with session.get(url) as response:
+                data = await response.json()
+                print(data)
+            try:
+                word = data[0]['word']
+                pronunctation = data[0]['phonetics'][0]['text']
+                definitions = data[0]['meanings'][0]['definitions'][0]['definition']
+                try:
+                    synonyms = ", ".join(data[0]['meanings'][0]['definitions'][0]['synonyms'])
+                except KeyError:
+                    synonyms = None
+                example = data[0]['meanings'][0]['definitions'][0]['example']
+                pos = data[0]['meanings'][0]['partOfSpeech']
+                embed = discord.Embed(color = discord.Color.green())
+                embed.set_author(name=f"Definition of {word}")
+                embed.add_field(name="Pronunciation", value = f"```{pronunctation}```")
+                embed.add_field(name='Part Of Speech', value = f"```{pos}```")
+                embed.add_field(name='Definition', value = f"```{definitions}```", inline = False)
+                embed.add_field(name='Synonyms', value = f"```{synonyms if synonyms is not None else 'None'}```", inline = False)
+                embed.add_field(name='Example Sentence', value = f"```{example}```", inline= False)
+                await ctx.send(embed=embed)
+            except KeyError:
+                return await ctx.send(f"It looks like the term `{term.strip()}` could not be found.")
 
 def setup(client):
     client.add_cog(Misc(client))

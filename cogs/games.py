@@ -3,6 +3,7 @@ import discord
 import akinator
 from akinator.async_aki import Akinator
 import asyncio
+import random
 
 aki = Akinator()
 
@@ -107,6 +108,53 @@ class Games(commands.Cog):
 
             except asyncio.TimeoutError:
                 return await ctx.reply("Game over due to inactivity.", mention_author = False)
+
+
+    @commands.command()
+    async def jumble(self, ctx):
+        wordlist = [
+            'insane',
+            'domination',
+            'greatest',
+            'basketball',
+            'football',
+            'amazing',
+            'phenomenal',
+            'extravagant',
+            'slam dunk',
+            'pogchamp',
+            'discord',
+            'google',
+            'apple',
+            'cheetah',
+            'lightning',
+            'robot',
+            'artificial intelligence',
+            'New York City',
+            'United States of America',
+            'Coronavirus',
+            'lockdown',
+            'superior',
+            'California',
+            'Justin Bieber'
+        ]
+        x = random.choice(wordlist)
+        newarr = []
+        for i in x:
+            newarr.append(i)
+        random.shuffle(newarr)
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+        await ctx.reply(f"Unscramble this word within **20 seconds**: `{''.join(newarr)}`", mention_author = False)
+        try:
+            msg = await self.client.wait_for('message', check=check, timeout=20.0)
+            if msg.content.strip().lower() == x.lower():
+                await msg.reply(f"Congratulations! The word was `{x}`!", mention_author = False)
+            else:
+                await msg.reply(f"Oof, your answer is incorrect! The correct answer was `{x}`!")
+        except asyncio.TimeoutError:
+            await ctx.send("You took too long!")
+
 
 def setup(client):
     client.add_cog(Games(client))

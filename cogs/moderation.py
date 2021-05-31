@@ -761,6 +761,38 @@ class Moderation(commands.Cog):
         if isinstance(error, commands.MissingPermissions):
             return await ctx.send("You can't use this!")
 
+    @commands.command()
+    @commands.has_permissions(manage_messages = True)
+    async def pin(self, ctx, message:discord.Message = None):
+        if message is None:
+            if ctx.message.reference:
+                msg = await ctx.fetch_message(ctx.message.reference.message_id)
+            else:
+                msg = ctx.message
+        else:
+            msg = message
+        try:
+            await msg.pin()
+        except discord.Forbidden:
+            return await ctx.send("I don't have permission to pin this message.")
+        await ctx.message.add_reaction('👍🏽')
+
+    @commands.command()
+    @commands.has_permissions(manage_messages=True)
+    async def unpin(self, ctx, message: discord.Message = None):
+        if message is None:
+            if ctx.message.reference:
+                msg = await ctx.fetch_message(ctx.message.reference.message_id)
+            else:
+                msg = ctx.message
+        else:
+            msg = message
+        try:
+            await msg.unpin()
+        except discord.Forbidden:
+            return await ctx.send("I don't have permission to unpin this message.")
+        await ctx.message.add_reaction('👍🏽')
+
 
 def setup(client):
     client.add_cog(Moderation(client))

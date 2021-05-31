@@ -244,5 +244,19 @@ class Misc(commands.Cog):
             except KeyError:
                 return await ctx.send(f"It looks like the term `{term.strip()}` could not be found.")
 
+    @commands.command()
+    async def inviteinfo(self, ctx, invite: discord.Invite):
+        try:
+            embed = discord.Embed(color=discord.Color.green())
+            embed.add_field(name="Inviter", value=f"```{invite.inviter}```")
+            embed.add_field(name="Code", value=f"```{invite.code}```")
+            embed.add_field(name="Server", value=f"```{invite.guild}```")
+            embed.add_field(name="URL", value=f"```{invite.url}```", inline=False)
+            embed.add_field(name="Uses", value=f"```{invite.uses}```", inline=False)
+            await ctx.send(embed=embed)
+        except Exception as e:
+            if str(e).strip() == 'Invite is invalid or expired.':
+                return await ctx.reply(e, mention_author=False)
+
 def setup(client):
     client.add_cog(Misc(client))

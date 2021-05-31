@@ -5,7 +5,9 @@ import random
 import aiohttp
 import asyncio
 import wikipedia
+from googletrans import Translator
 
+translator = Translator()
 class Misc(commands.Cog):
     def __init__(self, client):
         self.client = client
@@ -205,6 +207,14 @@ class Misc(commands.Cog):
                             continue
                 except asyncio.TimeoutError:
                     return await ctx.reply("Timed out", mention_author = False)
+
+    @commands.command()
+    async def translate(self, ctx, language = 'en', *, text = "Como estas?"):
+        try:
+            newphrase = translator.translate(text.strip(), dest=language.strip().lower())
+            await ctx.reply(f'Your phrase is: `{newphrase.text}`!', mention_author = False)
+        except ValueError:
+            await ctx.reply(f"You didn\'t mention the language you would like to translate to, or it was an invalid language!\n", mention_author = False)
 
 
 def setup(client):

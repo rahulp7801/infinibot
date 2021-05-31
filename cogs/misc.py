@@ -208,7 +208,7 @@ class Misc(commands.Cog):
                 except asyncio.TimeoutError:
                     return await ctx.reply("Timed out", mention_author = False)
 
-    @commands.command()
+    @commands.command(aliases = ['tr'])
     async def translate(self, ctx, language = 'en', *, text = "Como estas?"):
         try:
             newphrase = translator.translate(text.strip(), dest=language.strip().lower())

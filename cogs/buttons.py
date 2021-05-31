@@ -186,7 +186,6 @@ class Buttons(commands.Cog):
                         return
                     if res.component.label.isdigit():
                         try:
-                            print(arr)
                             if str(arr[0]) == '0':
                                 arr[0] = str(res.component.label)
                             else:

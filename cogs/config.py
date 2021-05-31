@@ -21,53 +21,10 @@ class Configuration(commands.Cog):
     async def on_ready(self):
         DiscordComponents(self.client, change_discord_methods=True)
 
-    @staticmethod
-    async def channelperms(channel: discord.TextChannel):
-        if channel.is_nsfw():
-            return False
-        if channel.guild.me.guild_permissions.administrator:
-            return True
-        y = channel.overwrites_for(channel.guild.default_role)
-        if not y.send_messages or not y.read_messages or not y.embed_links:
-            pass
-        else:
-            return True
-        for role in channel.guild.me.roles:
-            x = channel.overwrites_for(role)
-            if not x.send_messages or not x.read_messages or not x.embed_links:
-                continue
-            else:
-                return True
-
-        z = channel.overwrites_for(channel.guild.me)
-        if not z.send_messages or not z.read_messages or not z.embed_links:
-            return False
-
-    @staticmethod
-    async def rolecheck(role:discord.Role):
-        rolez = discord.utils.get(role.guild.roles, name=role.name)
-        if rolez is None:
-            return False, f"`{role}` is not a valid role in **{role.guild.name}**."
-        if rolez >= role.guild.me.top_role:
-            return False, f"{role.mention} is above my highest role!"
-        if rolez.is_default():
-            return False, f"{role.mention} is given to everybody, so I cannot assign this role."
-        if rolez.is_bot_managed():
-            return False, f"{role.mention} is managed by a bot."
-        if rolez.is_integration():
-            return False, f"{role.mention} is managed by an integration."
-        if rolez.is_premium_subscriber():
-            return False, f"{role.mention} is only given to server boosters and cannot be manually assigned."
-        return True
 
     @commands.group(invoke_without_command = True)
     async def setup(self, ctx):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         # add help for each command
         desc = f"```welcomechannel, welcometext, privset, welcomerole, captcha, muterole, leavemsg, spamdetection, logs, ghostping, all```"
         embed = discord.Embed(title="InfiniBot Setup Commands", description=desc, color=discord.Color.green())
@@ -78,12 +35,7 @@ class Configuration(commands.Cog):
 
     @setup.command()
     async def list(self, ctx):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         embed = discord.Embed(title="Available Setup Commands for InfiniBot", color=discord.Color.greyple())
         embed.add_field(name=f"{prefix}setup welcomechannel <#channel>",
                         value="Set the server\'s welcome channel! All welcome messages will be sent to this channel.",
@@ -123,19 +75,15 @@ class Configuration(commands.Cog):
     @setup.command()
     @commands.has_permissions(manage_messages=True)
     async def welcomechannel(self, ctx, channel: discord.TextChannel = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
+        db = cluster[f'GUILD{ctx.guild.id}']
         if channel is None:
             desc = f"```{prefix}setup welcomechannel [channel ID or mention]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
             embed.set_footer(text="Parameters in [] are required and () are optional")
             return await ctx.send(embed=embed)
         if ctx.message.author.guild_permissions.manage_messages:
-            res = await self.channelperms(channel)
+            res = utils.channelperms(channel)
             if not res:
                 return await ctx.send(
                     f"Please give me permission to `View Channel`, `Send Messages`, and `Embed Links` in {channel.mention} before proceeding.\n")
@@ -164,12 +112,8 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomemsg', 'welcomemessage'])
     @commands.has_permissions(manage_messages=True)
     async def welcometext(self, ctx, *, text: str = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
+        db=cluster[f'GUILD{ctx.guild.id}']
         if text is None:
             desc = f"```{prefix}setup welcometext [text]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -203,12 +147,8 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomenick', 'welconickname'])
     @commands.has_permissions(manage_nicknames=True)
     async def onjoinnick(self, ctx, *, nick=None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
+        db = cluster[f"GUILD{ctx.guild.id}"]
         if nick is None:
             desc = f"```{prefix}setup welcometext [text]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -233,12 +173,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['minecraftip'])
     @commands.has_permissions(manage_guild = True)
     async def mcip(self, ctx, *, text: str = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if text is None:
             desc = f"```{prefix}setup mcip [ip]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -265,12 +202,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['XP', 'levelups'])
     @commands.has_permissions(manage_guild = True)
     async def levels(self, ctx, enab=True):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(enab).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup levels [True or False]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -299,12 +233,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['antighostping', 'antighost'])
     @commands.has_permissions(manage_guild = True)
     async def ghostping(self, ctx, enab=True):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(enab).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup ghostping [True or False]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -333,12 +264,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['dmset', 'privmsg', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'])
     @commands.has_permissions(manage_guild = True)
     async def privset(self, ctx, *, text: str = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if text is None:
             desc = f"```{prefix}setup privset [text]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -373,12 +301,9 @@ class Configuration(commands.Cog):
     @setup.command()
     @commands.has_permissions(manage_guild = True)
     async def welcomerole(self, ctx, *, role: discord.Role = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if role is None:
             desc = f"```{prefix}setup welcomerole [Role Name]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -431,12 +356,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['bl', 'blackl'])
     @commands.has_permissions(manage_guild = True)
     async def blacklist(self, ctx, enab: bool = False):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(enab).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup blacklist [True or False]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -464,12 +386,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'])
     @commands.has_permissions(manage_guild = True)
     async def goodbyemsg(self, ctx, *, text: str = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if text is None:
             desc = f"```{prefix}setup goodbyemsg [text]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -511,12 +430,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['starchannel', 'starchan'])
     @commands.has_permissions(manage_guild = True)
     async def starboardchannel(self, ctx, channel: discord.TextChannel = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if channel is None:
             desc = f"```{prefix}setup starboardchannel [channel mention]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -524,7 +440,7 @@ class Configuration(commands.Cog):
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
-            res = await self.channelperms(channel)
+            res = utils.channelperms(channel)
             if not res:
                 return await ctx.send(
                     f"Please give me permission to `View Channel`, `Send Messages`, and `Embed Links` in {channel.mention} before proceeding.")
@@ -549,12 +465,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['servercaptcha'])
     @commands.has_permissions(manage_guild = True)
     async def captcha(self, ctx, text: bool = True):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(text).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup captcha [True or False]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -584,12 +497,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['spamdetect'])
     @commands.has_permissions(manage_guild = True)
     async def spamdetection(self, ctx, text: bool = False):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(text).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup spamdetection [True or False]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -619,12 +529,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['logs', 'log'])
     @commands.has_permissions(manage_guild = True)
     async def logging(self, ctx, setup: bool = True, channel: discord.TextChannel = None):
+        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
         if str(setup).lower() not in ['true', 'false']:
             desc = f"```{prefix}setup logging [True or False] [channel]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -654,7 +561,7 @@ class Configuration(commands.Cog):
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
-            res = await self.channelperms(channel)
+            res = utils.channelperms(channel)
             if not res:
                 return await ctx.send(
                     f"Please give me permission to `View Channel`, `Send Messages`, and `Embed Links` in {channel.mention} before proceeding.")
@@ -927,7 +834,7 @@ class Configuration(commands.Cog):
                         pass
                     try:
                         channel = msg.channel_mentions[0]
-                        res = await self.channelperms(channel)
+                        res = utils.channelperms(channel)
                         if not res:
                             desc = f"It looks like I am missing permissions to `Send Messages`, `View Channel`, and `Embed Links` in {channel.mention}. Please fix that " \
                                    f"and return to setup.\n" \
@@ -1124,7 +1031,7 @@ class Configuration(commands.Cog):
                                 await asyncio.sleep(3)
                                 continue
                         else:
-                            res = await self.rolecheck(role)
+                            res = utils.rolecheck(role)
                             if not res:
                                 desc = res[1]
                                 embed = discord.Embed(description=desc, color = discord.Color.red())
@@ -1346,7 +1253,7 @@ class Configuration(commands.Cog):
                                     await asyncio.sleep(3)
                                     continue
                             else:
-                                res = await self.rolecheck(role)
+                                res = utils.rolecheck(role)
                                 if not res:
                                     desc = res[1]
                                     embed = discord.Embed(description=desc, color=discord.Color.red())
@@ -1651,7 +1558,7 @@ class Configuration(commands.Cog):
                             pass
                         try:
                             channel = msg.channel_mentions[0]
-                            res = await self.channelperms(channel)
+                            res = utils.channelperms(channel)
                             if not res:
                                 desc = f"It looks like I am missing permissions to `Send Messages`, `View Channel`, and `Embed Links` in {channel.mention}. Please fix that " \
                                        f"and return to setup.\n" \
@@ -2147,7 +2054,7 @@ class Configuration(commands.Cog):
                         pass
                     try:
                         channel = msg.channel_mentions[0]
-                        res = await self.channelperms(channel)
+                        res = utils.channelperms(channel)
                         if not res:
                             desc = f"It looks like I am missing permissions to `Send Messages`, `View Channel`, and `Embed Links` in {channel.mention}. Please fix that " \
                                    f"and return to setup.\n" \

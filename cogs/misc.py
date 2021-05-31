@@ -337,5 +337,14 @@ class Misc(commands.Cog):
             embed.set_footer(text="Parameters in [] are required and () are optional")
             return await ctx.send(embed=embed)
 
+    @commands.command(aliases = ['msg2embed', 'm2e'])
+    async def msgtoembed(self, ctx, message:discord.Message=None):
+        if ctx.message.reference:
+            message = await ctx.fetch_message(ctx.message.reference.message_id)
+        if message is None:
+            message = ctx.message
+        res = utils.messagetoembed(message)
+        await ctx.send(embed=res)
+
 def setup(client):
     client.add_cog(Misc(client))

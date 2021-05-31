@@ -37,3 +37,5 @@
 /freenews.txt
 /__pycache__
 /cogs/__pycache__
+/logs.txt
+/errors.log

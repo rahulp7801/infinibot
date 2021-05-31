@@ -9,9 +9,16 @@ class Logging(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_error(self, ctx, error):
-        errmsg = f"{ctx.command.name} raised {error} in {ctx.guild.name} ({ctx.guild.id}) on {datetime.datetime.now()}"
+        if isinstance(error, commands.CommandNotFound): return
+        if isinstance(error, commands.CommandOnCooldown): return
+        if isinstance(error, commands.MissingRequiredArgument): return
+        if isinstance(error, commands.MissingPermissions): return
+        if isinstance(error, commands.MaxConcurrencyReached): return
+        if isinstance(error, commands.MaxConcurrency): return
+        errmsg = f"{ctx.command.name} raised {error} in {ctx.guild.name if ctx.guild is not None else 'DM'} ({ctx.guild.id if ctx.guild is not None else ctx.author.id + ' DM'}) on {datetime.datetime.now()}"
         logging.basicConfig(filename='./errors.log')
         logging.error(errmsg)
+
 
 
 

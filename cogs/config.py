@@ -6,6 +6,7 @@ import datetime
 from PIL import Image, ImageDraw, ImageFont
 import random
 from discord_components import DiscordComponents
+from modules import utils
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -759,12 +760,7 @@ class Configuration(commands.Cog):
 
     @changeprefix.error
     async def changeprefix_error(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f'```{prefix}changeprefix [prefix]```\n**NOTE: If you want a word prefix, surround the word in quotes and a space.** \nExample: {prefix}changeprefix "yo "'
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())

@@ -5,6 +5,7 @@ from pymongo import MongoClient
 import datetime
 import random
 from discord_components import DiscordComponents
+from modules import utils
 #automoderation will be another cog
 
 with open('./mongourl.txt', 'r') as file:
@@ -24,9 +25,12 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_messages = True)
     async def clear(self, ctx, amount:int):
-        await ctx.channel.purge(limit = amount + 1)
-        await asyncio.sleep(2)
-        await ctx.send(f"Cleared {amount + 1} messages!")
+        try:
+            await ctx.channel.purge(limit = amount + 1)
+            await asyncio.sleep(2)
+            await ctx.send(f"Cleared {amount + 1} messages!")
+        except discord.errors.HTTPException:
+            await ctx.send("I cannot delete messages past two weeks old!")
 
     @clear.error
     async def clear_err(self, ctx, error):
@@ -79,12 +83,7 @@ class Moderation(commands.Cog):
 
     @ban.error
     async def ban_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}ban [member] (reason)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -155,12 +154,7 @@ class Moderation(commands.Cog):
 
     @tempban.error
     async def tempban_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}tempban [member] (duration) (unit) (reason)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -213,12 +207,7 @@ class Moderation(commands.Cog):
 
     @kick.error
     async def kick_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}kick [member] (reason)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -243,12 +232,7 @@ class Moderation(commands.Cog):
 
     @unban.error
     async def unb_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}unban [user]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -261,6 +245,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles = True)
+    #use the durations_nlp module
     async def tempmute(self, ctx, member:discord.Member, duration = 1, unit = 'h', *, reason = "No reason given"):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
@@ -328,12 +313,7 @@ class Moderation(commands.Cog):
 
     @tempmute.error
     async def tempmute_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}tempmute [member] (duration) (unit) (reason)```\nUnits: `s`, `m`, `h`"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -346,7 +326,7 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_roles = True)
-    async def mute(self, ctx, member:discord.Member, *, reason = "No reason given"):
+    async def mute(self, ctx, member:discord.Member, *, dur = None):
         if member == self.client.user:
             return await ctx.send("I can't mute myself.")
         name = f"GUILD{ctx.guild.id}"
@@ -356,13 +336,18 @@ class Moderation(commands.Cog):
         for i in results:
             prefix = i['prefix']
             muterole = i['muterole']
+        if dur is not None:
+            try:
+                duration = utils.tmts(dur.strip())
+            except ValueError as e:
+                return await ctx.reply(str(e), mention_author = False)
         try:
             pfp = member.avatar_url
             author = member
-            embed = discord.Embed(description=f"For reason: ```{reason}```", color=discord.Color.red())
-            embed.set_author(name=str(author) + " has been muted indefintely.", icon_url=pfp)
+            embed = discord.Embed(description=f"For reason: ```Being Naughty```", color=discord.Color.red())
+            embed.set_author(name=str(author) + f" has been muted {'indefinitely' if not dur else 'for ' + utils.stringfromtime(duration)}.", icon_url=pfp)
             uembed = discord.Embed(title=f"You have been muted in {ctx.guild.name}",
-                                   description=f"For reason: ```{reason}```", color=discord.Color.blurple())
+                                   description=f"For reason: ```Being Naughty```", color=discord.Color.blurple())
             uembed.set_footer(text="If you believe this is in error, please contact an Admin.")
             if str(muterole) == '':
                 await ctx.send(
@@ -372,17 +357,16 @@ class Moderation(commands.Cog):
             if role in member.roles:
                 await ctx.send(f"`{member}` is already muted.")
                 return
-            elif reason != None:
-                if ctx.author.top_role >= member.top_role:
-                    await member.add_roles(role)
-                    await ctx.send(embed=embed)
-                    try:
-                        await member.send(embed=uembed)
-                    except:
-                        await ctx.send(f'A reason could not be sent to {member.mention} as they had their dms off.')
-                else:
-                    await ctx.send(f"You can only use this moderation on a member below yourself.")
-                    return
+            if ctx.author.top_role >= member.top_role:
+                await member.add_roles(role)
+                await ctx.send(embed=embed)
+                try:
+                    await member.send(embed=uembed)
+                except:
+                    await ctx.send(f'A reason could not be sent to {member.mention} as they had their dms off.')
+            else:
+                await ctx.send(f"You can only use this moderation on a member below yourself.")
+                return
         except AttributeError:
             return await ctx.send(
                 f"This server does not have a mute role. Use `{prefix}muterole` to create the muterole.")
@@ -397,14 +381,9 @@ class Moderation(commands.Cog):
 
     @mute.error
     async def mute_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}mute [member] (reason)```"
+            desc = f"```{prefix}mute [member] (duration)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
             embed.set_footer(text="Parameters in [] are required and () are optional")
             return await ctx.send(embed=embed)
@@ -432,12 +411,7 @@ class Moderation(commands.Cog):
 
     @unmute.error
     async def unmute_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}unmute [member]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -497,12 +471,7 @@ class Moderation(commands.Cog):
 
     @nick.error
     async def nick_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}nick [member] [nickname]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -517,12 +486,7 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.has_permissions(ban_members=True)
     async def softban(self, ctx, member: discord.Member = None, *, reason="To delete messages"):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if member is None:
             desc = f"```{prefix}softban [member] (reason)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -580,12 +544,7 @@ class Moderation(commands.Cog):
 
     @warn.error
     async def warn_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}warn [member] (reason)```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -601,10 +560,7 @@ class Moderation(commands.Cog):
         await ctx.trigger_typing()
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if member is None:
             if ctx.author.guild_permissions.manage_roles:
                 if member is None:
@@ -711,12 +667,7 @@ class Moderation(commands.Cog):
     @commands.command(aliases=['deleterole'])
     @commands.has_permissions(manage_guild = True)
     async def delrole(self, ctx, role: discord.Role = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if role is None:
             desc = f"```{prefix}delrole [role]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -747,12 +698,7 @@ class Moderation(commands.Cog):
 
     @hackban.error
     async def hackban_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}slowmode [channel mention] [duration]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())

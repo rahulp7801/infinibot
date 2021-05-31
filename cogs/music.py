@@ -6,6 +6,7 @@ from spotipy.oauth2 import SpotifyClientCredentials
 import datetime
 import pandas as pd
 import aiohttp
+from modules import utils
 
 sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
         client_secret='1e52b491d90e4c858ad914b5b2741f23',
@@ -184,12 +185,7 @@ class Spotifys(commands.Cog):
 
     @set.error
     async def set_error(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}fm set [username]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
@@ -376,12 +372,7 @@ class Spotifys(commands.Cog):
 
     @artist.error
     async def art_error(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}fm artist [artist]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())

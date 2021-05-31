@@ -9,6 +9,7 @@ import string
 from googletrans import Translator
 import pyfiglet
 from pymongo import MongoClient
+from modules import utils
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -329,12 +330,7 @@ class Misc(commands.Cog):
 
     @emojify.error
     async def emojify_err(self, ctx, error):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         if isinstance(error, commands.MissingRequiredArgument):
             desc = f"```{prefix}emojify [text]```"
             embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())

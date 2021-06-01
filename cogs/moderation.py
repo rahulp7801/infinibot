@@ -168,7 +168,7 @@ class Moderation(commands.Cog):
             return await ctx.reply("Please mention someone to ban.")
 
     @commands.command()
-    @commands.guild_only(0)
+    @commands.guild_only()
     @commands.has_permissions(kick_members = True)
     async def kick(self, ctx, member:discord.Member, *, reason = "No reason given"):
         try:

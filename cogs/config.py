@@ -76,12 +76,9 @@ class Configuration(commands.Cog):
     @setup.command()
     @commands.has_permissions(manage_messages=True)
     async def welcomechannel(self, ctx, channel: discord.TextChannel = None):
-        prefix = utils.serverprefix(ctx)
         db = cluster[f'GUILD{ctx.guild.id}']
         if channel is None:
-            desc = f"```{prefix}setup welcomechannel [channel ID or mention]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if ctx.message.author.guild_permissions.manage_messages:
             res = utils.channelperms(channel)
@@ -113,12 +110,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomemsg', 'welcomemessage'])
     @commands.has_permissions(manage_messages=True)
     async def welcometext(self, ctx, *, text: str = None):
-        prefix = utils.serverprefix(ctx)
         db=cluster[f'GUILD{ctx.guild.id}']
         if text is None:
-            desc = f"```{prefix}setup welcometext [text]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         membercount = ctx.guild.member_count
         member = ctx.author.mention
@@ -148,12 +142,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomenick', 'welconickname'])
     @commands.has_permissions(manage_nicknames=True)
     async def onjoinnick(self, ctx, *, nick=None):
-        prefix = utils.serverprefix(ctx)
         db = cluster[f"GUILD{ctx.guild.id}"]
         if nick is None:
-            desc = f"```{prefix}setup welcometext [text]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if len(nick.strip()) > 20:
             return await ctx.send(f"I cannot set this nickname due to Discord limitations.")
@@ -174,13 +165,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['minecraftip'])
     @commands.has_permissions(manage_guild = True)
     async def mcip(self, ctx, *, text: str = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            desc = f"```{prefix}setup mcip [ip]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
@@ -203,13 +191,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['XP', 'levelups'])
     @commands.has_permissions(manage_guild = True)
     async def levels(self, ctx, enab=True):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup levels [True or False]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
@@ -234,13 +219,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['antighostping', 'antighost'])
     @commands.has_permissions(manage_guild = True)
     async def ghostping(self, ctx, enab=True):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup ghostping [True or False]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
@@ -265,13 +247,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['dmset', 'privmsg', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'])
     @commands.has_permissions(manage_guild = True)
     async def privset(self, ctx, *, text: str = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            desc = f"```{prefix}setup privset [text]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         membercount = ctx.guild.member_count
         mention = ctx.author.mention
@@ -302,35 +281,17 @@ class Configuration(commands.Cog):
     @setup.command()
     @commands.has_permissions(manage_guild = True)
     async def welcomerole(self, ctx, *, role: discord.Role = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if role is None:
-            desc = f"```{prefix}setup welcomerole [Role Name]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
             rolez = discord.utils.get(ctx.guild.roles, name=role.name)
-            if rolez is None:
-                return await ctx.send(f"`{role}` is not a valid role in **{ctx.guild.name}**.")
-            if rolez >= ctx.guild.me.top_role:
-                return await ctx.send(
-                    f"`{role}` is higher than or equal to my top role in **{ctx.guild.name}**. You must make my role higher than this for me to assign it.")
-            if rolez.is_default():
-                return await ctx.send(f"You cannot set the role to be `@everyone` because everyone has it by default.")
-            if rolez.is_bot_managed():
-                return await ctx.send(f"You cannot assign a role that is managed by a bot.")
-            if rolez.is_integration():
-                return await ctx.send(f"You cannot assign a role that is managed by an integration.")
-            if rolez.is_premium_subscriber():
-                return await ctx.send(f"You cannot assign a role that can only be assigned to server boosters.")
-            if rolez >= ctx.author.top_role:
-                if ctx.author.id == ctx.guild.owner_id:
-                    pass
-                else:
-                    return await ctx.send("You cannot assign a role that is higher than your own.")
+            res = utils.rolecheck(rolez)
+            if not res:
+                return await ctx.send(res[1])
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
@@ -357,13 +318,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['bl', 'blackl'])
     @commands.has_permissions(manage_guild = True)
     async def blacklist(self, ctx, enab: bool = False):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup blacklist [True or False]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
@@ -387,13 +345,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'])
     @commands.has_permissions(manage_guild = True)
     async def goodbyemsg(self, ctx, *, text: str = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            desc = f"```{prefix}setup goodbyemsg [text]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
@@ -431,13 +386,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['starchannel', 'starchan'])
     @commands.has_permissions(manage_guild = True)
     async def starboardchannel(self, ctx, channel: discord.TextChannel = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if channel is None:
-            desc = f"```{prefix}setup starboardchannel [channel mention]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
@@ -466,13 +418,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['servercaptcha'])
     @commands.has_permissions(manage_guild = True)
     async def captcha(self, ctx, text: bool = True):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(text).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup captcha [True or False]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if text is None:
             return
@@ -498,13 +447,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['spamdetect'])
     @commands.has_permissions(manage_guild = True)
     async def spamdetection(self, ctx, text: bool = False):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(text).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup spamdetection [True or False]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if text is None:
             return
@@ -530,13 +476,10 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['logs', 'log'])
     @commands.has_permissions(manage_guild = True)
     async def logging(self, ctx, setup: bool = True, channel: discord.TextChannel = None):
-        prefix = utils.serverprefix(ctx)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(setup).lower() not in ['true', 'false']:
-            desc = f"```{prefix}setup logging [True or False] [channel]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if channel is None:
             if not setup:
@@ -556,9 +499,7 @@ class Configuration(commands.Cog):
                     return await ctx.send(
                         f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
 
-            desc = f"```{prefix}setup logging [True or False] [channel]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.message.author.guild_permissions.manage_messages:
@@ -661,15 +602,6 @@ class Configuration(commands.Cog):
         file = discord.File("./profile.png", filename='image.png')
         embed.set_image(url='attachment://image.png')
         await ctx.send(file=file, embed=embed)
-
-    @changeprefix.error
-    async def changeprefix_error(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f'```{prefix}changeprefix [prefix]```\n**NOTE: If you want a word prefix, surround the word in quotes and a space.** \nExample: {prefix}changeprefix "yo "'
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
 
     @setup.command()
     @commands.cooldown(1, 90000, commands.BucketType.guild)

@@ -10,6 +10,8 @@ from googletrans import Translator
 import pyfiglet
 from pymongo import MongoClient
 from modules import utils
+from prsaw import RandomStuff
+rs = RandomStuff(async_mode=True)
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -328,14 +330,6 @@ class Misc(commands.Cog):
         except:
             await ctx.send("Something went wrong, next time make sure to use only letters.")
 
-    @emojify.error
-    async def emojify_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}emojify [text]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
 
     @commands.command(aliases = ['msg2embed', 'm2e'])
     async def msgtoembed(self, ctx, message:discord.Message=None):
@@ -346,15 +340,35 @@ class Misc(commands.Cog):
         res = utils.messagetoembed(message)
         await ctx.send(embed=res)
 
-    @commands.command() #emoji from status command
-    async def rayhool(self, ctx, user:discord.Member = None):
-        if user is None:
-            user = ctx.author
-        print(user.activities)
-
     @commands.command()
-    async def pref(self, ctx):
-        pass
+    async def talk(self, ctx):
+        if ctx.author.bot:
+            return
+        try:
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+            await ctx.send(
+                f'{ctx.author.mention}, before I start I\'d like to go over a few things. When you wish to end the chat session, type `bye`. \n'
+                f'I only wait for 30 seconds between messages. If you don\'t respond, I will end the session on my own.\n'
+                f'Finally, press `y` to confirm you want to talk. Anything else, and the chat session ends.')
+            message = await self.client.wait_for('message', check=check, timeout=30)
+            if message.content.lower().strip() == 'y':
+                await ctx.send(f"Great {ctx.author.mention}, let's get to it. What's on your mind?")
+                while message.content.lower().strip() != "bye":
+                    message = await self.client.wait_for('message', check=check, timeout=30)
+                    response = await rs.get_ai_response(message.content.strip())
+                    await message.reply(response)
+                    if message.content.lower() == 'bye':
+                        await ctx.send(f'{ctx.author.mention}, we will meet again soon')
+                        return
+
+            else:
+                await ctx.send(f'{ctx.author.mention}, we will meet again soon')
+                return
+        except asyncio.TimeoutError:
+            await ctx.reply("Your chat session has timed out. Use the command again to chat.")
+            return
+
 
 def setup(client):
     client.add_cog(Misc(client))

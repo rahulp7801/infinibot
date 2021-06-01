@@ -18,6 +18,12 @@ class ErrorMessage(Exception):
     pass
 
 def tmts(string):
+    '''
+    :param string:
+    Formatted preferably in d, h, m, s
+    :return:
+    The value in seconds
+    '''
     try:
         string = string.strip().removeprefix('for')
         return int(Duration(string).to_seconds())
@@ -26,6 +32,12 @@ def tmts(string):
             raise ValueError('You need to specify a valid duration!')
 
 def stringfromtime(t, accuracy=4):
+    '''
+    :param t: more often than not the output from the tmts function
+    :param accuracy: How accurate, for example do we want days, seconds, hours?
+    :return:
+    a string of <days>, <hours>, <minutes>, <seconds>
+    '''
     try:
         m, s = divmod(t, 60)
         h, m = divmod(m, 60)
@@ -45,6 +57,10 @@ def stringfromtime(t, accuracy=4):
         print(e)
 
 def serverprefix(ctx):
+    '''
+    :param ctx: Context from message
+    :return: Returns the prefix from the context, if that doesn't work then scrapes the MongoDB
+    '''
     try:
         return ctx.prefix
     except Exception:
@@ -59,6 +75,11 @@ def serverprefix(ctx):
         return '%'
 
 def messagetoembed(message:discord.Message):
+    '''
+    :param message: Message ID or referenced message to convert
+    :return:
+    An embed of the message, (starchannel, logging, and fun commands)
+    '''
     embed = discord.Embed()
     embed.description = message.content.strip()
     embed.set_author(name=message.author.name + "#" + message.author.discriminator, icon_url=message.author.avatar_url)
@@ -70,6 +91,11 @@ def messagetoembed(message:discord.Message):
 
 
 def channelperms(channel: discord.TextChannel):
+    '''
+    :param channel: The text channel that we are getting perms for
+    :return:
+    True if the bot has sufficient perms, or False and a reason if the Bot does not
+    '''
     if channel.is_nsfw():
         return False
     if channel.guild.me.guild_permissions.administrator:
@@ -91,6 +117,11 @@ def channelperms(channel: discord.TextChannel):
         return False
 
 def rolecheck(role:discord.Role):
+    '''
+    :param role: A role in a server, (welcomerole, muterole, ...)
+    :return:
+    True if the bot has permission to manage this role, or False and a reason.
+    '''
     rolez = discord.utils.get(role.guild.roles, name=role.name)
     if rolez is None:
         return False, f"`{role}` is not a valid role in **{role.guild.name}**."
@@ -108,17 +139,28 @@ def rolecheck(role:discord.Role):
 
 
 def imgdraw(**kwargs):
+    '''
+    :param kwargs: Args from the input
+    :return:
+    An edited image with PIL, to shorten code (6 lines v 1 line)
+    '''
     try:
         photo = Image.open(str(kwargs['photo']))
-        print('hi1')
         font = ImageFont.truetype(kwargs['font'], int(kwargs['fontsize']))
-        print('hi2')
         draw = ImageDraw.Draw(photo)
-        print('hi3')
         draw.text(kwargs['xy'], kwargs['text'], kwargs['rgb'], font=font)
-        print('hi4')
         photo.save(f'profile.{"png" if str(kwargs["photo"]).endswith("png") else "jpg"}')
-        print('hi5')
         return photo
     except Exception as e:
         raise ErrorMessage(e)
+
+def errmsg(ctx):
+    '''
+    :param ctx: Context of the command
+    :return:
+    an embed explaining proper usage.
+    '''
+    desc = f"```{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}```"
+    embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
+    embed.set_footer(text="Parameters in <> are required and [] are optional")
+    return embed

@@ -9,10 +9,22 @@ from discord_components import DiscordComponents
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = False)
 
+
+
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension(f"cogs.{filename[:-3]}")
         print(f"{str(filename[:-3]).capitalize()} {'are' if filename[:-3].endswith('s') else 'is'} loaded.")
+
+class MyHelpCommand(commands.MinimalHelpCommand):
+    async def send_pages(self):
+        destination = self.get_destination()
+        e = discord.Embed(color=discord.Color.blurple(), description='')
+        for page in self.paginator.pages:
+            e.description += page
+        await destination.send(embed=e)
+
+client.help_command = MyHelpCommand()
 
 @client.event
 async def on_ready():

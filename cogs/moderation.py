@@ -8,6 +8,8 @@ from discord_components import DiscordComponents
 from modules import utils
 #automoderation will be another cog
 
+
+
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
 
@@ -36,8 +38,6 @@ class Moderation(commands.Cog):
     async def clear_err(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
             return await ctx.send("You can't use that!")
-        if isinstance(error, commands.MissingRequiredArgument):
-            return await ctx.send(f"You need to specify the amount you would like to clear!")
 
     @commands.command()
     @commands.guild_only()
@@ -81,17 +81,6 @@ class Moderation(commands.Cog):
             return await ctx.send(
                 "I do not have the `Ban Members` permission. You can fix that by going into Server Settings and giving my role that permission.")
 
-
-    @ban.error
-    async def ban_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}ban [member] (reason)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"{ctx.author.mention}, you can't use that!")
 
     @commands.command()
     @commands.guild_only()
@@ -153,17 +142,8 @@ class Moderation(commands.Cog):
                 return await ctx.send(f"You must make my highest role above {member.display_name}'s highest role for me to take action. ")
             return await ctx.send("I do not have the `Ban Members` permission.")
 
-
     @tempban.error
     async def tempban_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}tempban [member] (duration) (unit) (reason)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"{ctx.author.mention}, you can't use that!")
         if isinstance(error, commands.MemberNotFound):
             return await ctx.reply("Please mention someone to ban.")
 
@@ -208,16 +188,6 @@ class Moderation(commands.Cog):
                 return await ctx.send(f"You must make my highest role above {member.display_name}'s top role in order for me to take action on them.")
             await ctx.send("I do not have the `Kick Members` permission.")
 
-    @kick.error
-    async def kick_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}kick [member] (reason)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You don't have permissions!")
 
     @commands.command()
     @commands.guild_only()
@@ -236,12 +206,6 @@ class Moderation(commands.Cog):
 
     @unban.error
     async def unb_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}unban [user]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
         if isinstance(error, commands.UserNotFound):
             nban = discord.Embed(color=discord.Color.red())
             nban.set_author(name=f"User is not banned or doesn\'t exist!")
@@ -388,16 +352,8 @@ class Moderation(commands.Cog):
 
     @mute.error
     async def mute_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}mute [member] (duration)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
         if isinstance(error, commands.MemberNotFound):
             return await ctx.reply(error, mention_author=False)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"{ctx.author.name}, you can't use that!")
 
     @commands.command()
     @commands.guild_only()
@@ -416,17 +372,6 @@ class Moderation(commands.Cog):
         embed = discord.Embed(color=discord.Color.green())
         embed.set_author(name=str(author) + " has been unmuted.", icon_url=pfp)
         await ctx.send(embed=embed)
-
-    @unmute.error
-    async def unmute_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}unmute [member]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You can't use that!")
 
     @commands.command()
     @commands.guild_only()
@@ -449,6 +394,9 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def unlock(self, ctx):
+        res = await utils.channelperms(ctx.channel)
+        if not res:
+            raise ValueError(res[1])
         await ctx.channel.set_permissions(ctx.guild.default_role, send_messages=True)
         desc = (str("🔓") + ctx.channel.mention + " ***has been unlocked.***")
         embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
@@ -457,10 +405,9 @@ class Moderation(commands.Cog):
 
     @unlock.error
     async def unlock_err(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You can't use that!")
-        if isinstance(error, commands.CommandInvokeError):
-            return await ctx.send("I don't have the Manage Channel permission for that channel.")
+        error = error.original
+        if isinstance(error, ValueError):
+            return await ctx.send(f"I don't have the `Manage Channel` permission for {ctx.channel.mention}.")
 
     @commands.command()
     @commands.guild_only()
@@ -480,29 +427,13 @@ class Moderation(commands.Cog):
                 return await ctx.send(f"My top role must be higher than {member.display_name}'s top role.")
             return await ctx.send("I am missing the `Manage Nicknames` permission.")
 
-    @nick.error
-    async def nick_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}nick [member] [nickname]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"{ctx.author.name}, you can't use that!")
-        if isinstance(error, commands.BotMissingPermissions):
-            return await ctx.send("I don't have permission to `Manage Nicknames`. ")
 
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     async def softban(self, ctx, member: discord.Member = None, *, reason="To delete messages"):
-        prefix = utils.serverprefix(ctx)
         if member is None:
-            desc = f"```{prefix}softban [member] (reason)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
         if ctx.author.guild_permissions.ban_members:
             try:
@@ -555,17 +486,6 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed)
         await member.send(embed=uembed)
 
-    @warn.error
-    async def warn_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}warn [member] (reason)```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"You cannot use this!")
 
     @commands.command()
     @commands.guild_only()
@@ -683,11 +603,8 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def delrole(self, ctx, role: discord.Role = None):
-        prefix = utils.serverprefix(ctx)
         if role is None:
-            desc = f"```{prefix}delrole [role]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
+            embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
 
         if ctx.author.top_role >= role:
@@ -712,17 +629,6 @@ class Moderation(commands.Cog):
             await ctx.channel.send(embed=ban)
         except discord.Forbidden:
             return await ctx.send("I do not have proper permissions to ban this person!")
-
-    @hackban.error
-    async def hackban_err(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}slowmode [channel mention] [duration]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            await ctx.send(embed=embed)
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You can't use this!")
 
     @commands.command()
     @commands.has_permissions(manage_messages = True)
@@ -755,7 +661,8 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             return await ctx.send("I don't have permission to unpin this message.")
         await ctx.message.add_reaction('👍🏽')
-#
+
+
 
 def setup(client):
     client.add_cog(Moderation(client))

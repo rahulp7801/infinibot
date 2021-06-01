@@ -7,6 +7,7 @@ from pymongo import MongoClient
 import time
 import math
 import pandas as pd
+from modules import utils
 import os
 
 with open('mongourl.txt', 'r') as file:
@@ -94,6 +95,8 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
+        aitalk = self.client.get_command('talk')
+        aitalk.update(enabled=False)
         print(f"{self.client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
         while True:
             await asyncio.sleep(10)
@@ -951,6 +954,23 @@ class Events(commands.Cog):
         embed.set_author(name=f"{channel.guild.name}", icon_url=channel.guild.icon_url)
         embed.set_footer(text=f"Server: {channel.guild.name}")
         await channel1.send(embed=embed)
+
+    @commands.Cog.listener()
+    async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.MissingRequiredArgument):
+            embed = utils.errmsg(ctx)
+            return await ctx.send(embed=embed)
+        if isinstance(error, commands.DisabledCommand):
+            return await ctx.send(f"**{ctx.command.name}** is temporarily disabled, try again later!")
+        error = getattr(error, 'original', error)
+        if isinstance(error, commands.BotMissingPermissions):
+            regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
+            await ctx.send(f"I am missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
+        if isinstance(error, commands.MissingPermissions):
+            regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
+            await ctx.send(
+                f"You are missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
+
 
 def setup(client):
     client.add_cog(Events(client))

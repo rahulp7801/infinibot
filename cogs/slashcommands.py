@@ -373,10 +373,10 @@ class Slash(commands.Cog):
         upper = string.ascii_uppercase
         num = string.digits
         symbols = string.punctuation
-        if length > 20:
+        if abs(length) > 20:
             await ctx.send(f"Since your specified value was greater than 20 characters, we are shortening it to 20.", hidden=True)
         combined = lower + upper + num + symbols
-        temp = random.sample(combined, length if length <= 20 else 20)
+        temp = random.sample(combined, abs(length) if abs(length) <= 20 else 20)
         channel = ctx.channel
         desc = f'{"".join(temp)}'
         desc2 = f"\nYou requested this in {channel.mention} in the server **{ctx.guild.name}**"
@@ -496,12 +496,7 @@ class Slash(commands.Cog):
 
     @cog_ext.cog_slash(name='prefix', description='Returns the prefix for your server!')
     async def _prefix(self, ctx: SlashContext):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         # x = utils.imgdraw(photo = './Images/prefiximg.png', font = 'arial.ttf', fontsize=15, xy=(75,45), text=f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", rgb=(255,255,255))
         desc = f"Prefix for **{ctx.guild.name}** is {prefix}. \n\n**NOTE:** If you want a word prefix with a space after it, you must surround it in quotes due to a Discord limitation.\n\nEXAMPLE: {prefix}changeprefix \"yo \""
         embed = discord.Embed(description=desc, color=discord.Color.green())
@@ -525,12 +520,7 @@ class Slash(commands.Cog):
 
     @cog_ext.cog_slash(name='help', description='Get InfiniBot\'s help menu!')
     async def _help(self, ctx:SlashContext):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        user = collection.find({'_id': ctx.guild.id})
-        for i in user:
-            prefix = i['prefix']
+        prefix = utils.serverprefix(ctx)
         embed = discord.Embed(color=discord.Color.green())
         embed.set_author(name=f"{self.client.user.name}'s Help Menu", icon_url=self.client.user.avatar_url)
         embed.set_thumbnail(url=ctx.guild.icon_url)

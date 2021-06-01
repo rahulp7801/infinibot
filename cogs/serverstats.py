@@ -15,6 +15,7 @@ class Serverstats(commands.Cog):
         self.client = client
 
     @commands.command()
+    @commands.guild_only()
     async def serverstats(self, ctx):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]

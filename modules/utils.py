@@ -5,12 +5,17 @@ from durations_nlp import Duration
 from discord.ext import commands
 from pymongo import MongoClient
 import datetime
+from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
 
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
+
+class ErrorMessage(Exception):
+    pass
 
 def tmts(string):
     try:
@@ -41,6 +46,8 @@ def stringfromtime(t, accuracy=4):
 
 def serverprefix(ctx):
     try:
+        return ctx.prefix
+    except Exception:
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         collection = db['config']
@@ -98,3 +105,20 @@ def rolecheck(role:discord.Role):
     if rolez.is_premium_subscriber():
         return False, f"{role.mention} is only given to server boosters and cannot be manually assigned."
     return True
+
+
+def imgdraw(**kwargs):
+    try:
+        photo = Image.open(str(kwargs['photo']))
+        print('hi1')
+        font = ImageFont.truetype(kwargs['font'], int(kwargs['fontsize']))
+        print('hi2')
+        draw = ImageDraw.Draw(photo)
+        print('hi3')
+        draw.text(kwargs['xy'], kwargs['text'], kwargs['rgb'], font=font)
+        print('hi4')
+        photo.save(f'profile.{"png" if str(kwargs["photo"]).endswith("png") else "jpg"}')
+        print('hi5')
+        return photo
+    except Exception as e:
+        raise ErrorMessage(e)

@@ -402,7 +402,6 @@ class Events(commands.Cog):
         collection = db['config']
         res = collection.find({'_id': member.guild.id})
         for i in res:
-            prefix = i['prefix']
             logenab = i['logging']
             logchannel = i['logchannel']
         if not before.channel and after.channel:

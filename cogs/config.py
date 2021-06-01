@@ -23,6 +23,7 @@ class Configuration(commands.Cog):
 
 
     @commands.group(invoke_without_command = True)
+    @commands.guild_only()
     async def setup(self, ctx):
         prefix = utils.serverprefix(ctx)
         # add help for each command
@@ -653,11 +654,7 @@ class Configuration(commands.Cog):
         db = cluster[name]
         collection = db['config']
         collection.update_one({"_id": ctx.guild.id}, {"$set": {'prefix': str(prefix)}})
-        prefixz = Image.open('./Images/prefiximg.png')
-        font = ImageFont.truetype('arial.ttf', 15)
-        draw = ImageDraw.Draw(prefixz)
-        draw.text((75, 45), f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", (255, 255, 255), font=font)
-        prefixz.save('profile.png')
+        x = utils.imgdraw(photo='./Images/prefiximg.png', font = 'arial.ttf', fontsize=15, xy=(75, 45), text=f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", rgb=(255, 255, 255))
         desc = f"Prefix for **{ctx.guild.name}** has been updated to `{prefix}`. \n\n**NOTE:** If you want a word prefix with a space after it, you must surround it in quotes due to a Discord limitation.\n\nEXAMPLE: {prefix}changeprefix \"yo \""
         embed = discord.Embed(description=desc, color=discord.Color.green())
         embed.set_thumbnail(url=ctx.guild.icon_url)
@@ -1807,12 +1804,7 @@ class Configuration(commands.Cog):
                     await asyncio.sleep(3)
                     break
                 elif reaction.emoji == '✅':
-                    name = f"GUILD{ctx.guild.id}"
-                    db = cluster[name]
-                    collection = db['config']
-                    user = collection.find({'_id': ctx.guild.id})
-                    for i in user:
-                        prefix = i['prefix']
+                    prefix = ctx.prefix
                     desc = "Excellent! What would you like to change it to?\n\nNOTE: If you want a word prefix, you **MUST** surround it in quotes.\n" \
                            f"Example: {prefix}changeprefix \"yo \""
                     embed = discord.Embed(description=desc, color=discord.Color.green())

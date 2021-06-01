@@ -16,6 +16,7 @@ import pandas as pd
 import string
 from PIL import Image, ImageDraw, ImageFont
 from discord_components import DiscordComponents
+from modules import utils
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
 
@@ -373,17 +374,16 @@ class Slash(commands.Cog):
         num = string.digits
         symbols = string.punctuation
         if length > 20:
-            await ctx.send(f"Since your specified value was greater than 20 characters, we are shortening it to 20.")
+            await ctx.send(f"Since your specified value was greater than 20 characters, we are shortening it to 20.", hidden=True)
         combined = lower + upper + num + symbols
-        temp = random.sample(combined, length)
+        temp = random.sample(combined, length if length <= 20 else 20)
         channel = ctx.channel
         desc = f'{"".join(temp)}'
         desc2 = f"\nYou requested this in {channel.mention} in the server **{ctx.guild.name}**"
-        await ctx.send("Check your dms!", hidden=True)
         embed = discord.Embed(description=f"```{desc}```{desc2}", color=discord.Color.green())
         embed.set_author(name=f"{ctx.author.name}'s randomly generated password", icon_url=ctx.author.avatar_url)
         embed.set_footer(text="InfiniBot Password Generator")
-        await ctx.author.send(embed=embed)
+        await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='fm', description='Get your currently playing track from Last.fm!')
     async def _fm(self, ctx, member: discord.Member = None):
@@ -502,17 +502,13 @@ class Slash(commands.Cog):
         user = collection.find({'_id': ctx.guild.id})
         for i in user:
             prefix = i['prefix']
-        prefix = Image.open('./Images/prefiximg.png')
-        font = ImageFont.truetype('arial.ttf', 15)
-        draw = ImageDraw.Draw(prefix)
-        draw.text((75, 45), f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", (255, 255, 255), font=font)
-        prefix.save('profile.png')
+        # x = utils.imgdraw(photo = './Images/prefiximg.png', font = 'arial.ttf', fontsize=15, xy=(75,45), text=f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", rgb=(255,255,255))
         desc = f"Prefix for **{ctx.guild.name}** is {prefix}. \n\n**NOTE:** If you want a word prefix with a space after it, you must surround it in quotes due to a Discord limitation.\n\nEXAMPLE: {prefix}changeprefix \"yo \""
         embed = discord.Embed(description=desc, color=discord.Color.green())
         embed.set_thumbnail(url=ctx.guild.icon_url)
-        file = discord.File("./profile.png", filename='image.png')
-        embed.set_image(url='attachment://image.png')
-        await ctx.send(file=file, embed=embed, hidden=True)
+        # file = discord.File("./profile.png", filename='image.png')
+        # embed.set_image(url='attachment://image.png')
+        await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='inviteinfo', description='Get information about an invite!')
     async def _invinf(self, ctx:SlashContext, invite:discord.Invite):
@@ -541,10 +537,10 @@ class Slash(commands.Cog):
         # add individual help for each command
         embed.set_footer(text=f"Made by glizzybeam7801#8196 and kidsonfilms#4635")
         # add some example commands
-        embed.add_field(name="🛠️ Setup", value=f"Setup InfiniBot For {ctx.guild.name}!\n`{prefix}setup`")
-        embed.add_field(name="🎮 Games", value=f"Play games with InfiniBot!\n`{prefix}help games`")
+        embed.add_field(name="🛠️ Setup", value=f"Setup {self.client.user.name} for {ctx.guild.name}!\n`{prefix}setup`")
+        embed.add_field(name="🎮 Games", value=f"Play games with {self.client.user.name}!\n`{prefix}help games`")
         embed.add_field(name="📣 Moderation",
-                        value=f"Moderate your server or take a step back and let InfiniBot moderate for you!\n`{prefix}help moderation`")
+                        value=f"Moderate your server or take a step back and let {self.client.user.name} moderate for you!\n`{prefix}help moderation`")
         embed.add_field(name="❓ Miscellaneous",
                         value=f"These commands aren't sorted right now, but include everything.\n`{prefix}help misc`")
         embed.add_field(name="💰 Economy",
@@ -554,7 +550,7 @@ class Slash(commands.Cog):
         embed.add_field(name="About Us!",
                         value=f"[Invite Link](https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands) - [Support Server](https://discord.gg/4VnUA8ZXyH)\nSend the devs feedback by using `{prefix}feedback`!",
                         inline=False)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, hidden=True)
 
 
 def setup(client):

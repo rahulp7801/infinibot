@@ -346,5 +346,15 @@ class Misc(commands.Cog):
         res = utils.messagetoembed(message)
         await ctx.send(embed=res)
 
+    @commands.command() #emoji from status command
+    async def rayhool(self, ctx, user:discord.Member = None):
+        if user is None:
+            user = ctx.author
+        print(user.activities)
+
+    @commands.command()
+    async def pref(self, ctx):
+        pass
+
 def setup(client):
     client.add_cog(Misc(client))

@@ -153,18 +153,18 @@ class Slash(commands.Cog):
     @cog_ext.cog_slash(name='serverinvite', description='Generates an invite to the server!')
     async def _cinv(self, ctx: SlashContext):
         invite = await ctx.channel.create_invite(max_age=604800)
-        await ctx.send(f"Here is an invite to **{ctx.guild.name}**: \n{invite}")
+        await ctx.send(f"Here is an invite to **{ctx.guild.name}**: \n{invite}", hidden=True)
 
     @cog_ext.cog_slash(name='tinyurl', description='Generates a tinyurl')
     async def _tinyurl(self, ctx: SlashContext, url):
         try:
             x = url_shortener.tinyurl.short(url)
             await ctx.author.send(x)
-            await ctx.send("Check your dms!")
+            await ctx.send("Check your dms!", hidden=True)
         except Exception as e:
             print(e)
             return await ctx.send(
-                "Something went wrong. Make sure after the command invocation you are only putting the URL link.")
+                "Something went wrong. Make sure after the command invocation you are only putting the URL link.", hidden=True)
 
     @cog_ext.cog_slash(name='truemembercount', description='Returns the amount of humans in a server.')
     async def _tmc(self, ctx: SlashContext):
@@ -195,7 +195,7 @@ class Slash(commands.Cog):
         embed.set_author(name=f"{ctx.author.name} is now afk", icon_url=ctx.author.avatar_url)
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="The AFK setting has been saved.")
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, hidden=True)
 
         try:
             await member.edit(nick=f"[AFK] {cnick}")
@@ -286,7 +286,7 @@ class Slash(commands.Cog):
         msg = await channel.send(embed=fembed)
         await msg.add_reaction("👍")
         await msg.add_reaction("👎")
-        await ctx.send(str(f'Thank you for using InfiniBot!'))
+        await ctx.send(str(f'Thank you for using InfiniBot!'), hidden=True)
 
     @cog_ext.cog_slash(name='quickpoll', description='A one or the other poll')
     async def _quickpoll(self, ctx: SlashContext, opt1, opt2):
@@ -356,7 +356,7 @@ class Slash(commands.Cog):
         embed.add_field(name="Client Latency:", value=f"```{round(self.client.latency * 1000)}ms```", inline=False)
         embed.set_thumbnail(url=self.client.user.avatar_url)
         embed.set_author(name=f"InfiniBot Statistics", icon_url=self.client.user.avatar_url)
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='botinvite', description='Get a link to invite InfiniBot!')
     async def _botinv(self, ctx:SlashContext):
@@ -379,7 +379,7 @@ class Slash(commands.Cog):
         channel = ctx.channel
         desc = f'{"".join(temp)}'
         desc2 = f"\nYou requested this in {channel.mention} in the server **{ctx.guild.name}**"
-        await ctx.send("Check your dms!")
+        await ctx.send("Check your dms!", hidden=True)
         embed = discord.Embed(description=f"```{desc}```{desc2}", color=discord.Color.green())
         embed.set_author(name=f"{ctx.author.name}'s randomly generated password", icon_url=ctx.author.avatar_url)
         embed.set_footer(text="InfiniBot Password Generator")
@@ -492,7 +492,7 @@ class Slash(commands.Cog):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_author(name=f"{ctx.guild.name}'s Statistics", icon_url=ctx.guild.icon_url)
         embed.set_footer(text=f"Server ID: {ctx.guild.id}")
-        await ctx.send(embed=embed)
+        await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='prefix', description='Returns the prefix for your server!')
     async def _prefix(self, ctx: SlashContext):
@@ -512,7 +512,7 @@ class Slash(commands.Cog):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         file = discord.File("./profile.png", filename='image.png')
         embed.set_image(url='attachment://image.png')
-        await ctx.send(file=file, embed=embed)
+        await ctx.send(file=file, embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='inviteinfo', description='Get information about an invite!')
     async def _invinf(self, ctx:SlashContext, invite:discord.Invite):
@@ -523,7 +523,7 @@ class Slash(commands.Cog):
             embed.add_field(name = "Server", value = f"```{invite.guild}```")
             embed.add_field(name = "URL", value = f"```{invite.url}```", inline = False)
             embed.add_field(name = "Uses", value = f"```{invite.uses}```", inline = False)
-            await ctx.send(embed=embed)
+            await ctx.send(embed=embed, hidden=True)
         except Exception as e:
             return await ctx.send(str(e))
 

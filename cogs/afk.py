@@ -3,6 +3,8 @@ import discord
 from pymongo import MongoClient
 import datetime
 import time
+import math
+import asyncio
 from modules import utils
 
 with open('./mongourl.txt', 'r') as file:
@@ -15,8 +17,64 @@ class afk(commands.Cog):
     def __init__(self, client):
         self.client = client
 
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        if message.mentions:
+            name = f"GUILD{message.guild.id}"
+            db = cluster[name]
+            collection = db['afk']
+            userID = (message.mentions[0].id)
+            query = {'_id': userID}
+            if collection.count_documents(query) == 0:
+                pass
+            else:
+                user = collection.find({'_id': userID})
+                for i in user:
+                    status = i['status']
+                user = message.mentions[0].name
+                desc = f"Status: ```{status}```"
+                embed = discord.Embed(description=desc, color=discord.Color.red())
+                embed.set_thumbnail(url=message.guild.icon_url)
+                embed.set_author(name=f"{user} is afk", icon_url=message.mentions[0].avatar_url)
+                await message.reply(embed=embed, mention_author=False)
+
+        name = f"GUILD{message.guild.id}"
+        db = cluster[name]
+        collection = db['afk']
+        query = {'_id': message.author.id}
+        if collection.count_documents(query) == 0:
+            pass
+        else:
+            user = collection.find({'_id': message.author.id})
+            for i in user:
+                starttime = i['start']
+            totime = int(float(time.time())) - int(float(starttime))
+            if 60 <= totime:
+                mins = int(totime) // 60
+                desc = f"Away for {mins} minute{'' if math.floor(mins) == 1 else 's'}"
+            if totime < 60:
+                desc = f"Away for {int(totime)} second{'' if totime == 1 else 's'}"
+
+            embed = discord.Embed(title="Welcome Back!", description=desc, color=discord.Color.green())
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
+            embed.set_thumbnail(url=message.author.avatar_url)
+            await message.channel.send(embed=embed)
+            member = collection.find({'_id': message.author.id})
+            for i in member:
+                prenick = i['display_name']
+            try:
+                await message.author.edit(nick=prenick)
+            except discord.Forbidden:
+                pass
+            except UnboundLocalError:
+                pass
+            finally:
+                collection.delete_one({'_id': message.author.id})
+
     @commands.group(invoke_without_command=True)
     async def afk(self, ctx, *, message="Away"):
+        print('hirefe')
+        await asyncio.sleep(0.5)
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         collection = db['afk']
@@ -37,18 +95,14 @@ class afk(commands.Cog):
         embed.set_thumbnail(url=ctx.guild.icon_url)
         embed.set_footer(text="The AFK setting has been saved.")
         await ctx.send(embed=embed)
-
         try:
-            await member.edit(nick=f"[AFK] {cnick}")
+            return await member.edit(nick=f"[AFK] {cnick}")
         except discord.Forbidden:
-            pass
+            return
 
     @afk.command()
     @commands.has_permissions(manage_guild=True)
-    async def clear(self, ctx, member: discord.Member = None):
-        if member is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+    async def clear(self, ctx, member: discord.Member):
         if ctx.author.guild_permissions.manage_messages:
             db = cluster[f'GUILD{ctx.guild.id}']
             collection = db['afk']

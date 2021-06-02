@@ -324,56 +324,6 @@ class Events(commands.Cog):
                 except discord.Forbidden:
                     pass
         # add option to blacklist channels for spam detection
-
-        if message.mentions:
-            name = f"GUILD{message.guild.id}"
-            db = cluster[name]
-            collection = db['afk']
-            userID = (message.mentions[0].id)
-            query = {'_id': userID}
-            if collection.count_documents(query) == 0:
-                pass
-            else:
-                user = collection.find({'_id': userID})
-                for i in user:
-                    status = i['status']
-                user = message.mentions[0].name
-                desc = f"Status: ```{status}```"
-                embed = discord.Embed(description=desc, color=discord.Color.red())
-                embed.set_thumbnail(url=message.guild.icon_url)
-                embed.set_author(name=f"{user} is afk", icon_url=message.mentions[0].avatar_url)
-                await message.reply(embed=embed, mention_author=False)
-
-        name = f"GUILD{message.guild.id}"
-        db = cluster[name]
-        collection = db['afk']
-        query = {'_id': message.author.id}
-        if collection.count_documents(query) == 0:
-            pass
-        else:
-            user = collection.find({'_id': message.author.id})
-            for i in user:
-                starttime = i['start']
-            totime = int(float(time.time())) - int(float(starttime))
-            if 60 <= totime:
-                mins = int(totime) // 60
-                desc = f"Away for {mins} minute{'' if math.floor(mins) == 1 else 's'}"
-            if totime < 60:
-                desc = f"Away for {int(totime)} second{'' if totime == 1 else 's'}"
-
-            embed = discord.Embed(title="Welcome Back!", description=desc, color=discord.Color.green())
-            embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
-            embed.set_thumbnail(url=message.author.avatar_url)
-            await message.channel.send(embed=embed)
-            member = collection.find({'_id': message.author.id})
-            for i in member:
-                prenick = i['display_name']
-            try:
-                await message.author.edit(nick=prenick)
-            except discord.Forbidden:
-                pass
-            finally:
-                collection.delete_one({'_id': message.author.id})
         x = datetime.datetime.utcnow().strftime('%b%e, %Y')
         name = f"GUILD{message.guild.id}"
         # add more messages params

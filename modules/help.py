@@ -73,7 +73,7 @@ class Help(commands.HelpCommand):
             embed = discord.Embed(title = "InfiniBot Help", color = discord.Color.red())
             embed.set_thumbnail(url=ctx.guild.icon_url)
             for cog, commands in sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True):
-                if cog is None or cog.qualified_name in ['Developers', 'No Category']:
+                if cog is None or cog.qualified_name in ['Developers', 'No Category', 'Dhruv']:
                     continue
                 name = f"{cog.icon if hasattr(cog, 'icon') else ''} {cog.qualified_name}"
                 filtered = await self.filter_commands(commands, sort=True)
@@ -101,6 +101,9 @@ class Help(commands.HelpCommand):
                 embed.description = command.help
             else:
                 embed.description = 'No help for this command'
+            x = self.get_subcommand(command)
+            if x:
+                embed.description += f'\n{x}'
             await self.get_destination().send(embed=embed)
         except Exception as e:
             print(e)

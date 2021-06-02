@@ -25,19 +25,12 @@ class Configuration(commands.Cog):
         DiscordComponents(self.client, change_discord_methods=True)
 
 
-    @commands.group(invoke_without_command = True)
+    @commands.group(invoke_without_command = True, help = "Set up the bot for your server!")
     @commands.guild_only()
     async def setup(self, ctx):
-        prefix = utils.serverprefix(ctx)
-        # add help for each command
-        desc = f"```welcomechannel, welcometext, privset, welcomerole, captcha, muterole, leavemsg, spamdetection, logs, ghostping, all```"
-        embed = discord.Embed(title="InfiniBot Setup Commands", description=desc, color=discord.Color.green())
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.set_footer(
-            text=f"Use {prefix}setup <command> for these commands. For example, {prefix}setup welcomechannel")
-        await ctx.send(embed=embed)
+        return await utils.send_command_help(ctx)
 
-    @setup.command()
+    @setup.command(help='Shows a list of all setup commands.')
     async def list(self, ctx):
         prefix = utils.serverprefix(ctx)
         embed = discord.Embed(title="Available Setup Commands for InfiniBot", color=discord.Color.greyple())
@@ -76,7 +69,7 @@ class Configuration(commands.Cog):
                          icon_url=self.client.user.avatar_url)
         await ctx.send(embed=embed)
 
-    @setup.command()
+    @setup.command(help='Setup a channel for welcome messages!')
     @commands.has_permissions(manage_messages=True)
     async def welcomechannel(self, ctx, channel: discord.TextChannel = None):
         db = cluster[f'GUILD{ctx.guild.id}']
@@ -110,7 +103,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['welcomemsg', 'welcomemessage'])
+    @setup.command(aliases=['welcomemsg', 'welcomemessage'], help='Setup text for welcome messages!')
     @commands.has_permissions(manage_messages=True)
     async def welcometext(self, ctx, *, text: str = None):
         db=cluster[f'GUILD{ctx.guild.id}']
@@ -142,7 +135,7 @@ class Configuration(commands.Cog):
             embed.set_thumbnail(url=ctx.author.avatar_url)
             await ctx.send(content=f"Message has been set to {text}. EXAMPLE:", embed=embed)
 
-    @setup.command(aliases=['welcomenick', 'welconickname'])
+    @setup.command(aliases=['welcomenick', 'welconickname'], help = 'Setup a nickname for users to get on join!')
     @commands.has_permissions(manage_nicknames=True)
     async def onjoinnick(self, ctx, *, nick=None):
         db = cluster[f"GUILD{ctx.guild.id}"]
@@ -165,7 +158,7 @@ class Configuration(commands.Cog):
             collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': nick.strip()}})
             return await ctx.send(f"The welcomenick for {ctx.guild.name} has been updated to {nick.strip()}")
 
-    @setup.command(aliases=['minecraftip'])
+    @setup.command(aliases=['minecraftip'], help = 'Set a Minecraft IP!')
     @commands.has_permissions(manage_guild = True)
     async def mcip(self, ctx, *, text: str = None):
         name = f"GUILD{ctx.guild.id}"
@@ -191,7 +184,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['XP', 'levelups'])
+    @setup.command(aliases=['XP', 'levelups'], help = 'Enable leveling!')
     @commands.has_permissions(manage_guild = True)
     async def levels(self, ctx, enab=True):
         name = f"GUILD{ctx.guild.id}"
@@ -219,7 +212,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['antighostping', 'antighost'])
+    @setup.command(aliases=['antighostping', 'antighost'], help='Setup ghostping detection!')
     @commands.has_permissions(manage_guild = True)
     async def ghostping(self, ctx, enab=True):
         name = f"GUILD{ctx.guild.id}"
@@ -247,7 +240,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['dmset', 'privmsg', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'])
+    @setup.command(aliases=['dmset', 'privmsg', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'], help = 'Set up a private DM message for when a member joins!')
     @commands.has_permissions(manage_guild = True)
     async def privset(self, ctx, *, text: str = None):
         name = f"GUILD{ctx.guild.id}"
@@ -281,7 +274,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command()
+    @setup.command(help = 'Set a role to be given when a user joins your server!')
     @commands.has_permissions(manage_guild = True)
     async def welcomerole(self, ctx, *, role: discord.Role = None):
         name = f"GUILD{ctx.guild.id}"
@@ -318,7 +311,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['bl', 'blackl'])
+    @setup.command(aliases=['bl', 'blackl'], help = 'Toggle the blacklisted word detection!')
     @commands.has_permissions(manage_guild = True)
     async def blacklist(self, ctx, enab: bool = False):
         name = f"GUILD{ctx.guild.id}"
@@ -345,7 +338,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'])
+    @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'], help = 'Setup a leave message.')
     @commands.has_permissions(manage_guild = True)
     async def goodbyemsg(self, ctx, *, text: str = None):
         name = f"GUILD{ctx.guild.id}"
@@ -386,7 +379,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['starchannel', 'starchan'])
+    @setup.command(aliases=['starchannel', 'starchan'], help = 'Setup a starboard channel.')
     @commands.has_permissions(manage_guild = True)
     async def starboardchannel(self, ctx, channel: discord.TextChannel = None):
         name = f"GUILD{ctx.guild.id}"
@@ -418,7 +411,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['servercaptcha'])
+    @setup.command(aliases=['servercaptcha'], help = 'Set a captcha that users need to solve before verifying!')
     @commands.has_permissions(manage_guild = True)
     async def captcha(self, ctx, text: bool = True):
         name = f"GUILD{ctx.guild.id}"
@@ -447,7 +440,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['spamdetect'])
+    @setup.command(aliases=['spamdetect'], help = 'Setup spam detection!')
     @commands.has_permissions(manage_guild = True)
     async def spamdetection(self, ctx, text: bool = False):
         name = f"GUILD{ctx.guild.id}"
@@ -476,7 +469,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['logs', 'log'])
+    @setup.command(aliases=['logs', 'log'], help = 'Setup logging!')
     @commands.has_permissions(manage_guild = True)
     async def logging(self, ctx, setup: bool = True, channel: discord.TextChannel = None):
         name = f"GUILD{ctx.guild.id}"
@@ -544,7 +537,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command()
+    @setup.command(help  = 'Define a muterole!')
     @commands.has_permissions(manage_roles = True)
     async def muterole(self, ctx, *, name="Muted"):
         if len(name) > 20:
@@ -576,7 +569,7 @@ class Configuration(commands.Cog):
                 await ctx.send(
                     f"The muterole for {ctx.guild.name} has been updated to {mutedRole.mention}!")
 
-    @commands.command()
+    @commands.command(help = 'Change the prefix!')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def changeprefix(self, ctx, prefix):
@@ -606,7 +599,7 @@ class Configuration(commands.Cog):
         embed.set_image(url='attachment://image.png')
         await ctx.send(file=file, embed=embed)
 
-    @setup.command()
+    @setup.command(help='Setup all of the setup commands in one, interactive session!')
     @commands.cooldown(1, 90000, commands.BucketType.guild)
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)

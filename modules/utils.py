@@ -186,7 +186,7 @@ def boolint(val:bool):
     try:
         return 1 if val else 0
     except:
-        raise ValueError('Value passed in is not a boolean!')
+        raise ValueError(f'{val} is not a boolean!')
 
 def intbool(val:int):
     '''
@@ -202,4 +202,9 @@ def getcmnduse(ctx):
 async def send_bot_help(ctx):
     await ctx.bot.help_command.send_bot_help()
 
+async def send_cog_help(ctx, cog):
+    await ctx.bot.help_command.send_cog_help(cog)
+
+async def send_command_help(ctx):
+    await ctx.send_help(ctx.command)
 #create help function here that maps from help.py

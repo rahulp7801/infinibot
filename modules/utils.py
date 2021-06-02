@@ -160,7 +160,40 @@ def errmsg(ctx):
     :return:
     an embed explaining proper usage.
     '''
-    desc = f"```{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}```"
-    embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
+    desc = getcmnduse(ctx)
+    embed = discord.Embed(title="Incorrect Usage!", description=f"```{desc}```", color=discord.Color.red())
     embed.set_footer(text="Parameters in <> are required and [] are optional")
     return embed
+
+async def tomember(ctx, user):
+    '''
+    :param ctx: Context
+    :param user: The user to convert, preferably with an ID or with name+discrim
+    :return: A discord.Member object
+    '''
+    try:
+        return await commands.MemberConverter().convert(ctx, user)
+    except commands.errors.BadArgument as e:
+        raise ErrorMessage(e)
+
+def boolint(val:bool):
+    '''
+    :param val: The value (boolean)
+    :return:
+    1 (True) or 0 (False)
+    '''
+    try:
+        return 1 if val else 0
+    except:
+        raise ValueError('Value passed in is not a boolean!')
+
+def intbool(val:int):
+    '''
+    :param val: The value (integer)
+    :return:
+    True if the value is not None or 0 otherwise False
+    '''
+    return True if val != (0 or None) else False
+
+def getcmnduse(ctx):
+    return f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"

@@ -369,6 +369,10 @@ class Misc(commands.Cog):
             await ctx.reply("Your chat session has timed out. Use the command again to chat.")
             return
 
+    @commands.command()
+    async def activities(self, ctx, member:discord.Member):
+        pass
+
 
 def setup(client):
     client.add_cog(Misc(client))

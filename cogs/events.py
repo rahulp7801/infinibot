@@ -264,7 +264,7 @@ class Events(commands.Cog):
                     await chan.send(embed=embed)
 
     @commands.Cog.listener()
-    async def on_command(self, ctx):
+    async def on_command_completion(self, ctx):
         db = cluster['COMMANDCOUNT']
         collection = db['commandcount']
         query = {"_id": ctx.guild.id}
@@ -955,11 +955,14 @@ class Events(commands.Cog):
         embed.set_footer(text=f"Server: {channel.guild.name}")
         await channel1.send(embed=embed)
 
-    @commands.Cog.listener()
+    @commands.Cog.listener() #all errors come here
     async def on_command_error(self, ctx, error):
+        if isinstance(error, commands.CommandNotFound): return
         if isinstance(error, commands.MissingRequiredArgument):
             embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
+        if isinstance(error, commands.NoPrivateMessage):
+            return await ctx.send("This command is not supported in DMs.")
         if isinstance(error, commands.DisabledCommand):
             return await ctx.send(f"**{ctx.command.name}** is temporarily disabled, try again later!")
         error = getattr(error, 'original', error)
@@ -970,6 +973,16 @@ class Events(commands.Cog):
             regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
             await ctx.send(
                 f"You are missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
+        if isinstance(error, commands.CommandOnCooldown):
+            #for patrons:
+            #await ctx.reinvoke()
+            time = round(error.retry_after)
+            desc = f"{ctx.author.mention}, wait `{time}` seconds to use `{ctx.command.name}` again."
+            embed = discord.Embed(title="Command on cooldown", description=desc, color=discord.Color.red(),
+                                  timestamp=datetime.datetime.utcnow())
+            embed.set_footer(text=f"Message Author: {ctx.author}")
+            await ctx.send(embed=embed)
+            return
 
 
 def setup(client):

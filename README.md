@@ -23,8 +23,6 @@ InfiniBot is a Discord Bot which boasts (as of now) more than 50 commands in all
 * AND MUCH MORE!!
 Visit www.infinibot.xyz to access your information on a dashboard and learn more about the bot and its features!
 
-Join our support server!
-https://discord.gg/4VnUA8ZXyH
+[Join our support server!](https://discord.gg/4VnUA8ZXyH)
 
-Invite the Bot!
-https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands
+[Invite the Bot!](https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands)

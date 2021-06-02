@@ -9,8 +9,6 @@ from discord_components import DiscordComponents
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = False)
 
-
-
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):
         client.load_extension(f"cogs.{filename[:-3]}")
@@ -23,6 +21,14 @@ class MyHelpCommand(commands.MinimalHelpCommand):
         for page in self.paginator.pages:
             e.description += page
         await destination.send(embed=e)
+#
+# class HelpCommand(commands.HelpCommand):
+#     async def send(self):
+#         destination = self.get_destination()
+#         embed = discord.Embed()
+#         embed.colour = discord.Color.blurple()
+#
+#         await destination.send(embed=embed)
 
 client.help_command = MyHelpCommand()
 

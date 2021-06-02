@@ -197,3 +197,4 @@ def intbool(val:int):
 
 def getcmnduse(ctx):
     return f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"
+

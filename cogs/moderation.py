@@ -1,11 +1,13 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 import asyncio
 from pymongo import MongoClient
 import datetime
 import random
+import pandas as pd
 from discord_components import DiscordComponents
 from modules import utils
+import logging
 #automoderation will be another cog
 
 
@@ -19,6 +21,50 @@ cluster = MongoClient(mongo_url)
 class Moderation(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.unmute_loop.start()
+
+    @tasks.loop(seconds=60)
+    async def unmute_loop(self):
+        db = cluster['MUTED']
+        collection = db['users']
+        arr = []
+        results = collection.find()
+        for i in results:
+            arr.append((i['id'], i['gid'], i['fintime']))
+        if not arr:
+            return
+        for k in arr:
+            try:
+                if pd.to_datetime(k[2]) < datetime.datetime.utcnow():
+                    guild = self.client.get_guild(int(k[1]))
+                    user = guild.get_member(int(k[0]))
+                    name = f"GUILD{guild.id}"
+                    db = cluster[name]
+                    collection = db['config']
+                    results = collection.find({'_id': guild.id})
+                    for i in results:
+                        muterole = i['muterole']
+                    if str(muterole) == '': #shouldnt happen
+                        continue
+                    else:
+                        db = cluster['MUTED']
+                        collection = db['users']
+                        role = discord.utils.get(guild.roles, id=int(muterole))
+                        try:
+                            await user.remove_roles(role)
+                            collection.delete_one({'id':int(user.id), "gid":int(guild.id)})
+                            continue
+                        except discord.Forbidden:
+                            collection.delete_one({'id': int(user.id), "gid": int(guild.id)})
+                            continue
+            except Exception as e:
+                errmsg = f"While parsing through mutes, exception {e} was raised. {datetime.datetime.utcnow()}"
+                logging.basicConfig(filename='./errors.log')
+                logging.error(errmsg)
+
+    @unmute_loop.before_loop
+    async def beforeunmute(self):
+        await self.client.wait_until_ready()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -307,9 +353,23 @@ class Moderation(commands.Cog):
         for i in results:
             muterole = i['muterole']
         prefix = ctx.prefix
+        role = discord.utils.get(ctx.guild.roles, id=int(muterole))
+        if role in member.roles:
+            await ctx.send(f"`{member}` is already muted.")
+            return
         if dur is not None:
             try:
                 duration = utils.tmts(dur.strip())
+                db = cluster['MUTED']
+                collection = db['users']
+                query = {'id': member.id, 'gid':member.guild.id}
+                if collection.count_documents(query) == 0: #only real choice here, a person cant get muted twice in the same server
+                    ping_cm = {
+                        "id": member.id,
+                        "gid": ctx.guild.id,
+                        "fintime": datetime.datetime.utcnow() + datetime.timedelta(seconds=duration)
+                    }
+                    collection.insert_one(ping_cm)
             except ValueError as e:
                 return await ctx.reply(str(e), mention_author = False)
         try:
@@ -324,10 +384,7 @@ class Moderation(commands.Cog):
                 await ctx.send(
                     f"This server doesn\'t have a muterole set up! Use `{prefix}setup muterole <Optionalname>` to set it up.")
                 return
-            role = discord.utils.get(ctx.guild.roles, id=int(muterole))
-            if role in member.roles:
-                await ctx.send(f"`{member}` is already muted.")
-                return
+
             if ctx.author.top_role >= member.top_role:
                 await member.add_roles(role)
                 await ctx.send(embed=embed)

@@ -73,7 +73,7 @@ class Afk(commands.Cog):
             finally:
                 collection.delete_one({'_id': message.author.id})
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, help="Babatunde")
     async def afk(self, ctx, *, message="Away"):
         await asyncio.sleep(0.5) #the on message event is invoked after this command for a strange reason, so the trigger activates
         name = f"GUILD{ctx.guild.id}"

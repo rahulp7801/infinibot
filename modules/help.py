@@ -11,8 +11,7 @@ class Help(commands.HelpCommand):
         if hasattr(command, "commands"):
             for i in command.commands:
                 arr.append(((i.name, self.get_command_signature(i)), i.short_doc))
-        print(arr)
-        return arr
+        return None if not arr else arr
 
     async def send_cog_help(self, cog):
         ctx = self.context
@@ -23,7 +22,7 @@ class Help(commands.HelpCommand):
             embed.description = cog.description if cog.description else "..."
             embed.set_footer(text=f'Use {self.clean_prefix}help [command] to get more information on a specific command!',)
             for i in commands:
-                z = f"{i.short_doc}\t\n" if i.short_doc is not None else f"{'Placeholder'}\t\n"
+                z = f"{i.short_doc}\t\n" if i.short_doc != '' else f"{'Placeholder'}\t\n"
                 embed.add_field(name=f"""`{self.get_command_signature(i)}`""", value=f"{z}", inline=False)
                 x = self.get_subcommand(i)
                 if x:

@@ -4,6 +4,7 @@ import os
 import asyncio
 import datetime
 from discord_slash import SlashCommand
+from modules import help
 from discord_components import DiscordComponents
 
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
@@ -30,7 +31,7 @@ class MyHelpCommand(commands.MinimalHelpCommand):
 #
 #         await destination.send(embed=embed)
 
-client.help_command = MyHelpCommand()
+client.help_command = help.Help()
 
 @client.event
 async def on_ready():

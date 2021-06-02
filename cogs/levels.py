@@ -15,6 +15,8 @@ cluster = MongoClient(mongo_url)
 class Leveling(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🔼'
+        self.description = f'Take part in InfiniBot\'s leveling system!'
 
     @commands.Cog.listener()
     async def on_ready(self):

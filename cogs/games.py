@@ -10,6 +10,8 @@ aki = Akinator()
 class Games(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🎮'
+        self.description = f'Play games with InfiniBot!'
 
     @commands.command()
     async def akinator(self, ctx, on:str = None):

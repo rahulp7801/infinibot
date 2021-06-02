@@ -9,7 +9,7 @@ import string
 from googletrans import Translator
 import pyfiglet
 from pymongo import MongoClient
-from modules import utils
+from modules import utils, help
 from prsaw import RandomStuff
 rs = RandomStuff(async_mode=True)
 
@@ -21,9 +21,11 @@ cluster = MongoClient(mongo_url)
 
 
 translator = Translator()
-class Misc(commands.Cog):
+class Misc(commands.Cog, name="Miscellaneous"):
     def __init__(self, client):
         self.client = client
+        self.icon = '❓'
+        self.description = "These commands aren't sorted right now, but include everything."
 
     @commands.command()
     async def statuscol(self, ctx):
@@ -373,6 +375,13 @@ class Misc(commands.Cog):
     async def activities(self, ctx, member:discord.Member):
         pass
 
+    @commands.command()
+    async def babe(self, ctx):
+        try:
+            x = await utils.send_bot_help(ctx)
+            print('Success')
+        except Exception as e:
+            print(e)
 
 def setup(client):
     client.add_cog(Misc(client))

@@ -5,6 +5,7 @@ from durations_nlp import Duration
 from discord.ext import commands
 from pymongo import MongoClient
 import datetime
+from modules import help
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
 
@@ -198,3 +199,7 @@ def intbool(val:int):
 def getcmnduse(ctx):
     return f"{ctx.prefix}{ctx.command.qualified_name} {ctx.command.signature}"
 
+async def send_bot_help(ctx):
+    await ctx.bot.help_command.send_bot_help()
+
+#create help function here that maps from help.py

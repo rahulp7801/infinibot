@@ -17,6 +17,9 @@ cluster = MongoClient(mongo_url)
 class Configuration(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '⚙'
+        self.description = f'Setup InfiniBot for your server!'
+
     @commands.Cog.listener()
     async def on_ready(self):
         DiscordComponents(self.client, change_discord_methods=True)

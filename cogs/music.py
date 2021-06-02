@@ -19,9 +19,11 @@ with open('./mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
-class Spotifys(commands.Cog):
+class Spotifys(commands.Cog, name="Music"):
     def __init__(self, client):
         self.client = client
+        self.icon = '🎶'
+        self.description = f"Listen to music in VC with InfiniBot\'s never seen before audio recognition technology!"
 
     @commands.command()
     async def artistsearch(self, ctx, *, query:str = None):

@@ -11,6 +11,8 @@ cluster = MongoClient(mongo_url)
 class Triggers(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🚩'
+        self.description = 'Set message triggers!'
 
     '''
     Slows the bot down a lot, will be looking for a quicker way of implementation before deployment

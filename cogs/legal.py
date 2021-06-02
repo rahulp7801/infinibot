@@ -12,6 +12,8 @@ cluster = MongoClient(mongo_url)
 class Legal(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🏛️'
+        self.description = 'Boring stuff'
 
     @commands.command()
     @commands.cooldown(1, 90000, commands.BucketType.user)

@@ -7,6 +7,8 @@ import asyncio
 class Buttons(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🔘'
+        self.description = 'A new way to interact with bots!'
 
     @commands.Cog.listener()
     async def on_ready(self):

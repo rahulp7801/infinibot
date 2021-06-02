@@ -7,6 +7,8 @@ import asyncio
 class Giveaways(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🎉'
+        self.description = "Create and participate in giveaways!"
 
     @staticmethod
     async def channelperms(channel: discord.TextChannel):

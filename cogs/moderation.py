@@ -21,6 +21,8 @@ cluster = MongoClient(mongo_url)
 class Moderation(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🛠️'
+        self.description = f'Moderate your server or take a step back and let InfiniBot moderate for you!'
         self.unmute_loop.start()
 
     @tasks.loop(seconds=60)

@@ -10,9 +10,11 @@ with open('mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
-class Serverstats(commands.Cog):
+class Serverstats(commands.Cog, name = "Server Statistics"):
     def __init__(self, client):
         self.client = client
+        self.icon = '📈'
+        self.description = 'See comprehensive server statistics for your server!'
 
     @commands.command()
     @commands.guild_only()

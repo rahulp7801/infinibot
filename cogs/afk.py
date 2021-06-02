@@ -13,9 +13,11 @@ with open('./mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
-class afk(commands.Cog):
+class Afk(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '<a:afk:849686005149466654>'
+        self.description = f'Moderate your server or take a step back and let InfiniBot moderate for you!'
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -73,8 +75,7 @@ class afk(commands.Cog):
 
     @commands.group(invoke_without_command=True)
     async def afk(self, ctx, *, message="Away"):
-        print('hirefe')
-        await asyncio.sleep(0.5)
+        await asyncio.sleep(0.5) #the on message event is invoked after this command for a strange reason, so the trigger activates
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         collection = db['afk']
@@ -144,4 +145,4 @@ class afk(commands.Cog):
         return await ctx.send(f"All afk statuses for {ctx.guild.name} have been cleared.")
 
 def setup(client):
-    client.add_cog(afk(client))
+    client.add_cog(Afk(client))

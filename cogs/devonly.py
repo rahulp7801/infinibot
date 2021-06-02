@@ -10,6 +10,7 @@ async def is_dev(ctx):
 class Developers(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '👨🏽‍💻'
 
     @commands.group(invoke_without_command = True)
     @commands.check(is_dev)

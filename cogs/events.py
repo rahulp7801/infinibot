@@ -574,6 +574,8 @@ class Events(commands.Cog):
                 await member.send(embed=uembed)
         except discord.Forbidden:
             pass
+        except discord.errors.HTTPException:
+            pass
 
         if str(logging) == 'on':
             try:

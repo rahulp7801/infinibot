@@ -3,10 +3,26 @@ import discord
 import asyncio
 
 class Help(commands.HelpCommand):
+    '''
+    Inherit from the base Help Command and create a help command for the bot
+    '''
+
     def get_command_signature(self, command):
+        '''
+        :param command: The command we want to get the use for
+        Example command: "afk"
+        :return:
+        The expected input from the user:
+        ".afk Sleeping"
+        '''
         return f"{self.clean_prefix}{command.qualified_name} {command.signature}"
 
-    def get_subcommand(self, command, lent = 1):
+    def get_subcommand(self, command):
+        '''
+        :param command: The command we need to check for subcommands
+        :return:
+        None if there are no subcommands, or a list of tuples with the subcommand's signature and name (short description)
+        '''
         arr =[]
         if hasattr(command, "commands"):
             for i in command.commands:
@@ -14,6 +30,11 @@ class Help(commands.HelpCommand):
         return None if not arr else arr
 
     async def send_cog_help(self, cog):
+        '''
+        :param cog: The cog that was requested for help
+        :return:
+        An embed with a list of commands and their respective signatures
+        '''
         ctx = self.context
         try:
             commands = await self.filter_commands(cog.get_commands(), sort=True)
@@ -33,6 +54,11 @@ class Help(commands.HelpCommand):
             print(e)
 
     async def send_bot_help(self, mapping):
+        '''
+        :param mapping: The mapping of cog names to cogs (a dictionary)
+        :return:
+        The help menu as an embed
+        '''
         ctx = self.context
         try:
             embed = discord.Embed(title = "InfiniBot Help", color = discord.Color.red())

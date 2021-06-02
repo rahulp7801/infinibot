@@ -75,7 +75,7 @@ class Moderation(commands.Cog):
                     guild = self.client.get_guild(int(k[1]))
                     user = guild.get_member(int(k[0]))
                     try: #unban
-                        await guild.unban(user)
+                        await guild.unban(user=user)
                         collection.delete_one({'id':int(user.id), "gid":int(guild.id)})
                         continue
                     except discord.Forbidden:

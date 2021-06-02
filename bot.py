@@ -29,8 +29,8 @@ async def on_ready():
             f.truncate(0)
 
 @client.command()
-async def hi(ctx):
-    return await ctx.send('hey')
+async def ping(ctx):
+    return await ctx.send(f"{round(client.latency * 1000)}ms")
 
 with open('testbot.txt', 'r') as f:
     token = f.read()

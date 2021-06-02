@@ -54,7 +54,10 @@ class Slash(commands.Cog):
             f'watching {len(self.client.guilds)} server{"" if len(self.client.guilds) == 1 else "s"}',
             'samosa gang gang IV out now',
             f'%help | {self.client.user.name} Universe',
-            "New features coming soon!"
+            "New features coming soon!",
+            "Improving speed and efficiency",
+            'Google Chrome',
+            "With the API"
         ]
         while True:
             status = random.choice(choices)

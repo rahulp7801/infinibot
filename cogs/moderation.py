@@ -25,8 +25,8 @@ class Moderation(commands.Cog):
 
     @tasks.loop(seconds=60)
     async def unmute_loop(self):
-        db = cluster['MUTED']
-        collection = db['users']
+        db = cluster['TEMP']
+        collection = db['muted']
         arr = []
         results = collection.find()
         for i in results:
@@ -47,8 +47,8 @@ class Moderation(commands.Cog):
                     if str(muterole) == '': #shouldnt happen
                         continue
                     else:
-                        db = cluster['MUTED']
-                        collection = db['users']
+                        db = cluster['TEMP']
+                        collection = db['muted']
                         role = discord.utils.get(guild.roles, id=int(muterole))
                         try:
                             await user.remove_roles(role)
@@ -61,6 +61,32 @@ class Moderation(commands.Cog):
                 errmsg = f"While parsing through mutes, exception {e} was raised. {datetime.datetime.utcnow()}"
                 logging.basicConfig(filename='./errors.log')
                 logging.error(errmsg)
+                continue
+        collection = db['bans']
+        arr = []
+        results = collection.find()
+        for i in results:
+            arr.append((i['id'], i['gid'], i['fintime']))
+        if not arr:
+            return
+        for k in arr:
+            try:
+                if pd.to_datetime(k[2]) < datetime.datetime.utcnow():
+                    guild = self.client.get_guild(int(k[1]))
+                    user = guild.get_member(int(k[0]))
+                    try: #unban
+                        await guild.unban(user)
+                        collection.delete_one({'id':int(user.id), "gid":int(guild.id)})
+                        continue
+                    except discord.Forbidden:
+                        collection.delete_one({'id': int(user.id), "gid": int(guild.id)})
+                        continue
+            except Exception as e:
+                errmsg = f"While parsing through bans, exception {e} was raised. {datetime.datetime.utcnow()}"
+                logging.basicConfig(filename='./errors.log')
+                logging.error(errmsg)
+                continue
+
 
     @unmute_loop.before_loop
     async def beforeunmute(self):
@@ -131,51 +157,48 @@ class Moderation(commands.Cog):
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(ban_members = True)
-    async def tempban(self, ctx, member:discord.Member, duration = 1, unit = "h", *, reason = "No reason given"):
-        if unit == "s":
-            dur = str(duration) + " seconds"
-        elif unit == "m":
-            dur = str(duration) + " minutes"
-        elif unit == "h":
-            dur = str(duration) + " hours"
+    async def tempban(self, ctx, member:discord.Member, *, duration):
+        duration = utils.tmts(duration.strip())
+        durlen = utils.stringfromtime(duration)
         try:
             pfp = member.avatar_url
             author = member
-            if unit not in ["s", "m", "h"]:
-                await ctx.send("Please enter a correct unit. `(s)`, `(m)`, or `(h)`")
-                return
-            embed = discord.Embed(description=f"For reason: ```{reason}```", color=discord.Color.dark_red())
-            embed.set_author(name=str(author) + f" has been banned for {dur}.", icon_url=pfp)
+            embed = discord.Embed(description="For reason: ```Naughty```", color=discord.Color.dark_red())
+            embed.set_author(name=str(author) + f" has been banned for {durlen}.", icon_url=pfp)
             uembed = discord.Embed(title=f"You have been banned in {ctx.guild.name}",
-                                   description=f"For reason: ```{reason}```", color=discord.Color.blurple())
+                                   description=f"For reason: ```Naughty```", color=discord.Color.blurple())
             uembed.set_footer(text="If you believe this is in error, please contact an Admin.")
             if member.top_role >= ctx.author.top_role:
                 await ctx.send(f"You can only use this moderation on a member below you.")
                 return
             else:
                 if not member.bot:
-                    await ctx.guild.ban(member, reason=reason)
+                    await ctx.guild.ban(member, reason='Naughty')
                     await ctx.send(embed=embed)
                     try:
                         await member.send(embed=uembed)
                     except:
                         await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
                 else:
-                    await ctx.guild.ban(member, reason=reason)
+                    await ctx.guild.ban(member, reason='Naughty')
                     await ctx.send(embed=embed)
                     try:
                         await member.send(embed=uembed)
                     except:
                         await ctx.send(f'A reason could not be sent to {member} as they had their dms off.')
-                if unit == "s":
-                    await asyncio.sleep(duration)
-                    await ctx.guild.unban(user=member)
-                elif unit == "m":
-                    await asyncio.sleep(duration * 60)
-                    await ctx.guild.unban(user=member)
-                elif unit == "h":
-                    await asyncio.sleep(duration * 60 * 60)
-                    await ctx.guild.unban(user=member)
+
+
+                db = cluster['TEMP']
+                collection = db['bans']
+                query = {'id': member.id, 'gid': member.guild.id}
+                if collection.count_documents(
+                        query) == 0:  # only real choice here, a person cant get temp banned twice in the same server
+                    ping_cm = {
+                        "id": member.id,
+                        "gid": ctx.guild.id,
+                        "fintime": datetime.datetime.utcnow() + datetime.timedelta(seconds=duration)
+                    }
+                    collection.insert_one(ping_cm)
         except AttributeError as e:
             print(e)
             await ctx.reply("An error has occured. The devs have been notified and will look into it.")
@@ -360,8 +383,8 @@ class Moderation(commands.Cog):
         if dur is not None:
             try:
                 duration = utils.tmts(dur.strip())
-                db = cluster['MUTED']
-                collection = db['users']
+                db = cluster['TEMP']
+                collection = db['muted']
                 query = {'id': member.id, 'gid':member.guild.id}
                 if collection.count_documents(query) == 0: #only real choice here, a person cant get muted twice in the same server
                     ping_cm = {

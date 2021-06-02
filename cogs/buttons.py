@@ -40,7 +40,7 @@ class Buttons(commands.Cog):
                 else:
                     continue
 
-    @commands.command(aliases=['terms', 'privacypolicy', 'termsofservice'])
+    @commands.command(aliases=['terms', 'privacypolicy', 'termsofservice'], help = 'Get a link to the terms of service!')
     @commands.cooldown(5, 120, commands.BucketType.user)
     async def tos(self, ctx):
         await ctx.reply(
@@ -51,7 +51,7 @@ class Buttons(commands.Cog):
             mention_author = False
         )
 
-    @commands.command()
+    @commands.command(help='Create a poll!')
     async def poll(self, ctx, title, *args):
         if len(args) >= 5:
             return await ctx.send(f"You cannot have more than 5 options! You have specified {len(args)} options.")
@@ -142,7 +142,7 @@ class Buttons(commands.Cog):
             else:
                 continue
 
-    @commands.command()
+    @commands.command(aliases = ['calc', 'calculator'], help = "Opens a calculator!")
     async def calculate(self, ctx):
         embed = discord.Embed(title=f"{ctx.author.name}'s calculator", description='```0```', timestamp = datetime.datetime.utcnow())
         components = [[
@@ -300,12 +300,6 @@ class Buttons(commands.Cog):
                 return
             except KeyError:
                 pass
-
-
-
-
-
-
 
 def setup(client):
     client.add_cog(Buttons(client))

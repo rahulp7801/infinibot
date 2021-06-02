@@ -29,6 +29,15 @@ class Help(commands.HelpCommand):
                 arr.append(((i.name, self.get_command_signature(i)), i.short_doc))
         return None if not arr else arr
 
+    def get_aliases(self, mapping):
+        '''
+        :param mapping: The command name's mapping to the actual command itself
+        :return:
+        A string of aliases or None if there aren't any
+        '''
+        if mapping.aliases:
+            return ", ".join(mapping.aliases)
+
     async def send_cog_help(self, cog):
         '''
         :param cog: The cog that was requested for help
@@ -74,6 +83,24 @@ class Help(commands.HelpCommand):
             embed.add_field(name="About Us!",
                             value=f"[Invite Link](https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands) - [Support Server](https://discord.gg/4VnUA8ZXyH)\nSend the devs feedback by using `{ctx.prefix}feedback`!",
                             inline=False)
+            await self.get_destination().send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    async def send_command_help(self, command):
+        '''
+        :param command: The command that needs help
+        :return:
+        An embed with the aliases, usage, and help for a command
+        '''
+        try:
+            embed = discord.Embed(color = discord.Color.green())
+            embed.title = f"{self.get_command_signature(command)}"
+            embed.set_footer(text=f"{('Aliases: ' + self.get_aliases(command)) if self.get_aliases(command) is not None else ''}")
+            if command.help:
+                embed.description = command.help
+            else:
+                embed.description = 'No help for this command'
             await self.get_destination().send(embed=embed)
         except Exception as e:
             print(e)

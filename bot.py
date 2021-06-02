@@ -28,7 +28,7 @@ async def on_ready():
         with open('spamdetect.txt', 'r+') as f:
             f.truncate(0)
 
-@client.command()
+@client.command(help='Gives the ping of the bot!')
 async def ping(ctx):
     return await ctx.send(f"{round(client.latency * 1000)}ms")
 

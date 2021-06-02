@@ -73,7 +73,7 @@ class Afk(commands.Cog):
             finally:
                 collection.delete_one({'_id': message.author.id})
 
-    @commands.group(invoke_without_command=True, help="Babatunde")
+    @commands.group(invoke_without_command=True, help="Set an AFK status!")
     async def afk(self, ctx, *, message="Away"):
         await asyncio.sleep(0.5) #the on message event is invoked after this command for a strange reason, so the trigger activates
         name = f"GUILD{ctx.guild.id}"
@@ -101,7 +101,7 @@ class Afk(commands.Cog):
         except discord.Forbidden:
             return
 
-    @afk.command()
+    @afk.command(help = 'Clear AFK status for a person.')
     @commands.has_permissions(manage_guild=True)
     async def clear(self, ctx, member: discord.Member):
         if ctx.author.guild_permissions.manage_messages:
@@ -124,7 +124,7 @@ class Afk(commands.Cog):
         else:
             await ctx.send(f"{ctx.author.mention}, you don't have permission.")
 
-    @afk.command()
+    @afk.command(help = 'Clears all AFK statuses in a server.')
     @commands.has_permissions(manage_guild=True)
     @commands.cooldown(1, 300, commands.BucketType.guild)
     async def clearall(self, ctx):

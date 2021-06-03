@@ -546,12 +546,17 @@ class Configuration(commands.Cog):
         db = cluster[named]
         if ctx.author.guild_permissions.manage_roles:
             message = await ctx.send("Updating channel overrides...")
+            skipcount = 0
             mutedRole = await ctx.guild.create_role(name=name)
             for channel in ctx.guild.channels:
                 if str(channel.type).lower() == 'category':
                     continue
                 if str(channel.type).lower() == 'text':
-                    await channel.set_permissions(mutedRole, send_messages=False)
+                    try:
+                        await channel.set_permissions(mutedRole, send_messages=False)
+                    except discord.Forbidden:
+                        skipcount += 1
+                        continue
                 if str(channel.type).lower() == 'voice':
                     continue
             collection = db['config']
@@ -563,7 +568,7 @@ class Configuration(commands.Cog):
                     "muterole": mutedRole.id
                 }
                 collection.insert_one(ping_cm)
-                await ctx.send(f"The muterole for {ctx.guild.name} has been set to {mutedRole.mention}!")
+                await ctx.send(f"The muterole for {ctx.guild.name} has been set to {mutedRole.mention}! With {skipcount} channel{'' if skipcount == 1 else 's'} skipped.")
             else:
                 collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
                 await ctx.send(

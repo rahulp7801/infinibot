@@ -239,14 +239,14 @@ def get_classes(ctx, limit :int= 10):
             with open('token.json', 'w') as token:
                 token.write(creds.to_json())
         except Exception as e:
-            raise ValueError(e)
+            raise ClassroomError(e)
 
     service = build('classroom', 'v1', credentials=creds)
     # Call the Classroom API
     results = service.courses().list(pageSize=(int(limit) if limit < 15 else 15)).execute()
     courses = results.get('courses', [])
     if not courses:
-        raise ValueError("No courses found!")
+        raise ClassroomError("No courses found!")
     else:
         arr = []
         for i in courses:

@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 import pandas as pd
 from modules import utils
+from modules.utils import ClassroomError
 
 
 class GoogleC(commands.Cog):
@@ -16,7 +17,7 @@ class GoogleC(commands.Cog):
         try:
             try:
                 x , service = utils.get_classes(ctx, limit)
-            except ValueError as e:
+            except ClassroomError as e:
                 return await ctx.send(str(e))
 
             else:

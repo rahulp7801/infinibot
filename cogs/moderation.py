@@ -89,7 +89,6 @@ class Moderation(commands.Cog):
                 logging.error(errmsg)
                 continue
 
-
     @unmute_loop.before_loop
     async def beforeunmute(self):
         await self.client.wait_until_ready()
@@ -104,9 +103,9 @@ class Moderation(commands.Cog):
         try:
             await ctx.channel.purge(limit = amount + 1)
             await asyncio.sleep(2)
-            await ctx.send(f"Cleared {amount + 1} messages!")
+            await ctx.send(f"Cleared {amount + 1} messages!", delete_after = 5)
         except discord.errors.HTTPException:
-            await ctx.send("I cannot delete messages past two weeks old!")
+            await ctx.send("I cannot delete messages past two weeks old!", delete_after = 5)
 
     @clear.error
     async def clear_err(self, ctx, error):
@@ -198,7 +197,7 @@ class Moderation(commands.Cog):
                     collection.insert_one(ping_cm)
         except AttributeError as e:
             print(e)
-            await ctx.reply("An error has occured. The devs have been notified and will look into it.")
+            await ctx.reply("An error has occurred. The devs have been notified and will look into it.")
             return
         except discord.errors.Forbidden:
             if member.id == ctx.guild.owner_id:

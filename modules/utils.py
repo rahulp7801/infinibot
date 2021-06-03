@@ -71,7 +71,7 @@ def serverprefix(ctx):
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             prefix = i['prefix']
-        return prefix if prefix is not None else '%'
+        return "%" if prefix is None else prefix
     except UnboundLocalError:
         return '%'
 

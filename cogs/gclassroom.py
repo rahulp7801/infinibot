@@ -9,6 +9,8 @@ from modules.utils import ClassroomError
 class GoogleC(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🏫'
+        self.description = 'Integration with Google Classroom!'
 
     @commands.command()
     #add an all param that does not filter out archived classes

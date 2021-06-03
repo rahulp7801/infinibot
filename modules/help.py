@@ -1,6 +1,7 @@
 from discord.ext import commands
 import discord
-import asyncio
+import datetime
+import logging
 
 class Help(commands.HelpCommand):
     '''
@@ -108,5 +109,30 @@ class Help(commands.HelpCommand):
         except Exception as e:
             print(e)
 
+    async def on_help_command_error(self, ctx, error):
+        errmsg = f"{ctx.command.name} raised {error} in {ctx.guild.name if ctx.guild is not None else 'DM'} ({ctx.guild.id if ctx.guild is not None else ctx.author.id + ' DM'}) on {datetime.datetime.now()}"
+        logging.basicConfig(filename='./errors.log')
+        logging.error(errmsg)
 
+    async def send_group_help(self, group):
+        '''
+        :param group: The group that we need help for
+        :return:
+        an embed with all of the group's commands
+        '''
+        try:
+            embed = discord.Embed(color = discord.Color.green())
+            embed.title = f"{self.get_command_signature(group)}"
+            embed.set_footer(text=f"{('Aliases: ' + self.get_aliases(group)) if self.get_aliases(group) is not None else ''}")
+            if group.help:
+                embed.description = group.help
+            else:
+                embed.description = 'No help for this command'
+            x = self.get_subcommand(group)
+            if x:
+                for i in x:
+                    embed.add_field(name=f"`{i[0][1]}`", value = f"{i[1]}")
+            await self.get_destination().send(embed=embed)
+        except Exception as e:
+            print(e)
 

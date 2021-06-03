@@ -47,7 +47,6 @@ class Slash(commands.Cog):
         self.client = client
     @commands.Cog.listener()
     async def on_ready(self):
-        DiscordComponents(self.client, change_discord_methods=True)
         choices = [
             'with lines of code',
             'Testing new InfiniBot features!',
@@ -521,30 +520,6 @@ class Slash(commands.Cog):
             await ctx.send(embed=embed, hidden=True)
         except Exception as e:
             return await ctx.send(str(e))
-
-    @cog_ext.cog_slash(name='help', description='Get InfiniBot\'s help menu!')
-    async def _help(self, ctx:SlashContext):
-        prefix = utils.serverprefix(ctx)
-        embed = discord.Embed(color=discord.Color.green())
-        embed.set_author(name=f"{self.client.user.name}'s Help Menu", icon_url=self.client.user.avatar_url)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        # add individual help for each command
-        embed.set_footer(text=f"Made by glizzybeam7801#8196 and kidsonfilms#4635")
-        # add some example commands
-        embed.add_field(name="🛠️ Setup", value=f"Setup {self.client.user.name} for {ctx.guild.name}!\n`{prefix}setup`")
-        embed.add_field(name="🎮 Games", value=f"Play games with {self.client.user.name}!\n`{prefix}help games`")
-        embed.add_field(name="📣 Moderation",
-                        value=f"Moderate your server or take a step back and let {self.client.user.name} moderate for you!\n`{prefix}help moderation`")
-        embed.add_field(name="❓ Miscellaneous",
-                        value=f"These commands aren't sorted right now, but include everything.\n`{prefix}help misc`")
-        embed.add_field(name="💰 Economy",
-                        value=f"Participate in an economy system! (Currently in development). \n`{prefix}help economy`")
-        embed.add_field(name="📈 Server Stats",
-                        value=f"See server stats for {ctx.guild.name} \n`{prefix}help serverstats`")
-        embed.add_field(name="About Us!",
-                        value=f"[Invite Link](https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands) - [Support Server](https://discord.gg/4VnUA8ZXyH)\nSend the devs feedback by using `{prefix}feedback`!",
-                        inline=False)
-        await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='translate', description='Translate a phrase!')
     async def _translate(self, ctx:SlashContext, target_language, *, phrase):

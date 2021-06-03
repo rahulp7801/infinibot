@@ -8,7 +8,7 @@ from modules import help
 from discord_components import DiscordComponents
 
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
-slash = SlashCommand(client, sync_commands = False)
+slash = SlashCommand(client, sync_commands = True)
 
 for filename in os.listdir('./cogs'):
     if filename.endswith('.py'):

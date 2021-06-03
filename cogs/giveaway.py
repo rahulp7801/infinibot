@@ -172,5 +172,26 @@ class Giveaways(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.send("Giveaway setup has timed out and setup has been cancelled.")
 
+    @commands.command(help='Removes a giveaway from the database!')
+    @commands.guild_only()
+    async def gremove(self, ctx, message:discord.Message):
+        try:
+            x = await ctx.fetch_message(message.id)
+        except Exception as e:
+            return await ctx.send(str(e))
+        db = cluster['GIVEAWAYS']
+        collection = db['guilds']
+        query = {'id': x.id, 'gid': ctx.guild.id}
+        if collection.count_documents(query) == 0:
+            return await ctx.send("It looks like that message has not been saved as a giveaway!")
+        collection.delete_one({"id":x.id, 'gid':ctx.guild.id})
+        await ctx.send("Success! The message has been cleared from the database and the giveaway will be deleted...")
+        try:
+            await x.delete()
+        except discord.Forbidden:
+            return
+        except discord.errors.HTTPException:
+            return
+
 def setup(client):
     client.add_cog(Giveaways(client))

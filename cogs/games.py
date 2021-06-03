@@ -14,21 +14,21 @@ class Games(commands.Cog):
         self.description = f'Play games with InfiniBot!'
 
     @commands.command(name="Play an akinator game!")
-    async def akinator(self, ctx, on:str = None):
-        if on is None:
-            on = True
-        elif on.lower() != 'false':
-            on = True
+    async def akinator(self, ctx, childmode:str = None):
+        if childmode is None:
+            childmode = True
+        elif childmode.lower() != 'false':
+            childmode = True
         else:
             if ctx.channel.is_nsfw():
-                on = False
+                childmode = False
             else:
                 return await ctx.send("You must be in an NSFW channel to access this feature!")
 
         while True:
             counter = 1
             await ctx.trigger_typing()
-            q = await aki.start_game(child_mode=on)
+            q = await aki.start_game(child_mode=childmode)
             desc = f"**{q}**\n" \
                    f"[yes **(y)**/ no **(n)**/ probably **(p)**/ probably not **(pn)**/ back **(b)**]"
             embed = discord.Embed(description=desc, color=discord.Color.gold())

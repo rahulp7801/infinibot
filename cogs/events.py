@@ -936,6 +936,7 @@ class Events(commands.Cog):
             await ctx.send(embed=embed)
             return
         if isinstance(error, discord.Forbidden): return
+        if isinstance(error, commands.MemberNotFound): return await ctx.send(str(error))
 
 
 

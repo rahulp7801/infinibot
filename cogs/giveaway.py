@@ -21,9 +21,8 @@ class Giveaways(commands.Cog):
         self.description = "Create and participate in giveaways!"
         self.check_giveaways.start()
 
-    async def get_msg(self, ctx):
-        ctx.send('hi')
-
+    def cog_unload(self):
+        self.check_giveaways.cancel()
 
     @tasks.loop(seconds = 60)
     async def check_giveaways(self):

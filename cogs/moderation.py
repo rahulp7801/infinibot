@@ -9,9 +9,6 @@ from discord_components import DiscordComponents
 from modules import utils
 import logging
 #automoderation will be another cog
-
-
-
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
 
@@ -24,6 +21,9 @@ class Moderation(commands.Cog):
         self.icon = '🛠️'
         self.description = f'Moderate your server or take a step back and let InfiniBot moderate for you!'
         self.unmute_loop.start()
+
+    def cog_unload(self):
+        self.unmute_loop.close()
 
     @tasks.loop(seconds=60)
     async def unmute_loop(self):
@@ -184,11 +184,6 @@ class Moderation(commands.Cog):
                 else:
                     await ctx.guild.ban(member, reason='Naughty')
                     await ctx.send(embed=embed)
-                    try:
-                        await member.send(embed=uembed)
-                    except:
-                        await ctx.send(f'A reason could not be sent to {member} as they had their dms off.')
-
 
                 db = cluster['TEMP']
                 collection = db['bans']

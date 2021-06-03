@@ -5,6 +5,8 @@ import random
 import datetime
 from pymongo import MongoClient
 import time
+import traceback
+import sys
 import math
 import pandas as pd
 from modules import utils
@@ -937,7 +939,8 @@ class Events(commands.Cog):
             return
         if isinstance(error, discord.Forbidden): return
         if isinstance(error, commands.MemberNotFound): return await ctx.send(str(error))
-
+        print(f'Ignoring exception in {ctx.command.name}', file=sys.stderr)
+        traceback.print_exc()
 
 
 def setup(client):

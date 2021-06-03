@@ -11,6 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import discord
+from modules.exceptions import ClassroomError
 import pandas as pd
 
 with open('./mongourl.txt', 'r') as file:
@@ -23,9 +24,6 @@ SCOPES = ['https://www.googleapis.com/auth/classroom.course-work.readonly', 'htt
 
 
 class ErrorMessage(Exception):
-    pass
-
-class ClassroomError(Exception):
     pass
 
 def tmts(string):

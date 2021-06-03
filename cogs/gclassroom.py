@@ -3,7 +3,7 @@ import discord
 from discord.ext import commands
 import pandas as pd
 from modules import utils
-from modules.utils import ClassroomError
+from modules.exceptions import ClassroomError
 
 
 class GoogleC(commands.Cog):

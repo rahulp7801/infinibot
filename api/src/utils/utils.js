@@ -9,4 +9,12 @@ if ((guild.permissions & 0x20) === 0x20) {
 } else return false
 }
 
-module.exports = {getMutualGuilds, checkUserGuildPerms}
+async function removeArrayItem(array, value) {
+    const result = await array.filter(function(item) {
+        return item !== value
+    })
+    console.log(result)
+    return result
+}
+
+module.exports = {getMutualGuilds, checkUserGuildPerms, removeArrayItem}

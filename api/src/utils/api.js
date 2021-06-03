@@ -30,5 +30,25 @@ async function getGuildChannels(guildID) {
     return response.json()
 }
 
+async function getGuildBans(guildID) {
+    const response = await fetch('http://discord.com/api/v6/guilds/' + guildID + '/bans', {
+        method: "GET",
+        headers: {
+            Authorization: `Bot ${process.env.BOT_TOKEN}`
+        }
+    })
+    return response.json()
+}
 
-module.exports =  {getBotGuilds, getGuildInfo, getGuildChannels}
+async function getUserInfo(uID) {
+    const response = await fetch('http://discord.com/api/v6/users/' + uID, {
+        method: "GET",
+        headers: {
+            Authorization: `Bot ${process.env.BOT_TOKEN}`
+        }
+    })
+    return response.json()
+}
+
+
+module.exports =  {getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo}

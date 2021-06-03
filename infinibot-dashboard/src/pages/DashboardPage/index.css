@@ -215,6 +215,13 @@
     margin-right: 15px;
     overflow: hidden;
   }
+
+  .sidebar-wrapper .sidebar-header .user-name {
+    max-width: 15ch;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   
   .sidebar-wrapper .sidebar-header .user-pic img {
     object-fit: cover;
@@ -893,3 +900,68 @@
   .on .toggle:after {
     color: #fff;
   }  
+
+  .warn:first-child {
+    border-top-left-radius: .25rem;
+    border-top-right-radius: .25rem;
+}
+
+.warn {
+  position: relative;
+    display: flex;
+    /* padding: .75rem 1.25rem; */
+    padding: 5px;
+    margin-bottom: -1px;
+    background-color: #343b41;
+    border: 1px solid #23282c;
+    justify-content: space-between;
+
+}
+
+.warnInfo p {
+  margin: 0;
+}
+
+.warnInfo {
+  /* height: 25px;
+  line-height: 25px; */
+  /* text-align: center; */
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.warnInfo .modText {
+  font-size: 75%;
+  color: #818896;
+}
+
+.expandable p {
+  max-width: 25ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* number of lines to show */
+  -webkit-box-orient: vertical;
+}
+
+.expandable {
+  display: none;
+  visibility: hidden;
+  opacity: 0;
+}
+
+.warn-desc-open {
+  display: block;
+  visibility: visible;
+  opacity: 1;
+}
+
+.fa-ban {
+  transition: all linear 0.15s;
+  cursor: pointer;
+}
+
+.fa-ban:hover {
+  color: rgb(255, 60, 60);
+}

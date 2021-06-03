@@ -15,6 +15,15 @@ export function postNewPrefix(guildID, prefix) {
 export function getGuildInfo(guildID) {
     return axios.get(`http://localhost:3001/api/discord/guilds/${guildID}/info`, {withCredentials: true})
 }
+
 export function getGuildConfig(guildID) {
     return axios.get(`http://localhost:3001/api/discord/guilds/${guildID}/config`, {withCredentials: true})
+}
+
+export function getGuildModInfo(guildID) {
+    return axios.get(`http://localhost:3001/api/discord/guilds/${guildID}/modinfo`, {withCredentials: true})
+}
+
+export function getPersonInfo(uID) {
+    return axios.get(`http://localhost:3001/api/discord/user/${uID}/info`, {withCredentials: true})
 }

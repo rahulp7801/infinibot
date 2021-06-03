@@ -14,6 +14,7 @@ import aiohttp
 import psutil
 import pandas as pd
 import string
+from googletrans import Translator
 from PIL import Image, ImageDraw, ImageFont
 from discord_components import DiscordComponents
 from modules import utils
@@ -23,7 +24,7 @@ with open('./mongourl.txt', 'r') as file:
 botversion = '2.0.0'
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
-
+translator = Translator()
 with open('praw.txt', 'r') as f:
     ff = f.read()
     creds = ff.split('\n')
@@ -545,6 +546,14 @@ class Slash(commands.Cog):
                         inline=False)
         await ctx.send(embed=embed, hidden=True)
 
+    @cog_ext.cog_slash(name='translate', description='Translate a phrase!')
+    async def _translate(self, ctx:SlashContext, target_language, *, phrase):
+        try:
+            newphrase = translator.translate(phrase.strip(), dest=target_language.strip().lower())
+            await ctx.send(f'Your phrase is: `{newphrase.text}`!')
+        except ValueError:
+            await ctx.send(
+                f"You didn\'t mention the language you would like to translate to, or it was an invalid language!")
 
 def setup(client):
     client.add_cog(Slash(client))

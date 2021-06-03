@@ -11,7 +11,6 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import discord
-from discord.ext import commands
 import pandas as pd
 
 with open('./mongourl.txt', 'r') as file:

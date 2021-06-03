@@ -149,29 +149,29 @@ class Buttons(commands.Cog):
             Button(style=ButtonStyle.gray, label="1"),
             Button(style=ButtonStyle.gray, label="2"),
             Button(style=ButtonStyle.gray, label="3"),
-            Button(style=ButtonStyle.gray, label="x"),
-            Button(style=ButtonStyle.gray, label="Exit")
+            Button(style=ButtonStyle.blue, label="x"),
+            Button(style=ButtonStyle.red, label="Exit")
         ],
         [
             Button(style=ButtonStyle.gray, label="4"),
             Button(style=ButtonStyle.gray, label="5"),
             Button(style=ButtonStyle.gray, label="6"),
-            Button(style=ButtonStyle.gray, label="÷"),
-            Button(style=ButtonStyle.gray, label="←")
+            Button(style=ButtonStyle.blue, label="÷"),
+            Button(style=ButtonStyle.red, label="←")
         ],
         [
             Button(style=ButtonStyle.gray, label="7"),
             Button(style=ButtonStyle.gray, label="8"),
             Button(style=ButtonStyle.gray, label="9"),
-            Button(style=ButtonStyle.gray, label="+"),
-            Button(style=ButtonStyle.gray, label="Clear")
+            Button(style=ButtonStyle.blue, label="+"),
+            Button(style=ButtonStyle.red, label="Clear")
         ],
         [
             Button(style=ButtonStyle.gray, label="00"),
             Button(style=ButtonStyle.gray, label="0"),
-            Button(style=ButtonStyle.gray, label="."),
-            Button(style=ButtonStyle.gray, label="-"),
-            Button(style=ButtonStyle.gray, label="=")
+            Button(style=ButtonStyle.blue, label="."),
+            Button(style=ButtonStyle.blue, label="-"),
+            Button(style=ButtonStyle.red, label="=")
         ]]
 
         msg = await ctx.send(embed=embed, components = components)

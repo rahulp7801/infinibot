@@ -240,9 +240,9 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['dmset', 'privmsg', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'], help = 'Set up a private DM message for when a member joins!')
+    @setup.command(aliases=['dmset', 'privmsg', 'privset', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'], help = 'Set up a private DM message for when a member joins!')
     @commands.has_permissions(manage_guild = True)
-    async def privset(self, ctx, *, text: str = None):
+    async def privatewelcomemessage(self, ctx, *, text: str = None):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
@@ -572,7 +572,7 @@ class Configuration(commands.Cog):
             else:
                 collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
                 await ctx.send(
-                    f"The muterole for {ctx.guild.name} has been updated to {mutedRole.mention}!")
+                    f"The muterole for {ctx.guild.name} has been updated to {mutedRole.mention}! With {skipcount} channel{'' if skipcount == 1 else 's'} skipped.")
 
     @commands.command(help = 'Change the prefix!')
     @commands.guild_only()

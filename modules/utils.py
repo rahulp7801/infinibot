@@ -11,7 +11,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import discord
-from modules.exceptions import ClassroomError
+from .exceptions import ClassroomError
 import pandas as pd
 
 with open('./mongourl.txt', 'r') as file:
@@ -218,6 +218,12 @@ async def send_command_help(ctx):
 #create help function here that maps from help.py
 
 def get_classes(ctx, limit :int= 10):
+    '''
+    :param ctx: Context of the message
+    :param limit: The limit of classes we want to retrieve information from
+    :return:
+    Information of all classes returned in a list
+    '''
     creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
@@ -248,6 +254,5 @@ def get_classes(ctx, limit :int= 10):
     else:
         arr = []
         for i in courses:
-            #appending all information
-            arr.append(i)
+            arr.append(i) #appending all information
         return arr, service

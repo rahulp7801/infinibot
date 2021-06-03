@@ -30,7 +30,6 @@ class Giveaways(commands.Cog):
         db = cluster['GIVEAWAYS']
         collection = db['guilds']
         arr = []
-        print('ok')
         results = collection.find()
         for i in results:
             arr.append((i['id'], i['chanid'], i['gid'], i['fintime'], i['winners'], i['title']))

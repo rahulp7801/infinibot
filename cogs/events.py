@@ -311,7 +311,7 @@ class Events(commands.Cog):
                     spamdetect = i['spamdetect']
                     muterole = i['muterole']
                 try:
-                    if message.author.guild_permissions.manage_messages:
+                    if message.author.guild_permissions.manage_messages or message.author.guild.owner_id == message.author.id:
                         pass
                     if spamdetect.lower().strip() != 'on':
                         pass

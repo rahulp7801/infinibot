@@ -1,13 +1,18 @@
-import discord
-import asyncio
-import datetime
+from __future__ import print_function
 from durations_nlp import Duration
 from discord.ext import commands
 from pymongo import MongoClient
-import datetime
 from modules import help
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+import os.path
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+import discord
+from discord.ext import commands
+import pandas as pd
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -15,7 +20,13 @@ with open('./mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
+SCOPES = ['https://www.googleapis.com/auth/classroom.course-work.readonly', 'https://www.googleapis.com/auth/classroom.courses.readonly', 'https://www.googleapis.com/auth/classroom.announcements.readonly', 'https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly', 'https://www.googleapis.com/auth/classroom.coursework.me']
+
+
 class ErrorMessage(Exception):
+    pass
+
+class ClassroomError(Exception):
     pass
 
 def tmts(string):
@@ -208,3 +219,38 @@ async def send_cog_help(ctx, cog):
 async def send_command_help(ctx):
     await ctx.send_help(ctx.command)
 #create help function here that maps from help.py
+
+def get_classes(ctx, limit :int= 10):
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            creds = flow.run_local_server(port=0)
+        # Save the credentials for the next run
+        try:
+            with open('token.json', 'w') as token:
+                token.write(creds.to_json())
+        except Exception as e:
+            raise ValueError(e)
+
+    service = build('classroom', 'v1', credentials=creds)
+    # Call the Classroom API
+    results = service.courses().list(pageSize=(int(limit) if limit < 15 else 15)).execute()
+    courses = results.get('courses', [])
+    if not courses:
+        raise ValueError("No courses found!")
+    else:
+        arr = []
+        for i in courses:
+            #appending all information
+            arr.append(i)
+        return arr, service

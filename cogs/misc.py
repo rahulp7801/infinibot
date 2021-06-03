@@ -10,8 +10,6 @@ from googletrans import Translator
 import pyfiglet
 from pymongo import MongoClient
 from modules import utils, help
-from prsaw import RandomStuff
-rs = RandomStuff(async_mode=True)
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()

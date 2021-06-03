@@ -13,7 +13,7 @@ class Games(commands.Cog):
         self.icon = '🎮'
         self.description = f'Play games with InfiniBot!'
 
-    @commands.command()
+    @commands.command(name="Play an akinator game!")
     async def akinator(self, ctx, on:str = None):
         if on is None:
             on = True
@@ -112,7 +112,7 @@ class Games(commands.Cog):
                 return await ctx.reply("Game over due to inactivity.", mention_author = False)
 
 
-    @commands.command()
+    @commands.command(name="Unscramble the word as quickly as possible!")
     async def jumble(self, ctx):
         wordlist = [
             'insane',

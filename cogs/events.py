@@ -935,6 +935,8 @@ class Events(commands.Cog):
             embed.set_footer(text=f"Message Author: {ctx.author}")
             await ctx.send(embed=embed)
             return
+        if isinstance(error, discord.Forbidden): return
+
 
 
 def setup(client):

@@ -281,90 +281,6 @@ class Moderation(commands.Cog):
             nban = discord.Embed(color=discord.Color.red())
             nban.set_author(name=f"User is not banned or doesn\'t exist!")
             await ctx.send(embed=nban)
-
-    # @commands.command()
-    # @commands.guild_only()
-    # @commands.has_permissions(manage_roles = True)
-    # #use the durations_nlp module
-    # async def tempmute(self, ctx, member:discord.Member, duration = 1, unit = 'h', *, reason = "No reason given"):
-    #     name = f"GUILD{ctx.guild.id}"
-    #     db = cluster[name]
-    #     collection = db['config']
-    #     results = collection.find({'_id': ctx.guild.id})
-    #     for i in results:
-    #         muterole = i['muterole']
-    #     prefix = ctx.prefix
-    #     if unit.lower() == "s":
-    #         dur = str(duration) + " seconds"
-    #     elif unit.lower() == "m":
-    #         dur = str(duration) + " minutes"
-    #     elif unit.lower() == "h":
-    #         dur = str(duration) + " hours"
-    #     try:
-    #         pfp = member.avatar_url
-    #         author = member
-    #         if unit.lower() not in ["s", "m", "h"]:
-    #             await ctx.send("Please enter a correct unit. `(s)`, `(m)`, or `(h)`")
-    #             return
-    #         embed = discord.Embed(description=f"For reason: ```{reason}```", color=discord.Color.dark_red())
-    #         embed.set_author(name=str(author) + f" has been muted for {dur}.", icon_url=pfp)
-    #         uembed = discord.Embed(title=f"You have been muted in {ctx.guild.name}",
-    #                                description=f"For reason: ```{reason}```", color=discord.Color.blurple())
-    #         uembed.set_footer(text="If you believe this is in error, please contact an Admin.")
-    #         if str(muterole) == '':
-    #
-    #             await ctx.send(
-    #                 f"This server doesn\'t have a muterole set up! Use `{prefix}setup muterole <Optionalname>` to set it up.")
-    #             return
-    #         role = discord.utils.get(ctx.guild.roles, id=int(muterole))
-    #         if member.top_role >= ctx.author.top_role:
-    #             await ctx.send(f"You can only use this moderation on a member below you.")
-    #             return
-    #         elif role in member.roles:
-    #             await ctx.send(f"`{member}` is already muted.")
-    #             return
-    #         elif reason != None:
-    #             await member.add_roles(role)
-    #             await ctx.send(embed=embed)
-    #             try:
-    #                 await member.send(embed=uembed)
-    #             except:
-    #                 await ctx.send(f'A reason could not be sent to {member} as they had their dms off.')
-    #             if unit.lower() == "s":
-    #                 await asyncio.sleep(duration)
-    #                 await member.remove_roles(role)
-    #             elif unit.lower() == "m":
-    #                 await asyncio.sleep(duration * 60)
-    #                 await member.remove_roles(role)
-    #             elif unit.lower() == "h":
-    #                 await asyncio.sleep(duration * 60 * 60)
-    #                 await member.remove_roles(role)
-    #         elif reason is None:
-    #             await ctx.reply("Please provide a reason for tempmute.")
-    #     except AttributeError as e:
-    #         return await ctx.reply(
-    #             f"This server does not have a mute role. Use `{prefix}muterole` to create the muterole.")
-    #     except discord.errors.Forbidden:
-    #         if member.id == ctx.guild.owner_id:
-    #             await ctx.send(f"You cannot take any action on the server owner.")
-    #             return
-    #         role = discord.utils.get(ctx.guild.roles, id=int(muterole))
-    #         if role >= ctx.guild.me.top_role:
-    #             return await ctx.send("I cannot assign this role as it is above my top role.")
-    #
-    # @tempmute.error
-    # async def tempmute_err(self, ctx, error):
-    #     prefix = utils.serverprefix(ctx)
-    #     if isinstance(error, commands.MissingRequiredArgument):
-    #         desc = f"```{prefix}tempmute [member] (duration) (unit) (reason)```\nUnits: `s`, `m`, `h`"
-    #         embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-    #         embed.set_footer(text="Parameters in [] are required and () are optional")
-    #         return await ctx.send(embed=embed)
-    #     if isinstance(error, commands.CommandInvokeError):
-    #         return await ctx.send("I do not have the `Manage Roles` permission.")
-    #     if isinstance(error, commands.MissingPermissions):
-    #         return await ctx.send(f"{ctx.author.name}, you can't use that!")
-
     @commands.command()
     @commands.guild_only()
     @commands.has_permissions(manage_roles = True)
@@ -567,7 +483,6 @@ class Moderation(commands.Cog):
         uembed.set_footer(text="If you believe this is an error, please contact an Admin.")
         await ctx.send(embed=embed)
         await member.send(embed=uembed)
-
 
     @commands.command()
     @commands.guild_only()

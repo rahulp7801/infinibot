@@ -6,7 +6,7 @@ import os
 import asyncio
 import datetime
 from discord_slash import SlashCommand
-from modules import help
+from modules import help, utils
 from discord_components import DiscordComponents
 
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
@@ -24,6 +24,10 @@ async def on_ready():
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
     for i in client.guilds:
         print(i.name + "->" + str(i.owner_id))
+        try:
+            utils.add_guild_to_db(i)
+        except:
+            continue
     DiscordComponents(client, change_discord_methods=True)
     while True:
         await asyncio.sleep(10)

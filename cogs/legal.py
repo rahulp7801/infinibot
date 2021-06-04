@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import datetime
+from modules import utils
 from pymongo import MongoClient
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -87,102 +88,7 @@ class Legal(commands.Cog):
             reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
             if reaction.emoji == '✅':
                 cluster.drop_database(name)
-                name = f"GUILD{ctx.guild.id}"
-                db = cluster[name]
-                collection = db['config']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'prefix': '%',
-                    'welcomemsg': "",
-                    "welcomechannel": "",
-                    'priv_welcomemsg': "",
-                    'leavemsg': "",
-                    'captchaon': "",
-                    'muterole': "",
-                    'spamdetect': "",
-                    'logging': "",
-                    'logchannel': "",
-                    'levelups': "",
-                    'ghostpingon': "",
-                    'ghostcount': '',
-                    'blacklistenab': "",
-                    'mcip': "",
-                    'starchannel': '',
-                    'welcomenick': '',
-                    'welcomerole': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['afk']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'afkstatus': "",
-                    'startafk': '',
-                    'preafknick': '',
-                    'afkid': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['serverstats']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'vcsecs': "",
-                    'msgcount': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['levels']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['customcmnd']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'commandname': ""
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['commands']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'commandname': "",
-                    'commandcount': '',
-                    'commandchannel': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['warns']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'reason': "",
-                    'time': '',
-                    'mod': '',
-                    'offender': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['messages']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'author': "",
-                    'date': '',
-                    'channel': '',
-                    'count': ''
-                }
-                x = collection.insert_one(ping_cm)
-                collection = db['typing']
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    'uid': '',
-                    'date': "",
-                    'accuracy': '',
-                    'wpm': ''
-                }
-                x = collection.insert_one(ping_cm)
+                utils.add_guild_to_db(ctx.guild)
                 await message.clear_reactions()
                 desc = f"All server data for {ctx.guild.name} has successfully been cleared from the database."
                 embed = discord.Embed(description=desc, color=discord.Color.green())

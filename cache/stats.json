@@ -1,0 +1,49 @@
+{
+    "guilds": [
+        {
+            "guildID": 830158413408239646,
+            "messages": 31,
+            "userdiff": 23,
+            "vcsecdiff": 2300,
+            "engagedusers": [
+                {
+                    "username": "kidsonfilms#4635",
+                    "uid": 645388150524608523,
+                    "messagesSent": 23,
+                    "vcsecs": 0,
+                    "activetime": [
+                        1622837196,
+                        1622840796
+                    ]
+                },
+                {
+                    "username": "glizzybeam7801#8196",
+                    "uid": 759245009693704213,
+                    "messagesSent": 25,
+                    "vcsecs": 0,
+                    "activetime": [
+                        1622826364,
+                        1622833596
+                    ]
+                }
+            ]
+        },
+        {
+            "guildID": 834855563241455627,
+            "messages": 6,
+            "userdiff": 0,
+            "vcsecdiff": 0,
+            "engagedusers": [
+                {
+                    "username": "kidsonfilms#4635",
+                    "uid": 645388150524608523,
+                    "messagesSent": 1,
+                    "vcsecs": 0,
+                    "activetime": [
+                        1622839323.14802
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -57,11 +57,6 @@ from matplotlib import pyplot as plt
 from PIL import Image, ImageDraw, ImageFilter, ImageFont
 from pymongo import MongoClient
 import pymongo
-import os.path
-from os import path
-import os
-import json
-import time
 
 with open('praw.txt', 'r') as f:
     ff = f.read()
@@ -117,28 +112,6 @@ def get_prefix(client, msg):
     return commands.when_mentioned_or(prefix)(client, msg)
 
 
-def cache_init():
-    if path.exists("cache/stats.json"):
-        print('Cache Exists')
-        cache = open('cache/stats.json')
-        try:
-            cache_json = json.loads(cache.read())
-        except:
-            cache.close()
-            cache = open("cache-2/stats.json", "w")
-            cache.write('{"guilds": []}')
-            cache.close()
-        if cache_json["guilds"] != None:
-            print('Cache in Correct Format, Loading Data Complete')
-            return cache_json["guilds"]
-    else:
-        print('Cache Does Not Exist, Creating Cache')
-        os.mkdir('cache')
-        cache = open("cache-2/stats.json", "w")
-        cache.write('{"guilds": []}')
-        cache.close()
-
-cache = cache_init()
 
 client = commands.Bot(command_prefix=get_prefix, intents=intents, allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, override_type = True)
@@ -685,25 +658,6 @@ async def on_message(message):
             count = int(count)
             count += 1
         collection.update_one({'_id':message.guild.id}, {'$set' : {'count' : str(count)}})
-    if any(x for x in cache if x["guildID"] == message.guild.id):
-        for h in cache:
-            if h["guildID"] == message.guild.id:
-                h["messages"] += 1
-                if any(p for p in h["engagedusers"] if p["uid"] == message.author.id):
-                    for p in h["engagedusers"]:
-                        if p["uid"] == message.author.id:
-                            p["messagesSent"] += 1
-                else:
-                    h["engagedusers"].append({"username":message.author.username + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
-                json_cache = open('cache/stats.json', 'w')
-                json_str = '{"guilds":'+ json.dumps(cache)
-                json_cache.write(json_str + '}')
-    else:
-        print(f"Cache Not Found for Guild {message.guild.id}, Writing it Now")
-        cache.append({"guildID": message.guild.id, "messages": 1, "userdiff": 0, "vcsecdiff": 0, "engagedusers": [{"username":message.author.username + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]}]})
-        json_cache = open('cache/stats.json', 'w')
-        json_str = '{"guilds":'+ json.dumps(cache)
-        json_cache.write(json_str + '}')
     # cursor.execute(f"SELECT msgcount from {name} WHERE user_id = {message.author.id} AND msgchannel_id = {message.channel.id} AND date = '{x}'")
     # result2 = cursor.fetchone()
     # if result2 is None:

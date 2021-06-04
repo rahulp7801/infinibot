@@ -5,7 +5,6 @@ import './index.css'
 import $ from 'jquery'
 import jQuery from 'jquery'
 import ReactMarkdown from 'react-markdown'
-import {Line} from 'react-chartjs-2'
 
 import { getUserDetails, postNewPrefix, getGuildInfo, getGuildModInfo, getPersonInfo } from '../../utils/api'
 import auditTypeDict from '../../utils/auditDict';
@@ -87,9 +86,7 @@ export function DashboardPage(props) {
         })
         const timer = setTimeout(() => {
             console.log(personInfoDict)
-            console.log('Starting Expandable Element Init...')
             var warnsEle = document.querySelectorAll(".warn")
-            console.log('Got Warn Elements')
             console.log(warnsEle)
             for (var i = 0; i < warnsEle.length; i++) {
                 warnsEle[i].addEventListener('click', (e) => {
@@ -215,7 +212,7 @@ export function DashboardPage(props) {
                         <div className="user-info">
                             <span className="user-name">{guildInfo.info.name}
                             </span>
-                            <span className="user-role"><a href="../../menu" style={{ color: `#818896` }}>	&#60; BACK</a></span>
+                            <span className="user-role"><a href="../menu" style={{ color: `#818896` }}>	&#60; BACK</a></span>
                             {/* <span className="user-status">
             <i className="fa fa-circle"></i>
             <span>Online</span>
@@ -732,139 +729,7 @@ export function DashboardPage(props) {
                                 </div>
 
 
-                            </div>) : page == 'stats' ? (
-                                <div className="card-row">
-
-                                <div className="col-sm-12 col-md-6">
-                                    <div className="card">
-                                        <header className="card-header">
-                                            <div><i className="icon-settings">
-                                            </i> General</div>
-                                        </header>
-                                        <div className="card-body" style={{color: 'white'}}>
-                                            <h5>Server Health</h5>
-                                            <p>This show your Server Health based on the number of messages, when members join and leave, member engagment, and number of minutes spent in the VC</p>
-                                        <Line data={{
-                                                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-                                                    datasets: [
-                                                        {
-                                                            label: "First dataset",
-                                                            data: [33, 53, 85, 41, 44, 65],
-                                                            fill: true,
-                                                            backgroundColor: "rgba(75,192,192,0.2)",
-                                                            borderColor: "rgba(75,192,192,1)"
-                                                        },
-                                                        {
-                                                            label: "Second dataset",
-                                                            data: [33, 25, 35, 51, 54, 76],
-                                                            fill: false,
-                                                            borderColor: "#742774"
-                                                        }
-                                                    ],
-                                                    plugins: { 
-                                                        legend: {
-                                                            labels: {
-                                                                color: "blue",
-                                                                fontSize: 18
-                                                            }
-                                                        },
-                                                        // scales: {
-                                                        //     yAxes: [{
-                                                        //         ticks: {
-                                                        //             fontColor: "green",
-                                                        //             fontSize: 18,
-                                                        //             stepSize: 1,
-                                                        //             beginAtZero: true
-                                                        //         }
-                                                        //     }],
-                                                        //     xAxes: [{
-                                                        //         ticks: {
-                                                        //             fontColor: "purple",
-                                                        //             fontSize: 14,
-                                                        //             stepSize: 1,
-                                                        //             beginAtZero: true
-                                                        //         }
-                                                        //     }]
-                                                        // }
-                                                    }
-                                                }
-                                                } style={{color: 'white'}}/>
-                                        </div>
-                                    </div>
-
-                                    
-                                </div>
-                                <div className="col-sm-12 col-md-6">
-                                    <div className="card">
-                                        <header className="card-header">
-                                            <div><i className="icon-settings">
-                                            </i> Welcome</div>
-                                        </header>
-                                        <div className="card-body">
-                                            <fieldset className="form-group" id="__BVID__130">
-                                                <div tabIndex="-1" role="group">
-                                                    <h4 className="smalltitle">Welcome</h4>
-                                                    Send a message when a new person joins your server! <br /> <br />
-                                                Useful variables: <br />
-                                                    <code>{`{member}`}</code>
-                                                 - Mentions the person joining/leaving. <br />
-                                                    <code>{`{members}`}</code>
-                                                  - The number to members in the server <br />
-                                                    <code>{`{user}`}</code>
-                                                   - The person joining/leaving's name in the 'Wumpus#4201' format. <br />
-                                                    <code>{`{guild}`}</code>
-                                                    - The server name.
-                                                    <br /> <br />
-                                                    <h5>Welcome Channel
-                                                    </h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        {/* <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" value={prefix} />
-                                                    <div className="input-group-append">
-                                                    </div> */}
-                                                        <div className="c-dropdown js-dropdown">
-                                                            <input type="hidden" name="Framework" id="Framework" className="js-dropdown__input" />
-                                                            <span className="c-button c-button--dropdown js-dropdown__current">Select Welcome Channel</span>
-                                                            <ul className="c-dropdown__list">
-                                                                {
-                                                                    guildInfo.channels.map((channel) => (
-                                                                        <li className="c-dropdown__item" data-dropdown-value={channel.id.toString()}>{channel.name}</li>
-                                                                    )
-                                                                    )
-                                                                }
-                                                                {/* <li className="c-dropdown__item" data-dropdown-value="angular">Angular</li>
-                                                            <li className="c-dropdown__item" data-dropdown-value="backbone">Backbone</li>
-                                                            <li className="c-dropdown__item" data-dropdown-value="ember">Ember</li>
-                                                            <li className="c-dropdown__item" data-dropdown-value="knockout">Knockout</li>
-                                                            <li className="c-dropdown__item" data-dropdown-value="react">React</li> */}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </div>
-
-                                            </fieldset>
-                                            <fieldset>
-                                                <br />
-                                                <h5>Welcome Message</h5>
-                                                <textarea placeholder="Hey {member}, welcome to {guild}!" rows="6" wrap="soft" className="col-12 form-control welcomeMsg" maxLength="5000" type="text" id="__BVID__332" spellCheck="true" onChange={(value) => setWelcomeMsg(value.target.value)}></textarea>
-                                                <br />
-                                                <h5>Welcome Message Preview</h5>
-                                                <div className="wrapper">
-                                                    <div className="side-colored"></div>
-                                                    <div className="card-embed embed">
-                                                        <div className="card-block">
-                                                            <div className="embed-inner"><div className="embed-author"><img className="embed-author-icon" src="https://cdn.discordapp.com/avatars/645388150524608523/c58a466d4d44f14ea1470860f61d64a6.webp?size=256" /><a className="embed-author-name" href="">{`{user} just joined the server!`}</a></div><div className="embed-description"><ReactMarkdown>{welcomeMsg}</ReactMarkdown></div></div>
-                                                        </div>
-                                                        {/* <div className="embed-footer"><span>{(date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear()}</span></div> */}
-                                                    </div>
-                                                </div>
-                                            </fieldset>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                            </div>
-                            ) : (<h1>404</h1>)
+                            </div>) : page == 'stats' ? (<h1>Statistics</h1>) : (<h1>404</h1>)
                     }
 
 

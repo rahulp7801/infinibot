@@ -55,6 +55,15 @@ async def feedback(ctx):
     except asyncio.TimeoutError:
         await ctx.reply("Timed out.", mention_author=False, delete_after=5)
 
+@client.command(aliases = ['invite', 'botinvite'])
+async def botinv(ctx):
+    embed = discord.Embed(title="InfiniBot Invite Link",
+                          description=r'https://discord.com/api/oauth2/authorize?client_id=829464107710677022&permissions=4294307063&scope=bot%20applications.commands',
+                          color=discord.Color.blurple())
+    embed.set_footer(text=f"InfiniBot Help | Requested by {ctx.author.name}")
+    await ctx.reply(embed=embed)
+
+
 with open('testbot.txt', 'r') as f:
     token = f.read()
 

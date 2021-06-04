@@ -217,6 +217,9 @@ async def send_command_help(ctx):
     await ctx.send_help(ctx.command)
 #create help function here that maps from help.py
 
+async def send_group_help(ctx, group):
+    await ctx.bot.help_command.send_group_help(group)
+
 def get_classes(ctx, limit :int= 10):
     '''
     :param ctx: Context of the message
@@ -256,3 +259,19 @@ def get_classes(ctx, limit :int= 10):
         for i in courses:
             arr.append(i) #appending all information
         return arr, service
+
+def add_member_cah(member:discord.Member):
+    embed = discord.Embed(description=f'{member.mention} was added to the game!', color=discord.Color.blue())
+    return embed
+
+def priv_cah_msg(channel:discord.TextChannel):
+    embed = discord.Embed(
+        description=f"You have joined a Cards Against Humanity game in {channel.mention} in **{channel.guild.name}**.",
+        color=discord.Color.blue())
+    return embed
+
+def current_tzar(index:int, arr):
+    embed = discord.Embed(description=f"The current czar is {arr[index]}! Wait until the other players have submitted their cards, then choose the best one.",
+                                color=discord.Color.blue())
+    current_admin = arr[index]
+    return embed, current_admin

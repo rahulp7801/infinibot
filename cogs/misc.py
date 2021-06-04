@@ -10,6 +10,8 @@ from googletrans import Translator
 import pyfiglet
 from pymongo import MongoClient
 from modules import utils, help
+import re
+import urllib.request
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -373,13 +375,11 @@ class Misc(commands.Cog, name="Miscellaneous"):
     async def activities(self, ctx, member:discord.Member):
         pass
 
-    @commands.command()
-    async def babe(self, ctx):
-        try:
-            x = await utils.send_bot_help(ctx)
-            print('Success')
-        except Exception as e:
-            print(e)
+    @commands.group(invoke_without_command=True)
+    async def youtube(self, ctx, *, query):
+        html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query}")
+        vidid = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+        await ctx.send(f"https://www.youtube.com/watch?v={vidid[0]}")
 
 def setup(client):
     client.add_cog(Misc(client))

@@ -66,6 +66,11 @@ class Developers(commands.Cog):
 
     @commands.command()
     @commands.check(is_dev)
+    async def uniquemembers(self, ctx):
+        await ctx.send(len(set(self.client.users)))
+
+    @commands.command()
+    @commands.check(is_dev)
     async def broadcast(self, ctx):
         try:
             def check(m):

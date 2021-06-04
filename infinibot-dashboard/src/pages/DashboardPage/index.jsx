@@ -7,6 +7,7 @@ import jQuery from 'jquery'
 import ReactMarkdown from 'react-markdown'
 
 import { getUserDetails, postNewPrefix, getGuildInfo, getGuildModInfo, getPersonInfo } from '../../utils/api'
+import auditTypeDict from '../../utils/auditDict';
 
 
 export function DashboardPage(props) {
@@ -19,6 +20,7 @@ export function DashboardPage(props) {
     const { guildID, page } = useParams()
     const [welcomeMsg, setWelcomeMsg] = React.useState("")
     const [modInfo, setModInfo] = React.useState({ warns: [], bans: [], logs: [] })
+    const [personInfoDict, setPersonInfoDict] = React.useState(new Map())
 
     async function getDataFromDiscord(uID) {
         getPersonInfo(uID).then((d) => {
@@ -43,12 +45,47 @@ export function DashboardPage(props) {
             setGuildInfo(data)
             console.log(guildInfo)
         })
-        getGuildModInfo(guildID).then(async ({ data }) => {
+        getGuildModInfo(guildID).then(({ data }) => {
+            // const test = getDataFromDiscord(data.warns[0].offender)
+            data.warns.forEach((warn) => {
+                if (personInfoDict.get(warn.offender) == undefined || personInfoDict.get(warn.offender) == null) {
+                    getPersonInfo(warn.offender).then(async (personInfo) => {
+                        console.log(personInfo.data)
+                        personInfoDict.set(warn.offender, personInfo.data)
+                        setPersonInfoDict(personInfoDict)
+                    })
+                }
+            })
+            // data.logs.slice(0,26).forEach((log) => {
+            // if (personInfoDict.get(log.user_id) == undefined || personInfoDict.get(log.user_id) == null) {
+            //     getPersonInfo(log.user_id).then(async (personInfo) => {
+            //         console.log(personInfo.data)
+            //         personInfoDict.set(log.user_id, personInfo.data)
+            //         // setPersonInfoDict(personInfoDict)
+            //     })
+            // }
+            // })
+
+            // data.logs.slice(0,26).forEach((log) => {
+            // if (personInfoDict.get(log.target_id) == undefined || personInfoDict.get(log.target_id) == null) {
+            //     getPersonInfo(log.target_id).then(async (personInfo) => {
+            //         console.log(personInfo.data)
+            //         personInfoDict.set(log.target_id, personInfo.data)
+            //         // setPersonInfoDict(personInfoDict)
+            //     })
+            // }
+            // })
+
+            data.log_users.forEach((u) => {
+                personInfoDict.set(u.id, u)
+                setPersonInfoDict(personInfoDict)
+            })
+            console.log(personInfoDict)
             setModInfo(data)
-            const test = getDataFromDiscord(data.warns[0].offender)
-            console.log(test)
+            console.log(data)
         })
         const timer = setTimeout(() => {
+            console.log(personInfoDict)
             var warnsEle = document.querySelectorAll(".warn")
             console.log(warnsEle)
             for (var i = 0; i < warnsEle.length; i++) {
@@ -65,6 +102,7 @@ export function DashboardPage(props) {
                 })
                 console.log(warnsEle[i])
             }
+            console.log(personInfoDict)
 
             console.log('Init Sidebar...')
             $(".sidebar-dropdown > a").on('click', function () {
@@ -587,8 +625,8 @@ export function DashboardPage(props) {
                                                             modInfo.warns.map((warn) => (
                                                                 <div className="warn" id={`warn-${warn._id}`}>
                                                                     <div className="warnInfo">
-                                                                        <p>{warn.name} <span className="modText">uID: {warn.offender}</span></p>
-                                                                        <p className="modText">Moderator: {warn.mod}</p>
+                                                                        <p>{warn.name}#{personInfoDict.get(warn.offender) != undefined ? personInfoDict.get(warn.offender).discriminator : ''} <span className="modText">uID: {warn.offender}</span></p>
+                                                                        <p className="modText">Moderator: {personInfoDict.get(warn.mod) != undefined ? personInfoDict.get(warn.mod).username + '#' + personInfoDict.get(warn.mod).discriminator : '--'}</p>
                                                                         <p className="modText">{warn.time}</p>
                                                                         <div className="expandable" id={`expandable-warn-${warn._id}`}>
                                                                             <p>{warn.reason}</p>
@@ -610,124 +648,35 @@ export function DashboardPage(props) {
                                     <div className="card">
                                         <header className="card-header">
                                             <div><i className="icon-settings">
-                                            </i> Logging</div>
+                                            </i> Logs</div>
                                         </header>
                                         <div className="card-body">
                                             <fieldset className="form-group" id="__BVID__130">
                                                 <div tabIndex="-1" role="group">
-                                                    <h4 className="smalltitle">Logging</h4>
+                                                    <h4 className="smalltitle">Moderation Log</h4>
                                                     <p>Get instant messages when something happens in your server for better moderation and managment!</p>
                                                     {/* <div role="group" className="input-group pb-1">
                                                     <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
                                                     <div className="input-group-append">
                                                     </div>
                                                 </div> */}
-                                                    <h5>Have Logging Enabled</h5>
-                                                    <div className="toggle">
-                                                        <input type="checkbox" id="toggle" />
-                                                        <label htmlFor="toggle"></label>
-                                                    </div>
-                                                    <h5>Choose Logging Channel</h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        {/* <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" value={prefix} />
-                                                <div className="input-group-append">
-                                                </div> */}
-                                                        <div className="c-dropdown js-dropdown">
-                                                            <input type="hidden" name="Framework" id="Framework" className="js-dropdown__input" />
-                                                            <span className="c-button c-button--dropdown js-dropdown__current">Select Channel</span>
-                                                            <ul className="c-dropdown__list">
-                                                                {
-                                                                    guildInfo.channels.map((channel) => (
-                                                                        <li className="c-dropdown__item" data-dropdown-value={channel.id.toString()}>{channel.name}</li>
-                                                                    )
-                                                                    )
-                                                                }
-                                                                {/* <li className="c-dropdown__item" data-dropdown-value="angular">Angular</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="backbone">Backbone</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="ember">Ember</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="knockout">Knockout</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="react">React</li> */}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </fieldset>
-                                        </div>
-                                    </div>
-                                    <div className="card">
-                                        <header className="card-header">
-                                            <div><i className="icon-settings">
-                                            </i> Miscellaneous</div>
-                                        </header>
-                                        <div className="card-body">
-                                            <fieldset className="form-group" id="__BVID__130">
-                                                <div tabIndex="-1" role="group">
-                                                    <h4 className="smalltitle">Miscellaneous</h4>
-                                                    <p>Get instant messages when something happens in your server for better moderation and managment!</p>
-                                                    {/* <div role="group" className="input-group pb-1">
-                                                    <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
-                                                    <div className="input-group-append">
-                                                    </div>
-                                                </div> */}
-                                                    <h5>Minecraft IP</h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        <input type="text" placeholder="play.mc.com or 192.xx.xx.xxx" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" />
-                                                        <div className="input-group-append">
-                                                        </div>
-                                                    </div><br />
-                                                    <h5>Choose Star Channel</h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        {/* <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" value={prefix} />
-                                                <div className="input-group-append">
-                                                </div> */}
-                                                        <div className="c-dropdown js-dropdown">
-                                                            <input type="hidden" name="Framework" id="Framework" className="js-dropdown__input" />
-                                                            <span className="c-button c-button--dropdown js-dropdown__current">Select Channel</span>
-                                                            <ul className="c-dropdown__list">
-                                                                {
-                                                                    guildInfo.channels.map((channel) => (
-                                                                        <li className="c-dropdown__item" data-dropdown-value={channel.id.toString()}>{channel.name}</li>
-                                                                    )
-                                                                    )
-                                                                }
-                                                                {/* <li className="c-dropdown__item" data-dropdown-value="angular">Angular</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="backbone">Backbone</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="ember">Ember</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="knockout">Knockout</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="react">React</li> */}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                    <br />
-                                                    <h5>Welcome Nick</h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        <input type="text" placeholder="Enter a Welcome Nickname" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
-                                                        <div className="input-group-append">
-                                                        </div>
-                                                    </div>
-                                                    <br />
-                                                    <h5>Welcome Role</h5>
-                                                    <div role="group" className="input-group pb-1">
-                                                        {/* <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" value={prefix} />
-                                                <div className="input-group-append">
-                                                </div> */}
-                                                        <div className="c-dropdown js-dropdown">
-                                                            <input type="hidden" name="Framework" id="Framework" className="js-dropdown__input" />
-                                                            <span className="c-button c-button--dropdown js-dropdown__current">Select Role</span>
-                                                            <ul className="c-dropdown__list">
-                                                                {
-                                                                    guildInfo.info.roles.map((role) => (
-                                                                        <li className="c-dropdown__item" data-dropdown-value={role.id.toString()}>{role.name}</li>
-                                                                    )
-                                                                    )
-                                                                }
-                                                                {/* <li className="c-dropdown__item" data-dropdown-value="angular">Angular</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="backbone">Backbone</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="ember">Ember</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="knockout">Knockout</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="react">React</li> */}
-                                                            </ul>
-                                                        </div>
+                                                    <div className="warnList">
+
+                                                        {
+                                                            modInfo.logs.slice(0,26).map((log) => (
+                                                                <div className="warn" id={`log-${log.id}`}>
+                                                                    <div className="warnInfo">
+                                                                        <p>{auditTypeDict.get(log.action_type)} <span class="modText">CODE {log.action_type}</span></p>
+                                                                        <p className="modText">Target: {personInfoDict.get(log.target_id) != undefined ? personInfoDict.get(log.target_id).username + '#' + personInfoDict.get(log.target_id).discriminator : '--'}</p>
+                                                                        <p className="modText">Moderator: {personInfoDict.get(log.user_id) != undefined ? personInfoDict.get(log.user_id).username + '#' + personInfoDict.get(log.user_id).discriminator : '--'}</p>
+                                                                        {/* <p className="modText">4/11/12</p> */}
+                                                                        <div className="expandable" id={`expandable-log-${log.id}`}>
+                                                                            <p>{log.action}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        }
                                                     </div>
                                                 </div>
                                             </fieldset>
@@ -738,63 +687,40 @@ export function DashboardPage(props) {
                                     <div className="card">
                                         <header className="card-header">
                                             <div><i className="icon-settings">
-                                            </i> Welcome</div>
+                                            </i> Bans</div>
                                         </header>
                                         <div className="card-body">
                                             <fieldset className="form-group" id="__BVID__130">
                                                 <div tabIndex="-1" role="group">
-                                                    <h4 className="smalltitle">Welcome</h4>
-                                                Send a message when a new person joins your server! <br /> <br />
-                                            Useful variables: <br />
-                                                    <code>{`{member}`}</code>
-                                             - Mentions the person joining/leaving. <br />
-                                                    <code>{`{members}`}</code>
-                                              - The number to members in the server <br />
-                                                    <code>{`{user}`}</code>
-                                               - The person joining/leaving's name in the 'Wumpus#4201' format. <br />
-                                                    <code>{`{guild}`}</code>
-                                                - The server name.
-                                                <br /> <br />
-                                                    <h5>Welcome Channel
-                                                </h5>
+                                                    <h4 className="smalltitle">Bans </h4>
+                                                    <p>The following players have been banned, you can change the reason, revoke, or add a ban by pressing the designated buttons</p>
                                                     <div role="group" className="input-group pb-1">
-                                                        {/* <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" value={prefix} />
-                                                <div className="input-group-append">
-                                                </div> */}
-                                                        <div className="c-dropdown js-dropdown">
-                                                            <input type="hidden" name="Framework" id="Framework" className="js-dropdown__input" />
-                                                            <span className="c-button c-button--dropdown js-dropdown__current">Select Welcome Channel</span>
-                                                            <ul className="c-dropdown__list">
-                                                                {
-                                                                    guildInfo.channels.map((channel) => (
-                                                                        <li className="c-dropdown__item" data-dropdown-value={channel.id.toString()}>{channel.name}</li>
-                                                                    )
-                                                                    )
-                                                                }
-                                                                {/* <li className="c-dropdown__item" data-dropdown-value="angular">Angular</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="backbone">Backbone</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="ember">Ember</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="knockout">Knockout</li>
-                                                        <li className="c-dropdown__item" data-dropdown-value="react">React</li> */}
-                                                            </ul>
+                                                        <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
+                                                        <div className="input-group-append">
+                                                            <button type="button" className="btn btn-primary">Warn</button>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                    <div className="warnList">
 
-                                            </fieldset>
-                                            <fieldset>
-                                                <br />
-                                                <h5>Welcome Message</h5>
-                                                <textarea placeholder="Hey {member}, welcome to {guild}!" rows="6" wrap="soft" className="col-12 form-control welcomeMsg" maxLength="5000" type="text" id="__BVID__332" spellCheck="true" onChange={(value) => setWelcomeMsg(value.target.value)}></textarea>
-                                                <br />
-                                                <h5>Welcome Message Preview</h5>
-                                                <div className="wrapper">
-                                                    <div className="side-colored"></div>
-                                                    <div className="card-embed embed">
-                                                        <div className="card-block">
-                                                            <div className="embed-inner"><div className="embed-author"><img className="embed-author-icon" src="https://cdn.discordapp.com/avatars/645388150524608523/c58a466d4d44f14ea1470860f61d64a6.webp?size=256" /><a className="embed-author-name" href="">{`{user} just joined the server!`}</a></div><div className="embed-description"><ReactMarkdown>{welcomeMsg}</ReactMarkdown></div></div>
-                                                        </div>
-                                                        {/* <div className="embed-footer"><span>{(date.getMonth() + 1) + '/' + date.getDate() + '/' + date.getFullYear()}</span></div> */}
+                                                        {
+                                                            modInfo.bans.map((ban) => (
+                                                                <div className="warn" id={`ban-${ban.user.id}`}>
+                                                                    <div className="warnInfo">
+                                                                        <p>{ban.user.username}#{ban.user.discriminator}</p>
+                                                                        <p className="modText">uID: {ban.user.id}</p>
+                                                                        {/* <p className="modText">Moderator: kidsonfilms</p>
+                                                                        <p className="modText">4/11/12</p> */}
+                                                                        <div className="expandable" id={`expandable-ban-${ban.user.id}`}>
+                                                                            <p>{ban.reason}</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div className="warnActions">
+                                                                        {/* <i className="fas fa-edit fa-lg"></i>*/}
+                                                                        <i className="fas fa-ban fa-lg"></i>
+                                                                    </div>
+                                                                </div>
+                                                            ))
+                                                        }
                                                     </div>
                                                 </div>
                                             </fieldset>

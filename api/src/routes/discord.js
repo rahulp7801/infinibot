@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo } = require('../utils/api')
+const { getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo, getGuildAuditLog } = require('../utils/api')
 const User = require('../database/schemas/user')
 const { getMutualGuilds, checkUserGuildPerms, removeArrayItem } = require('../utils/utils')
 const GuildConfig = require('../database/schemas/GuildConfig')
@@ -129,11 +129,13 @@ router.get('/guilds/:guildId/modinfo', async (req, res) => {
                     const guildDB = guildDBO.db(`GUILD${guildId}`)
                     const guildWarns = await guildDB.collection("warns").find().toArray()
                     const bans = await getGuildBans(guildId)
+                    const auditLog = await getGuildAuditLog(guildId)
                     guildWarns.splice(0, 1)
                     const data = {
                         warns: guildWarns,
                         bans: bans,
-                        logs: [{action: "BAN", moderator: 13234332334}]
+                        logs: auditLog.audit_log_entries,
+                        log_users: auditLog.users
                     }
                     guildDBO.close()
                     return data ? res.status(200).send(data) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })

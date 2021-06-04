@@ -11,10 +11,31 @@ with open('mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
-
 class rr(commands.Cog, name = "Reaction Roles"):
     def __init__(self, client):
         self.client = client
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        name = f"GUILD{payload.guild_id}"
+        db = cluster[name]
+        collection = db['reactionroles']
+        query = {'_id': payload.message_id}
+        if collection.count_documents(query) == 0:
+            return
+        user = collection.find({'_id': payload.message_id})
+        guild1 = payload.guild_id
+        guild = self.client.get_guild(guild1)
+        member = guild.get_member(int(payload.user_id))
+        for i in user:
+            roles = i['roles']
+        for i in roles:
+            if payload.emoji.name == i:
+                role = discord.utils.get(guild.roles, id=int(roles[i]))
+                if role in member.roles:
+                    return
+                await member.add_roles(role)
+                return
 
     @commands.group(invoke_without_command = True)
     async def rr(self, ctx):

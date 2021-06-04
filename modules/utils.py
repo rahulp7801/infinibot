@@ -277,6 +277,11 @@ def current_tzar(index:int, arr):
     return embed, current_admin
 
 def add_guild_to_db(guild:discord.Guild):
+    '''
+    :param guild: The guild (server) we need to add to the database.
+    :return:
+    add the guild to the database, but if it already exists just pass (we don't need duplicates)
+    '''
     try:
         name = f"GUILD{guild.id}"
         db = cluster[name]

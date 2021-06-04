@@ -693,6 +693,12 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setupticketing(self, ctx, title = None):
+        name = f"GUILD{ctx.guild.id}"
+        db = cluster[name]
+        collection = db['config']
+        query = {'id': ctx.guild.id}
+        if collection.count_documents(query) != 0:
+            return await ctx.send("You already set up a ticketing message.")
         embed = discord.Embed(color = discord.Color.blue())
         if title is None:
             title = f"{ctx.guild.name} Ticketing"

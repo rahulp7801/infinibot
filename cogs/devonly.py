@@ -59,5 +59,28 @@ class Developers(commands.Cog):
             print(e)
             await ctx.author.send("Something went wrong while shutting down.")
 
+    @commands.command()
+    @commands.check(is_dev)
+    async def servercount(self, ctx):
+        await ctx.send(f"I'm in {len(self.client.guilds)} servers!")
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def broadcast(self, ctx):
+        try:
+            def check(m):
+                return m.author == ctx.author and m.channel == ctx.channel
+
+            await ctx.send(f"Type message now....")
+            message = await self.client.wait_for('message', check=check)
+            for k in self.client.guilds:
+                for channel in k.text_channels:
+                    if channel.permissions_for(k.me).send_messages:
+                        await channel.send(message.content)
+                        break
+            await ctx.message.add_reaction('✅')
+        except Exception as e:
+            print(e)
+
 def setup(client):
     client.add_cog(Developers(client))

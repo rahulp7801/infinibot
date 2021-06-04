@@ -172,9 +172,31 @@ const discordClient = new Discord.Client()
 discordClient.on('ready', () => {
     console.log(`Logged in as ${discordClient.user.tag}!`)
     const startEmbed = new Discord.MessageEmbed().setTitle('JARVIS Started!').setDescription(`JARVIS is now online, logged in as ${discordClient.user.tag}`)
-    discordClient.guilds.cache.get('834855563241455627').channels.cache.get('840386258203312129').send(startEmbed)
+    // discordClient.guilds.cache.get('834855563241455627').channels.cache.get('840386258203312129').send(startEmbed)
 })
 discordClient.login(DISCORD_TOK)
+
+const PREFIX = 'a!';
+const _CMD_HELP = PREFIX + 'vchelp';
+const _CMD_JOIN = PREFIX + 'vcjoin';
+const _CMD_LEAVE = PREFIX + 'vcleave';
+const _CMD_PLAY = PREFIX + 'vcplay';
+const _CMD_PAUSE = PREFIX + 'vcpause';
+const _CMD_RESUME = PREFIX + 'vcresume';
+const _CMD_SHUFFLE = PREFIX + 'vcshuffle';
+const _CMD_FAVORITE = PREFIX + 'vcfavorite';
+const _CMD_UNFAVORITE = PREFIX + 'vcunfavorite';
+const _CMD_FAVORITES = PREFIX + 'vcfavorites';
+const _CMD_GENRE = PREFIX + 'vcgenre';
+const _CMD_GENRES = PREFIX + 'vcgenres';
+const _CMD_CLEAR = PREFIX + 'vcclear';
+const _CMD_RANDOM = PREFIX + 'vcrandom';
+const _CMD_SKIP = PREFIX + 'vcskip';
+const _CMD_QUEUE = PREFIX + 'vcqueue';
+const _CMD_DEBUG = PREFIX + 'vcdebug';
+const _CMD_TEST = PREFIX + 'vchello';
+const _CMD_LANG = PREFIX + 'vclang';
+const PLAY_CMDS = [_CMD_PLAY, _CMD_PAUSE, _CMD_RESUME, _CMD_SHUFFLE, _CMD_SKIP, _CMD_GENRE, _CMD_GENRES, _CMD_RANDOM, _CMD_CLEAR, _CMD_QUEUE, _CMD_FAVORITE, _CMD_FAVORITES, _CMD_UNFAVORITE];
 
 const EMOJI_GREEN_CIRCLE = '🟢'
 const EMOJI_RED_CIRCLE = '🔴'
@@ -193,60 +215,7 @@ const GENRES = {
 
 const guildMap = new Map();
 
-const sql = require('sqlite3')
-function getGuildPrefix(guildID) {
-    const db = new sql.Database('main.sqlite');
-    const result = db.run(`SELECT prefix from ${guildID}`)
-    console.log(result)
-    return "it!"
-}
-
-const PREFIX = getGuildPrefix('834855563241455627');
-const _CMD_HELP = PREFIX + 'vchelp';
-const _CMD_JOIN = PREFIX + 'vcjoin';
-const _CMD_LEAVE = PREFIX + 'vcleave';
-const _CMD_PLAY = PREFIX + 'vcplay';
-const _CMD_PAUSE = PREFIX + 'vcpause';
-const _CMD_RESUME = PREFIX + 'vcresume';
-const _CMD_SHUFFLE = PREFIX + 'vcshuffle';
-const _CMD_FAVORITE = PREFIX + 'vcfavorite';
-const _CMD_UNFAVORITE = PREFIX + 'vcunfavorite';
-const _CMD_FAVORITES = PREFIX + 'vcfavorites';
-const _CMD_GENRE = PREFIX + 'vcgenre';
-const _CMD_GENRES = PREFIX + 'vcgenres';
-const _CMD_CLEAR = PREFIX + 'vcclear';
-const _CMD_RANDOM = PREFIX + 'vcrandom';
-const _CMD_SKIP = PREFIX + 'vcskip';
-const _CMD_QUEUE = PREFIX + 'vcqueue';
-const _CMD_DEBUG = PREFIX + 'vcdebug';
-const _CMD_TEST = PREFIX + 'vchello';
-const _CMD_LANG = PREFIX + 'vclang';
-const PLAY_CMDS = [_CMD_PLAY, _CMD_PAUSE, _CMD_RESUME, _CMD_SHUFFLE, _CMD_SKIP, _CMD_GENRE, _CMD_GENRES, _CMD_RANDOM, _CMD_CLEAR, _CMD_QUEUE, _CMD_FAVORITE, _CMD_FAVORITES, _CMD_UNFAVORITE];
-
-
 discordClient.on('message', async (msg) => {
-    const PREFIX = getGuildPrefix();
-const _CMD_HELP = PREFIX + 'vchelp';
-const _CMD_JOIN = PREFIX + 'vcjoin';
-const _CMD_LEAVE = PREFIX + 'vcleave';
-const _CMD_PLAY = PREFIX + 'vcplay';
-const _CMD_PAUSE = PREFIX + 'vcpause';
-const _CMD_RESUME = PREFIX + 'vcresume';
-const _CMD_SHUFFLE = PREFIX + 'vcshuffle';
-const _CMD_FAVORITE = PREFIX + 'vcfavorite';
-const _CMD_UNFAVORITE = PREFIX + 'vcunfavorite';
-const _CMD_FAVORITES = PREFIX + 'vcfavorites';
-const _CMD_GENRE = PREFIX + 'vcgenre';
-const _CMD_GENRES = PREFIX + 'vcgenres';
-const _CMD_CLEAR = PREFIX + 'vcclear';
-const _CMD_RANDOM = PREFIX + 'vcrandom';
-const _CMD_SKIP = PREFIX + 'vcskip';
-const _CMD_QUEUE = PREFIX + 'vcqueue';
-const _CMD_DEBUG = PREFIX + 'vcdebug';
-const _CMD_TEST = PREFIX + 'vchello';
-const _CMD_LANG = PREFIX + 'vclang';
-const PLAY_CMDS = [_CMD_PLAY, _CMD_PAUSE, _CMD_RESUME, _CMD_SHUFFLE, _CMD_SKIP, _CMD_GENRE, _CMD_GENRES, _CMD_RANDOM, _CMD_CLEAR, _CMD_QUEUE, _CMD_FAVORITE, _CMD_FAVORITES, _CMD_UNFAVORITE];
-
     try {
         if (!('guild' in msg) || !msg.guild) return; // prevent private messages to bot
         const mapKey = msg.guild.id;

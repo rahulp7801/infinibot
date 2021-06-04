@@ -78,7 +78,7 @@ class Developers(commands.Cog):
                     if channel.permissions_for(k.me).send_messages:
                         await channel.send(message.content)
                         break
-            await ctx.message.add_reaction('✅')
+            await message.add_reaction('✅')
         except Exception as e:
             print(e)
 

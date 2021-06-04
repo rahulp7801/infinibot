@@ -25,6 +25,42 @@ class Moderation(commands.Cog):
     def cog_unload(self):
         self.unmute_loop.close()
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        name = f"GUILD{payload.guild_id}"
+        db = cluster[name]
+        collection = db['config']
+        query = {'id': payload.guild_id}
+        if collection.count_documents(query) == 0:
+            return
+        user = collection.find({'msgid': payload.message_id, 'id': payload.guild_id})
+        guild1 = payload.guild_id
+        guild = self.client.get_guild(guild1)
+        member = guild.get_member(int(payload.user_id))
+        channel = payload.channel_id
+        channel = self.client.get_channel(channel)
+        message = await channel.fetch_message(payload.message_id)
+        await message.remove_reaction('🎟️', member)
+        if member.bot:
+            return
+        for i in user:
+            role = i['supportrole']
+        role = discord.utils.get(guild.roles, id=int(role))
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(read_messages=False),
+            guild.me: discord.PermissionOverwrite(read_messages=True),
+            member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+        }
+        num = random.randint(0000, 1002222384031)
+        name = f"open-ticket-{num}"
+        channel = await guild.create_text_channel(name, overwrites=overwrites)
+        await channel.send(f"{member.mention}, you have opened a support ticket. {role.mention}")
+        desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem"
+        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+        embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {member.name}")
+        embed.title = "Support ticket opened"
+        await channel.send(embed=embed)
+
     @tasks.loop(seconds=60)
     async def unmute_loop(self):
         db = cluster['TEMP']
@@ -652,6 +688,102 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             return await ctx.send("I don't have permission to unpin this message.")
         await ctx.message.add_reaction('👍🏽')
+
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild = True)
+    async def setupticketing(self, ctx, title = None):
+        embed = discord.Embed(color = discord.Color.blue())
+        if title is None:
+            title = f"{ctx.guild.name} Ticketing"
+        embed.title = title
+        embed.description = "To create a ticket react with 🎟️!"
+        embed.set_footer(text = "Advanced Ticketing", icon_url=self.client.user.avatar_url)
+        try:
+            await ctx.send("What channel would you like this message to be sent in?\nMention it below.")
+            while True:
+                msg = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout = 120)
+                try:
+                    channel = msg.channel_mentions[0].id
+                    channel = self.client.get_channel(channel)
+                    break
+                except IndexError:
+                    await ctx.send("Did you mention a channel? Try again...")
+                    continue
+            await ctx.send("Would you like a role to be pinged when a ticket gets opened? Reply with `yes` or `no`.")
+            msg = await self.client.wait_for('message', check=lambda m: (m.channel == ctx.channel and m.author == ctx.author and m.content.lower().strip() in ['yes', 'no']), timeout = 120)
+            if msg.content.lower().strip() == 'yes':
+                await ctx.send("Please mention the role below...")
+                while True:
+                    msg = await self.client.wait_for('message', check=lambda m: m.channel == ctx.channel and m.author == ctx.author, timeout = 120)
+                    try:
+                        role = msg.role_mentions[0].id
+                        role = discord.utils.get(ctx.guild.roles, id=role)
+                        break
+                    except IndexError:
+                        await ctx.send("I didn\'t catch a role in that message. Try again?")
+                        continue
+                name = f"GUILD{ctx.guild.id}"
+                db = cluster[name]
+                collection = db['config']
+                message = await channel.send(embed=embed)
+                query = {'id': ctx.guild.id}
+                if collection.count_documents(query) == 0:
+                    collection.insert_one({'id': ctx.guild.id, 'supportrole': role.id, 'msgid':message.id})
+                else:
+                    collection.update_one({'id': ctx.guild.id}, {'$set': {'supportrole': role.id, 'msgid':message.id}})
+                await ctx.send("Success! I have saved your preferences and have sent the message...")
+                await message.add_reaction('🎟️')
+                return
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long.")
+
+    @commands.command(aliases = ['ct'])
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild = True)
+    async def closeticket(self, ctx):
+        name = f"GUILD{ctx.guild.id}"
+        db = cluster[name]
+        collection = db['config']
+        query = {'id': ctx.guild.id}
+        if collection.count_documents(query) == 0:
+            return
+        user = collection.find({'id': ctx.guild.id})
+        for i in user:
+            role = i['supportrole']
+            break
+        if ctx.channel.name.startswith('open-ticket-'):
+            await ctx.trigger_typing()
+            msg = await ctx.reply(
+                f"{ctx.author.mention}, if you would like to save this channel, react with the ✅, otherwise react with the :no_entry: emoji to delete this channel.",
+                mention_author=False)
+            await msg.add_reaction("✅")
+            await msg.add_reaction('⛔')
+            def check(reaction, user):
+                return user == ctx.author and str(reaction.emoji) in ["✅", '⛔']
+
+            reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=60)
+            if reaction.emoji == '⛔':
+                await ctx.trigger_typing()
+                await ctx.channel.send('This channel will be deleted shortly...')
+                await asyncio.sleep(3)
+                await ctx.channel.delete()
+                return
+            elif reaction.emoji == ("✅"):
+                await ctx.trigger_typing()
+                overwrites = {
+                    ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                    ctx.guild.me: discord.PermissionOverwrite(read_messages=False),
+                    # ctx.message.author: discord.PermissionOverwrite(send_messages=True)
+                    ctx.message.author: discord.PermissionOverwrite(read_messages=True, send_messages=False),
+                    role: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+                }
+                await ctx.channel.send('Great, this channel will be saved. Updating overwrites now...')
+                await asyncio.sleep(3)
+                newname = f"closed-ticket"
+                await ctx.channel.edit(overwrites=overwrites, name=newname)
+                return
+
 
 
 

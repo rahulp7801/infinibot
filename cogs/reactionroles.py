@@ -19,6 +19,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
         self.icon = '🔴'
         self.description = 'Reaction roles!'
 
+
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         name = f"GUILD{payload.guild_id}"

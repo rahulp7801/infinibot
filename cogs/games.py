@@ -7,8 +7,16 @@ import random
 from modules import exceptions, utils
 import time
 import os
+from pymongo import MongoClient
+import datetime
 
 aki = Akinator()
+
+with open('mongourl.txt', 'r') as file:
+    url = file.read()
+
+mongo_url = url.strip()
+cluster = MongoClient(mongo_url)
 
 class Games(commands.Cog):
     def __init__(self, client):
@@ -285,6 +293,183 @@ class Games(commands.Cog):
             return await ctx.send("You took too long.")
         except Exception as e:
             print(e)
+
+    @commands.group(invoke_without_command=True)
+    async def typing(self, ctx):
+        await ctx.send(
+            f"{ctx.author.mention}, we are going to be testing your typing speed! Press `y` to confirm. Anything else, and we will end the session.")
+
+        def check(m):
+            return m.author == ctx.author and m.channel == ctx.channel
+
+        message = await self.client.wait_for('message', check=check, timeout=30)
+        if message.content.lower() == 'y':
+            await ctx.send(
+                f'Great, we will be calculating your typing speed.')
+            await asyncio.sleep(1)
+            await ctx.send(
+                f"{ctx.author.mention} Excellent! A test will be available in 5 seconds. Type out the entire sentence in one go.")
+            choices = []
+            for file in os.listdir('./Discord Bot/Typing Test'):
+                if file.endswith(".txt"):
+                    choices.append(file)
+                if len(choices) == 0:
+                    # No typing tests... should never happen
+                    msg = 'I\'m not configured for typing test yet...'
+                    await ctx.send(msg)
+                    return
+            try:
+                randnum = random.randint(0, (len(choices) - 1))
+                randLib = choices[randnum]
+                with open("./Discord Bot/Typing Test/{}".format(randLib),
+                          'r') as myfile:
+                    data = myfile.read()
+                    d2 = data.split()
+                    x = " ".join(d2)
+                    print(x)
+                await asyncio.sleep(2)
+                await ctx.send("Start typing as soon as the words show up.")
+                await asyncio.sleep(2)
+                await ctx.send(f'```{utils.obfuscate(x)}```')
+                start = time.time()
+                message = await self.client.wait_for('message', check=check, timeout=180)
+                if utils.anticheat(message):
+                    return await ctx.send("Why cheating tho man")
+                end = time.time()
+                timtot = (end - start)
+                inp = message.content.split()
+                wpm = round((len(d2) / timtot) * 60)
+                words = len(d2)
+                timetaken = round(timtot)
+                acc = 0
+                for index, k in enumerate(inp):
+                    # print(index, k)
+                    try:
+                        if k == d2[index]:
+                            # print("yes")
+                            acc += 1
+                        else:
+                            # print("no")
+                            continue
+                    except IndexError:
+                        break
+                perccorr = round((acc / len(d2)) * 100)
+                if message.content == x:
+                    if wpm >= 300:
+                        await message.reply(f"{ctx.author.mention}, did you copy paste it smh", mention_author=False)
+                        return
+                    await message.reply("Wow, you got it exactly right!", mention_author=False)
+                    await asyncio.sleep(1)
+                    name = f"GUILD{ctx.guild.id}"
+                    db = cluster[name]
+                    collection = db['typing']
+                    ping_cm = {
+                        "name": ctx.guild.name,
+                        "date": datetime.datetime.utcnow(),
+                        'uid': ctx.author.id,
+                        'accuracy': 100,
+                        'wpm': wpm
+                    }
+                    collection.insert_one(ping_cm)
+                    collection = db['typing']
+                    results = collection.find({'_id': ctx.guild.id})
+                    for i in results:
+                        topscore = i['wpm']
+                    query = {'_id': ctx.guild.id}
+                    if collection.count_documents(query) == 0:
+                        ping_cm = {
+                            "_id": ctx.guild.id,
+                            "name": ctx.guild.name,
+                            "wpm": wpm,
+                            'date': datetime.datetime.utcnow(),
+                            'uid': ctx.author.id,
+                            'accuracy': 100
+                        }
+                        collection.insert_one(ping_cm)
+                        await ctx.send(f"🎉 With {wpm} WPM, you are now first place on the server WPM leaderboard! 🎉 ")
+                    elif topscore == '':
+                        collection.update_one({"_id": ctx.guild.id}, {
+                            "$set": {'wpm': wpm, 'accuracy': 100, 'uid': ctx.guild.id,
+                                     'date': datetime.datetime.utcnow(), 'name': ctx.guild.name}})
+                        await ctx.send(f"🎉 With {wpm} WPM, you are now first place on the server WPM leaderboard! 🎉")
+                    else:
+                        if int(topscore) < int(wpm):
+                            collection.update_one({"_id": ctx.guild.id}, {
+                                "$set": {'wpm': wpm, 'accuracy': 100, 'uid': ctx.author.id,
+                                         'date': datetime.datetime.utcnow(), 'name': ctx.guild.name}})
+                            await ctx.send(
+                                f"🎉 With {wpm} WPM, you are now first place on the server WPM leaderboard! 🎉")
+                        elif int(topscore) == int(wpm):
+                            collection.update_one({"_id": ctx.guild.id}, {
+                                "$set": {'wpm': wpm, 'accuracy': 100, 'uid': ctx.author.id,
+                                         'date': datetime.datetime.utcnow(), 'name': ctx.guild.name}})
+                            await ctx.send(
+                                f"🎉 With {wpm} WPM, you tied first place on the server WPM leaderboard! 🎉 ")
+                        else:
+                            pass
+                    pfp = ctx.author.avatar_url
+                    author = ctx.author
+                    embed = discord.Embed(color=discord.Color.blurple(), timestamp=datetime.datetime.utcnow())
+                    embed.set_author(name=f'{author}\'s typing report', icon_url=pfp)
+                    embed.add_field(name="Accuracy:", value="100%")
+                    embed.add_field(name="Speed:", value=str(wpm) + " WPM", inline=False)
+                    embed.add_field(name="Words Typed:", value=str(words) + " words", inline=False)
+                    embed.add_field(name="Time Taken:", value=str(timetaken) + " seconds", inline=False)
+                    embed.set_footer(text=f"InfiniBot Typing Test | Requested by: {ctx.author}")
+                    await ctx.send(embed=embed)
+                    return
+                elif message.content != x:
+                    if (end - start) <= 10:
+                        await message.reply(
+                            f"{ctx.author.mention}, lmao you copy pasted but still couldn\'t get it right.",
+                            mention_author=False)
+                        return
+                    await message.reply("Unfortunately this wasn\'t 100% accurate.", mention_author=False)
+                    perccorr = round((acc / len(d2)) * 100)
+                    pfp = ctx.author.avatar_url
+                    name = f"GUILD{ctx.guild.id}"
+                    db = cluster[name]
+                    collection = db['typing']
+                    query = {'_id': ctx.guild.id}
+                    if collection.count_documents(query) == 0:
+                        ping_cm = {
+                            "_id": ctx.guild.id,
+                            "name": ctx.guild.name,
+                            "wpm": 0,
+                            'date': datetime.datetime.utcnow(),
+                            'uid': ctx.author.id,
+                            'accuracy': 100
+                        }
+                        collection.insert_one(ping_cm)
+                    else:
+                        ping_cm = {
+                            "name": ctx.guild.name,
+                            "wpm": wpm,
+                            'date': datetime.datetime.utcnow(),
+                            'uid': ctx.author.id,
+                            'accuracy': perccorr
+                        }
+                        collection.insert_one(ping_cm)
+                    # await ctx.send(f"Channel has been set to {channel.mention}.")
+                    author = ctx.author
+                    words = len(d2)
+                    timetaken = round(timtot)
+                    embed = discord.Embed(color=discord.Color.blurple(), timestamp=datetime.datetime.utcnow())
+                    embed.set_author(name=f'{author}\'s typing report', icon_url=pfp)
+                    embed.add_field(name="Accuracy:", value=str(perccorr) + "%")
+                    embed.add_field(name="Speed:", value=str(wpm) + "WPM", inline=False)
+                    embed.add_field(name="Words Typed:", value=str(words) + " words", inline=False)
+                    embed.add_field(name="Time Taken:", value=str(timetaken) + " seconds", inline=False)
+                    embed.set_footer(text=f"InfiniBot Typing Test | Requested by: {ctx.author}")
+                    await asyncio.sleep(1)
+                    await ctx.send(embed=embed)
+                    # await ctx.send(f'{ctx.author.mention}, you were {perccorr}% accurate.')
+                    return
+
+            except asyncio.TimeoutError:
+                await ctx.send(f"{ctx.author.mention}, your typing test has timed out.")
+                return
+
 
 def setup(client):
     client.add_cog(Games(client))

@@ -5,6 +5,8 @@ from pymongo import MongoClient
 from modules import help
 from PIL import Image, ImageDraw, ImageFont
 from io import BytesIO
+import random
+import re
 import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -392,3 +394,23 @@ def add_guild_to_db(guild:discord.Guild):
         x = collection.insert_one(ping_cm)
     except Exception:
         pass
+
+separators = [" ", " ", " ", "  ", "  ", " "]
+font = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ1234567890"
+
+def obfuscate(text):
+    while " " in text:
+        text = text.replace(" ", random.choice(separators), 1)
+    letter_dict = dict(zip("abcdefghijklmnopqrstuvwxyz1234567890", font))
+    return "".join(letter_dict.get(letter, letter) for letter in text)
+
+def anticheat(message):
+    remainder = "".join(
+        set(message.content).intersection(font + "".join(separators))
+    )
+    return remainder != ""
+
+def clean_string(string):
+    string = re.sub('@', '@\u200b', string)
+    string = re.sub('#', '#\u200b', string)
+    return string

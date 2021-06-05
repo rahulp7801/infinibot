@@ -832,9 +832,11 @@ class Events(commands.Cog):
         error = getattr(error, 'original', error)
         if isinstance(error, commands.BotMissingPermissions):
             regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
+            regperm = regperm.replace('_', '')
             await ctx.send(f"I am missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
         if isinstance(error, commands.MissingPermissions):
             regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
+            regperm = regperm.replace('_', '')
             await ctx.send(
                 f"You are missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
         if isinstance(error, commands.CommandOnCooldown):

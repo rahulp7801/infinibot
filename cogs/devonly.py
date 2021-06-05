@@ -117,6 +117,7 @@ class Developers(commands.Cog):
             return
 
     @commands.command()
+    @commands.check(is_dev)
     async def force_reset_guild(self, ctx, guild : discord.Guild= None):
         if guild is None:
             guild = ctx.guild

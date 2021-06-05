@@ -393,8 +393,7 @@ def add_guild_to_db(guild:discord.Guild):
             'wpm': ''
         }
         x = collection.insert_one(ping_cm)
-    except Exception as e:
-        print(e)
+    except Exception:
         pass
 
 separators = [" ", " ", " ", "  ", "  ", " "]

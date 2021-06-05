@@ -586,6 +586,9 @@ class Configuration(commands.Cog):
             return await ctx.reply(
                 f"The prefix `{prefix}` starts with a space. Rerun the command, and don't put a space next time.",
                 mention_author=False)
+        if prefix.mentions:
+            await ctx.send("Bruh seriously")
+            return
         try:
             prefix = prefix.lstrip()
         except Exception as e:
@@ -1765,6 +1768,9 @@ class Configuration(commands.Cog):
                         await message.clear_reactions()
                         await message.edit(embed=embed)
                         await asyncio.sleep(3)
+                        continue
+                    if msg.mentions:
+                        await ctx.send("Bruh seriously")
                         continue
                     else:
                         name = f"GUILD{ctx.guild.id}"

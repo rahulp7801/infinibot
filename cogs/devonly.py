@@ -87,5 +87,12 @@ class Developers(commands.Cog):
         except Exception as e:
             print(e)
 
+    @commands.command(aliases = ['changestatus'])
+    @commands.check(is_dev)
+    async def changepresence(self, ctx, *, presence):
+        await self.client.change_presence(activity=discord.Game(name=presence.strip()))
+        await ctx.message.add_reaction('👍🏽')
+
+
 def setup(client):
     client.add_cog(Developers(client))

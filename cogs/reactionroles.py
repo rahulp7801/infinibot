@@ -159,7 +159,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
             if settingup == 'reaction':
                 await ctx.send(f"Great. Now it is time to assign roles. The format is the name of the emoji"
                                f" and then the role mention, and split the two by a `:`. Unfortunately, we are currently limited to default emojis, "
-                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: : @cool kid```")
+                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: : @cool kid```\n"
+                               f"Type `done` when you are finished.")
                 namearr = []
                 while True: #limit needs to be defined as the number of reaction role messages a server has, but for testing purposes i wont keep it
                     message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 180)
@@ -169,7 +170,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
                         args = message.content.split(':')
                         emoji = (args[0].replace(':', '').strip())
                         xz = discord.utils.get(ctx.guild.roles, id=int(f"{args[1].strip().replace('<@&', '').replace('>', '')}"))
-                        res = utils.rolecheck(xz)
+                        res = utils.rolecheck(xz, ctx)
                         if not res:
                             await ctx.send(res[1])
                             continue
@@ -188,6 +189,10 @@ class rr(commands.Cog, name = "Reaction Roles"):
                         continue
                     except Exception as e:
                         print(e)
+
+                if len(resultarr) == 0:
+                    return await ctx.send("It looks like you did not mention any roles, so I have ended this session.\nDon't try to break me <:AngryInfini:842156223037964299>")
+
                 try:
                     if takecare:
                         arr = []
@@ -206,8 +211,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
                         message = await channel.send(embed=embed)
                         for i in resultarr:
                             await message.add_reaction(str(i[0]))
-                except Exception as e:
-                    print(e)
+                except ValueError as e:
+                    await ctx.send("Unfortunately, we cannot take custom emojis at the moment.")
                 finally:
                     print(mongodict)
                     x = collection.insert_one({'_id': message.id, 'roles': mongodict, 'type': settingup})
@@ -224,7 +229,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     try:
                         role = message.role_mentions[0].id
                         role = discord.utils.get(ctx.guild.roles, id=int(role))
-                        res = utils.rolecheck(role)
+                        res = utils.rolecheck(role, ctx)
                         if not res:
                             await ctx.send(res[1])
                             continue
@@ -241,6 +246,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
                 if len(resultarr) > 25:
                     return await ctx.send(f"Looks like you had too many roles. You had `{len(resultarr)}`, and the limit is 25. \n"
                                           f"Try again with creating a new message per 25.")
+                if len(resultarr) == 0:
+                    return await ctx.send("It looks like you did not mention any roles, so I have ended this session.\nDon't try to break me <:AngryInfini:842156223037964299>")
 
                 try:
                     x = ((len(resultarr)) / 5)

@@ -125,7 +125,7 @@ def channelperms(channel: discord.TextChannel):
     if not z.send_messages or not z.read_messages or not z.embed_links:
         return False
 
-def rolecheck(role:discord.Role):
+def rolecheck(role:discord.Role, ctx):
     '''
     :param role: A role in a server, (welcomerole, muterole, ...)
     :return:
@@ -144,6 +144,11 @@ def rolecheck(role:discord.Role):
         return False, f"{role.mention} is managed by an integration."
     if rolez.is_premium_subscriber():
         return False, f"{role.mention} is only given to server boosters and cannot be manually assigned."
+    if rolez >= ctx.author.top_role:
+        if ctx.author.id == ctx.guild.owner_id:
+            pass
+        else:
+            return False, f"{role.mention} is above your highest role."
     return True
 
 

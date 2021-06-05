@@ -285,7 +285,7 @@ class Configuration(commands.Cog):
 
         if ctx.message.author.guild_permissions.manage_messages:
             rolez = discord.utils.get(ctx.guild.roles, name=role.name)
-            res = utils.rolecheck(rolez)
+            res = utils.rolecheck(rolez, ctx)
             if not res:
                 return await ctx.send(res[1])
             collection = db['config']
@@ -961,7 +961,7 @@ class Configuration(commands.Cog):
                                 await asyncio.sleep(3)
                                 continue
                         else:
-                            res = utils.rolecheck(role)
+                            res = utils.rolecheck(role, ctx)
                             if not res:
                                 desc = res[1]
                                 embed = discord.Embed(description=desc, color = discord.Color.red())
@@ -1183,7 +1183,7 @@ class Configuration(commands.Cog):
                                     await asyncio.sleep(3)
                                     continue
                             else:
-                                res = utils.rolecheck(role)
+                                res = utils.rolecheck(role, ctx)
                                 if not res:
                                     desc = res[1]
                                     embed = discord.Embed(description=desc, color=discord.Color.red())

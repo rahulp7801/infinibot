@@ -732,15 +732,20 @@ class Moderation(commands.Cog):
                 name = f"GUILD{ctx.guild.id}"
                 db = cluster[name]
                 collection = db['config']
-                message = await channel.send(embed=embed)
-                query = {'id': ctx.guild.id}
-                if collection.count_documents(query) == 0:
-                    collection.insert_one({'id': ctx.guild.id, 'supportrole': role.id, 'msgid':message.id})
-                else:
-                    collection.update_one({'id': ctx.guild.id}, {'$set': {'supportrole': role.id, 'msgid':message.id}})
-                await ctx.send("Success! I have saved your preferences and have sent the message...")
-                await message.add_reaction('🎟️')
-                return
+                try:
+                    message = await channel.send(embed=embed)
+                    await message.add_reaction('🎟️')
+                    query = {'id': ctx.guild.id}
+                    if collection.count_documents(query) == 0:
+                        collection.insert_one({'id': ctx.guild.id, 'supportrole': role.id, 'msgid':message.id})
+                    else:
+                        collection.update_one({'id': ctx.guild.id}, {'$set': {'supportrole': role.id, 'msgid':message.id}})
+                    await ctx.send("Success! I have saved your preferences and have sent the message...")
+                    return
+                except Exception as e:
+                    print(e)
+            else:
+                return await ctx.send('Ok, cancelling.')
         except asyncio.TimeoutError:
             return await ctx.send("You took too long.")
 

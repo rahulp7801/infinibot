@@ -551,9 +551,12 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_edit(self, before, after):
+        if before.guild is None: return
         if before.author == self.client.user:
             return
-        if before.author.bot:
+        if before.author.id == self.client.user.id:
+            return
+        if before.clean_content == after.clean_content:
             return
         name = f"GUILD{before.guild.id}"
         db = cluster[name]

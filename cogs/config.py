@@ -212,7 +212,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['antighostping', 'antighost'], help='Setup ghostping detection!')
+    @setup.command(aliases=['antighostping', 'antighost', 'ghostpingdetection'], help='Setup ghostping detection!')
     @commands.has_permissions(manage_guild = True)
     async def ghostping(self, ctx, enab=True):
         name = f"GUILD{ctx.guild.id}"

@@ -48,7 +48,7 @@ def cache_init():
             cache_json = json.loads(cache.read())
         except:
             cache.close()
-            cache = open("cache-2/stats.json", "w")
+            cache = open("cache/stats.json", "w")
             cache.write('{"guilds": []}')
             cache.close()
         if cache_json["guilds"] != None:
@@ -57,7 +57,7 @@ def cache_init():
     else:
         print('Cache Does Not Exist, Creating Cache')
         os.mkdir('cache')
-        cache = open("cache-2/stats.json", "w")
+        cache = open("cache/stats.json", "w")
         cache.write('{"guilds": []}')
         cache.close()
 
@@ -66,6 +66,8 @@ cache = cache_init()
 @client.event
 async def on_message(message):
     if any(x for x in cache if x["guildID"] == message.guild.id):
+        if message.author.bot:
+            return ''
         for h in cache:
             if h["guildID"] == message.guild.id:
                 h["messages"] += 1
@@ -74,13 +76,13 @@ async def on_message(message):
                         if p["uid"] == message.author.id:
                             p["messagesSent"] += 1
                 else:
-                    h["engagedusers"].append({"username":message.author.username + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
+                    h["engagedusers"].append({"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
                 json_cache = open('cache/stats.json', 'w')
                 json_str = '{"guilds":'+ json.dumps(cache)
                 json_cache.write(json_str + '}')
     else:
         print(f"Cache Not Found for Guild {message.guild.id}, Writing it Now")
-        cache.append({"guildID": message.guild.id, "messages": 1, "userdiff": 0, "vcsecdiff": 0, "engagedusers": [{"username":message.author.username + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]}]})
+        cache.append({"guildID": message.guild.id, "messages": 1, "userdiff": 0, "vcsecdiff": 0, "engagedusers": [{"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]}]})
         json_cache = open('cache/stats.json', 'w')
         json_str = '{"guilds":'+ json.dumps(cache)
         json_cache.write(json_str + '}')

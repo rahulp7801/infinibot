@@ -255,6 +255,8 @@ class Events(commands.Cog):
                 count += 1
             collection.update_one({'_id': message.guild.id}, {'$set': {'count': str(count)}})
 
+
+
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         name = f"GUILD{member.guild.id}"
@@ -617,7 +619,7 @@ class Events(commands.Cog):
             return
         pfp = before.author.avatar_url
         channel = self.client.get_channel(id=int(logchannel))
-        desc = f"{before.author.mention} edited a message in {before.channel.mention}! \n\nOriginal: ```{before.content}```\nUpdated: ```{after.content}```"
+        desc = f"{before.author.mention} edited a message in {before.channel.mention}! \n\nOriginal: ```{before.content.replace('`', '').replace('<', '').replace('>', '')}```\nUpdated: ```{after.content.replace('`', '').replace('<', '').replace('>', '')}```"
         embed = discord.Embed(description=f"{desc}\n[Jump to message!]({after.jump_url})", color=discord.Color.red(),
                               timestamp=datetime.datetime.utcnow())
         embed.set_author(name=f"{before.author.name}", icon_url=pfp)

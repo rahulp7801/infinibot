@@ -159,7 +159,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
             if settingup == 'reaction':
                 await ctx.send(f"Great. Now it is time to assign roles. The format is the name of the emoji"
                                f" and then the role mention, and split the two by a `:`. Unfortunately, we are currently limited to default emojis, "
-                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: @cool kid```")
+                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: : @cool kid```")
                 namearr = []
                 while True: #limit needs to be defined as the number of reaction role messages a server has, but for testing purposes i wont keep it
                     message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 180)
@@ -168,12 +168,12 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     try:
                         args = message.content.split(':')
                         emoji = (args[0].replace(':', '').strip())
-                        xz = discord.utils.get(ctx.guild.roles, name=f"{args[1].strip()}")
+                        xz = discord.utils.get(ctx.guild.roles, id=int(f"{args[1].strip().replace('<@&', '').replace('>', '')}"))
                         res = utils.rolecheck(xz)
                         if not res:
                             await ctx.send(res[1])
                             continue
-                        if namearr.count(emoji) == 1:
+                        elif namearr.count(emoji) == 1:
                             await ctx.send("You already set this emoji!")
                             continue
                         await message.add_reaction("👍🏽")
@@ -186,6 +186,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     except IndexError:
                         await ctx.send(f"Did you format that correctly? Try again.")
                         continue
+                    except Exception as e:
+                        print(e)
                 try:
                     if takecare:
                         arr = []

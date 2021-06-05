@@ -291,6 +291,7 @@ def add_guild_to_db(guild:discord.Guild):
     '''
     try:
         name = f"GUILD{guild.id}"
+        print('HERE')
         db = cluster[name]
         collection = db['config']
         ping_cm = {
@@ -392,7 +393,8 @@ def add_guild_to_db(guild:discord.Guild):
             'wpm': ''
         }
         x = collection.insert_one(ping_cm)
-    except Exception:
+    except Exception as e:
+        print(e)
         pass
 
 separators = [" ", " ", " ", "  ", "  ", " "]
@@ -414,3 +416,9 @@ def clean_string(string):
     string = re.sub('@', '@\u200b', string)
     string = re.sub('#', '#\u200b', string)
     return string
+
+def force_reset_guild_db(guild):
+    name = f"GUILD{guild.id}"
+    cluster.drop_database(name)
+    add_guild_to_db(guild)
+    print(f"Success, force resetted {guild.name} ({guild.id})'s information")

@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 import os
+from modules import utils
 
 
 async def is_dev(ctx):
@@ -115,7 +116,14 @@ class Developers(commands.Cog):
             await ctx.send(e)
             return
 
-
+    @commands.command()
+    async def force_reset_guild(self, ctx, guild : discord.Guild= None):
+        if guild is None:
+            guild = ctx.guild
+        utils.force_reset_guild_db(guild)
+        await ctx.send("Success!")
+        owner = guild.owner_id
+        await ctx.send(f"The owner ID is {owner} for reference.")
 
 def setup(client):
     client.add_cog(Developers(client))

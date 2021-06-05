@@ -97,8 +97,6 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_ready(self):
-        aitalk = self.client.get_command('talk')
-        aitalk.update(enabled=False)
         print(f"{self.client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
         while True:
             await asyncio.sleep(10)

@@ -50,3 +50,4 @@
 /token.json
 cogs/eastereggs.py
 /cache
+/cogs/devonly.py

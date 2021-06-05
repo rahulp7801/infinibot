@@ -27,39 +27,42 @@ class Moderation(commands.Cog):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        name = f"GUILD{payload.guild_id}"
-        db = cluster[name]
-        collection = db['config']
-        query = {'id': payload.guild_id}
-        if collection.count_documents(query) == 0:
-            return
-        user = collection.find({'msgid': payload.message_id, 'id': payload.guild_id})
-        guild1 = payload.guild_id
-        guild = self.client.get_guild(guild1)
-        member = guild.get_member(int(payload.user_id))
-        channel = payload.channel_id
-        channel = self.client.get_channel(channel)
-        message = await channel.fetch_message(payload.message_id)
-        await message.remove_reaction('🎟️', member)
-        if member.bot:
-            return
-        for i in user:
-            role = i['supportrole']
-        role = discord.utils.get(guild.roles, id=int(role))
-        overwrites = {
-            guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            guild.me: discord.PermissionOverwrite(read_messages=True),
-            member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        num = random.randint(0000, 1002222384031)
-        name = f"open-ticket-{num}"
-        channel = await guild.create_text_channel(name, overwrites=overwrites)
-        await channel.send(f"{member.mention}, you have opened a support ticket. {role.mention}")
-        desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem"
-        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-        embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {member.name}")
-        embed.title = "Support ticket opened"
-        await channel.send(embed=embed)
+        try:
+            name = f"GUILD{payload.guild_id}"
+            db = cluster[name]
+            collection = db['config']
+            query = {'id': payload.guild_id}
+            if collection.count_documents(query) == 0:
+                return
+            user = collection.find({'msgid': payload.message_id, 'id': payload.guild_id})
+            guild1 = payload.guild_id
+            guild = self.client.get_guild(guild1)
+            member = guild.get_member(int(payload.user_id))
+            channel = payload.channel_id
+            channel = self.client.get_channel(channel)
+            message = await channel.fetch_message(payload.message_id)
+            await message.remove_reaction('🎟️', member)
+            if member.bot:
+                return
+            for i in user:
+                role = i['supportrole']
+            role = discord.utils.get(guild.roles, id=int(role))
+            overwrites = {
+                guild.default_role: discord.PermissionOverwrite(read_messages=False),
+                guild.me: discord.PermissionOverwrite(read_messages=True),
+                member: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+            }
+            num = random.randint(0000, 1002222384031)
+            name = f"open-ticket-{num}"
+            channel = await guild.create_text_channel(name, overwrites=overwrites)
+            await channel.send(f"{member.mention}, you have opened a support ticket. {role.mention}")
+            desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem"
+            embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+            embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {member.name}")
+            embed.title = "Support ticket opened"
+            await channel.send(embed=embed)
+        except UnboundLocalError:
+            pass
 
     @tasks.loop(seconds=60)
     async def unmute_loop(self):

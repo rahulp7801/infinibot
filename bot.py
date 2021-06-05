@@ -8,6 +8,11 @@ import datetime
 from discord_slash import SlashCommand
 from modules import help, utils
 from discord_components import DiscordComponents
+import os.path
+from os import path
+import os
+import json
+import time
 
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = True)
@@ -33,6 +38,54 @@ async def on_ready():
         await asyncio.sleep(10)
         with open('spamdetect.txt', 'r+') as f:
             f.truncate(0)
+
+
+def cache_init():
+    if path.exists("cache/stats.json"):
+        print('Cache Exists')
+        cache = open('cache/stats.json')
+        try:
+            cache_json = json.loads(cache.read())
+        except:
+            cache.close()
+            cache = open("cache/stats.json", "w")
+            cache.write('{"guilds": []}')
+            cache.close()
+        if cache_json["guilds"] != None:
+            print('Cache in Correct Format, Loading Data Complete')
+            return cache_json["guilds"]
+    else:
+        print('Cache Does Not Exist, Creating Cache')
+        os.mkdir('cache')
+        cache = open("cache/stats.json", "w")
+        cache.write('{"guilds": []}')
+        cache.close()
+
+cache = cache_init()
+
+@client.event
+async def on_message(message):
+    if any(x for x in cache if x["guildID"] == message.guild.id):
+        if message.author.bot:
+            return ''
+        for h in cache:
+            if h["guildID"] == message.guild.id:
+                h["messages"] += 1
+                if any(p for p in h["engagedusers"] if p["uid"] == message.author.id):
+                    for p in h["engagedusers"]:
+                        if p["uid"] == message.author.id:
+                            p["messagesSent"] += 1
+                else:
+                    h["engagedusers"].append({"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
+                json_cache = open('cache/stats.json', 'w')
+                json_str = '{"guilds":'+ json.dumps(cache)
+                json_cache.write(json_str + '}')
+    else:
+        print(f"Cache Not Found for Guild {message.guild.id}, Writing it Now")
+        cache.append({"guildID": message.guild.id, "messages": 1, "userdiff": 0, "vcsecdiff": 0, "engagedusers": [{"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]}]})
+        json_cache = open('cache/stats.json', 'w')
+        json_str = '{"guilds":'+ json.dumps(cache)
+        json_cache.write(json_str + '}')
 
 @client.command(help='Gives the ping of the bot!')
 async def ping(ctx):

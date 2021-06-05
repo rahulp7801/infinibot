@@ -22,7 +22,6 @@
 /DJFlame/node_modules
 /DJFlame/data
 /Discord Bot/Website
-/README.md
 /DJFlame/settings.json
 /DJFlame/package-lock.json
 /DJFlame/package.json
@@ -50,3 +49,4 @@
 /cogs/token.json
 /token.json
 cogs/eastereggs.py
+/cache

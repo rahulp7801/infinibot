@@ -863,7 +863,7 @@ class Events(commands.Cog):
         if member.bot:
             return
         reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-        if (reaction and reaction.count > 0 and payload.emoji.name == "⭐"):
+        if (reaction and reaction.count > 5 and payload.emoji.name == "⭐"):
             name = f"GUILD{guild.id}"
             db = cluster[name]
             collection = db['config']
@@ -915,7 +915,7 @@ class Events(commands.Cog):
         if member.bot:
             return
         reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-        if (reaction and reaction.count > 5 and payload.emoji.name == "⭐"):
+        if (reaction and reaction.count > 0 and payload.emoji.name == "⭐"):
             name = f"GUILD{guild.id}"
             db = cluster[name]
             collection = db['config']

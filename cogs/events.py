@@ -905,7 +905,7 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
         member = payload.user_id
-        if payload.guild_id is None or payload.guild_id != 830158413408239646:
+        if payload.guild_id is None:
             return
         guild = self.client.get_guild(payload.guild_id)
         member = guild.get_member(member)
@@ -915,7 +915,7 @@ class Events(commands.Cog):
         if member.bot:
             return
         reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-        if (reaction and reaction.count > 0 and payload.emoji.name == "⭐"):
+        if (reaction and reaction.count > 5 and payload.emoji.name == "⭐"):
             name = f"GUILD{guild.id}"
             db = cluster[name]
             collection = db['config']
@@ -941,7 +941,7 @@ class Events(commands.Cog):
                 embed.set_footer(text=f"Message ID: {reaction.message.id}")
                 if message.attachments:
                     embed.set_image(url=message.attachments[0].proxy_url)
-                stars = reaction.count
+                stars = reaction.count if reaction.count != 0 else '0'
                 res = utils.check_if_starboard_message_exists(message)
                 if not res:
                     msg = await chan.send(content=f"⭐ {stars} {channel.mention}", embed=embed)

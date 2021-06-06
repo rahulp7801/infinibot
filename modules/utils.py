@@ -393,6 +393,11 @@ def add_guild_to_db(guild:discord.Guild):
             'wpm': ''
         }
         x = collection.insert_one(ping_cm)
+        collection = db['starboard']
+        ping_cm = {
+            "_id": guild.id
+        }
+        x = collection.insert_one(ping_cm)
     except Exception:
         pass
 
@@ -421,3 +426,66 @@ def force_reset_guild_db(guild):
     cluster.drop_database(name)
     add_guild_to_db(guild)
     print(f"Success, force resetted {guild.name} ({guild.id})'s information")
+
+def check_if_starboard_message_exists(message:discord.Message):
+    db = cluster[f"GUILD{message.guild.id}"]
+    collection = db['starboard']
+    query = {'ogmsg': message.id}
+    if collection.count_documents(query) == 0:
+        return False
+    return True
+
+async def clear_guild_starboard_messages(guild:discord.Guild):
+    name = f"GUILD{guild.id}"
+    db = cluster[name]
+    collection = db['config']
+    query = {"_id": guild.id}
+    if collection.count_documents(query) == 0:
+        return False, "This guild has not been indexed, contact the developers immediately."
+    else:
+        res = collection.find(query)
+        for result in res:
+            starchannel = result['starchannel']
+        if starchannel == '':
+            return False, "Starboard channel does not exist in the database!"
+        try:
+            chan = guild.get_channel(int(starchannel))
+        except Exception:
+            return False, "I cannot access the starboard channel anymore!"
+        try:
+            await chan.purge(limit = 10000)
+        except:
+            pass
+    collection = db['starboard']
+    db.drop_collection(collection)
+    ping_cm = {
+        "_id": guild.id
+    }
+    x = collection.insert_one(ping_cm)
+    return True
+
+def add_message_to_starboard(message:discord.Message, ogmsg:discord.Message, channel:discord.TextChannel):
+    name = f"GUILD{message.guild.id}"
+    db = cluster[name]
+    collection = db['starboard']
+    ping_cm = {
+        "_id": message.id,
+        'gid' : message.guild.id,
+        'ogmsg' : ogmsg.id,
+        'starboardchannel': channel.id,
+        'ogchannel': ogmsg.channel.id
+    }
+    collection.insert_one(ping_cm)
+
+def fetch_starboard_message(message:discord.Message):
+    name = f"GUILD{message.guild.id}"
+    db = cluster[name]
+    collection = db['starboard']
+    query = {'ogmsg':message.id, 'gid':message.guild.id}
+    result = collection.find(query)
+    for i in result:
+        msg = i['_id']
+        channel = i['starboardchannel']
+
+    return int(msg), int(channel)
+

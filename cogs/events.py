@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from discord.ext import commands
+from discord.ext import commands, flags
 import random
 import datetime
 from pymongo import MongoClient
@@ -126,47 +126,47 @@ class Events(commands.Cog):
         except Exception:
             pass
 
-    @commands.Cog.listener()
-    async def on_reaction_add(self, reaction, user):
-        if user.bot:
-            return
-        if str(reaction) == "⭐":
-            # make it work for images
-            if reaction.count == 1:
-                name = f"GUILD{reaction.message.guild.id}"
-                db = cluster[name]
-                collection = db['config']
-                query = {"_id": reaction.message.guild.id}
-                if collection.count_documents(query) == 0:
-                    return
-                else:
-                    res = collection.find(query)
-                    for result in res:
-                        starchannel = result['starchannel']
-                    if starchannel == '':
-                        return
-                    try:
-                        chan = self.client.get_channel(int(starchannel))
-                    except:
-                        return
-                    if reaction.message.attachments:
-                        desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}\n\n"
-                        embed = discord.Embed(description=desc, color=discord.Color.green(),
-                                              timestamp=datetime.datetime.utcnow())
-                        embed.set_image(url=reaction.message.attachments[0].url)
-                        embed.set_author(name=reaction.message.author.name,
-                                         icon_url=reaction.message.author.avatar_url)
-                        await chan.send(
-                            f"{reaction.message.author.name}'s message in {reaction.message.channel.mention}!")
-                        return await chan.send(embed=embed)
-                    desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}"
-                    embed = discord.Embed(description=f"{desc}\n\n{reaction.message.content}",
-                                          color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-                    embed.set_author(name=reaction.message.author.name, icon_url=reaction.message.author.avatar_url)
-                    embed.set_footer(text=f"Message ID: {reaction.message.id}")
-                    await chan.send(
-                        f"Sent by {reaction.message.author.name} in {reaction.message.channel.mention}!")
-                    await chan.send(embed=embed)
+    # @commands.Cog.listener()
+    # async def on_reaction_add(self, reaction, user):
+    #     if user.bot:
+    #         return
+    #     if str(reaction) == "⭐":
+    #         # make it work for images
+    #         if reaction.count == 1:
+    #             name = f"GUILD{reaction.message.guild.id}"
+    #             db = cluster[name]
+    #             collection = db['config']
+    #             query = {"_id": reaction.message.guild.id}
+    #             if collection.count_documents(query) == 0:
+    #                 return
+    #             else:
+    #                 res = collection.find(query)
+    #                 for result in res:
+    #                     starchannel = result['starchannel']
+    #                 if starchannel == '':
+    #                     return
+    #                 try:
+    #                     chan = self.client.get_channel(int(starchannel))
+    #                 except:
+    #                     return
+    #                 if reaction.message.attachments:
+    #                     desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}\n\n"
+    #                     embed = discord.Embed(description=desc, color=discord.Color.green(),
+    #                                           timestamp=datetime.datetime.utcnow())
+    #                     embed.set_image(url=reaction.message.attachments[0].url)
+    #                     embed.set_author(name=reaction.message.author.name,
+    #                                      icon_url=reaction.message.author.avatar_url)
+    #                     await chan.send(
+    #                         f"{reaction.message.author.name}'s message in {reaction.message.channel.mention}!")
+    #                     return await chan.send(embed=embed)
+    #                 desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}"
+    #                 embed = discord.Embed(description=f"{desc}\n\n{reaction.message.content}",
+    #                                       color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+    #                 embed.set_author(name=reaction.message.author.name, icon_url=reaction.message.author.avatar_url)
+    #                 embed.set_footer(text=f"Message ID: {reaction.message.id}")
+    #                 await chan.send(
+    #                     f"Sent by {reaction.message.author.name} in {reaction.message.channel.mention}!")
+    #                 await chan.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
@@ -850,6 +850,109 @@ class Events(commands.Cog):
         if isinstance(error, discord.Forbidden): return
         if isinstance(error, commands.MemberNotFound): return await ctx.send(str(error))
 
+    @commands.Cog.listener()
+    async def on_raw_reaction_add(self, payload):
+        member = payload.user_id
+        if payload.guild_id is None or payload.guild_id != 830158413408239646:
+            return
+        guild = self.client.get_guild(payload.guild_id)
+        member = guild.get_member(member)
+        channel = payload.channel_id
+        channel = self.client.get_channel(channel)
+        message = await channel.fetch_message(payload.message_id)
+        if member.bot:
+            return
+        reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
+        if (reaction and reaction.count > 0 and payload.emoji.name == "⭐"):
+            name = f"GUILD{guild.id}"
+            db = cluster[name]
+            collection = db['config']
+            query = {"_id": guild.id}
+            if collection.count_documents(query) == 0:
+                return
+            else:
+                res = collection.find(query)
+                for result in res:
+                    starchannel = result['starchannel']
+                if starchannel == '':
+                    return
+                if message.channel.id == starchannel:
+                    return
+                try:
+                    chan = self.client.get_channel(int(starchannel))
+                except Exception:
+                    return
+                desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}"
+                embed = discord.Embed(description=f"{reaction.message.clean_content}\n{desc}",
+                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+                embed.set_author(name=reaction.message.author.name, icon_url=reaction.message.author.avatar_url)
+                embed.set_footer(text=f"Message ID: {reaction.message.id}")
+                if message.attachments:
+                    embed.set_image(url=message.attachments[0].proxy_url)
+                stars = reaction.count
+                res = utils.check_if_starboard_message_exists(message)
+                if not res:
+                    msg = await chan.send(content=f"⭐ {stars} {channel.mention}", embed=embed)
+                    print(msg, message)
+                    return utils.add_message_to_starboard(msg, message, msg.channel)
+                else:
+                    msg, chanel = utils.fetch_starboard_message(message)
+                    print(msg)
+                    chanel = self.client.get_channel(chanel)
+                    msg = await chanel.fetch_message(msg)
+                    await msg.edit(content=f"⭐ {stars} {channel.mention}", embed=embed)
+
+    @commands.Cog.listener()
+    async def on_raw_reaction_remove(self, payload):
+        member = payload.user_id
+        if payload.guild_id is None or payload.guild_id != 830158413408239646:
+            return
+        guild = self.client.get_guild(payload.guild_id)
+        member = guild.get_member(member)
+        channel = payload.channel_id
+        channel = self.client.get_channel(channel)
+        message = await channel.fetch_message(payload.message_id)
+        if member.bot:
+            return
+        reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
+        if (reaction and reaction.count > 0 and payload.emoji.name == "⭐"):
+            name = f"GUILD{guild.id}"
+            db = cluster[name]
+            collection = db['config']
+            query = {"_id": guild.id}
+            if collection.count_documents(query) == 0:
+                return
+            else:
+                res = collection.find(query)
+                for result in res:
+                    starchannel = result['starchannel']
+                if starchannel == '':
+                    return
+                if message.channel.id == starchannel:
+                    return
+                try:
+                    chan = self.client.get_channel(int(starchannel))
+                except Exception:
+                    return
+                desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}"
+                embed = discord.Embed(description=f"{reaction.message.clean_content}\n{desc}",
+                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+                embed.set_author(name=reaction.message.author.name, icon_url=reaction.message.author.avatar_url)
+                embed.set_footer(text=f"Message ID: {reaction.message.id}")
+                if message.attachments:
+                    embed.set_image(url=message.attachments[0].proxy_url)
+                stars = reaction.count
+                res = utils.check_if_starboard_message_exists(message)
+                if not res:
+                    msg = await chan.send(content=f"⭐ {stars} {channel.mention}", embed=embed)
+                    print(msg, message)
+                    return utils.add_message_to_starboard(msg, message, msg.channel)
+                else:
+                    msg, chanel = utils.fetch_starboard_message(message)
+                    print(msg)
+                    chanel = self.client.get_channel(chanel)
+                    msg = await chanel.fetch_message(msg)
+                    await msg.edit(content=f"⭐ {stars} {channel.mention}", embed=embed)
 
 def setup(client):
     client.add_cog(Events(client))

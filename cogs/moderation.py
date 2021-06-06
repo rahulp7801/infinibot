@@ -798,7 +798,13 @@ class Moderation(commands.Cog):
                 await ctx.channel.edit(overwrites=overwrites, name=newname)
                 return
 
-
+    @commands.command(name = 'clearstarboard')
+    @commands.has_permissions(manage_guild = True)
+    async def clear_starboard(self, ctx):
+        res = await utils.clear_guild_starboard_messages(ctx.guild)
+        if not res:
+            return await ctx.send(str(res[1]))
+        await ctx.message.add_reaction('✅')
 
 
 def setup(client):

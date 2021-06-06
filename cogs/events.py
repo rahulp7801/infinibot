@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from discord.ext import commands, flags
+from discord.ext import commands, flags, tasks
 import random
 import datetime
 from pymongo import MongoClient
@@ -21,6 +21,7 @@ cluster = MongoClient(mongo_url)
 class Events(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.change_status.start()
 
 
     async def servercaptcha(self, member: discord.Member):
@@ -95,6 +96,9 @@ class Events(commands.Cog):
                 f"{member.name}, you did not answer within 5 minutes, so you must ask a server moderator to manually give you a role.")
             return False
 
+    def cog_unload(self):
+        self.change_status.close()
+
     @commands.Cog.listener()
     async def on_ready(self):
         print(f"{self.client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
@@ -102,6 +106,28 @@ class Events(commands.Cog):
             await asyncio.sleep(10)
             with open('spamdetect.txt', 'r+') as f:
                 f.truncate(0)
+
+    @tasks.loop(seconds=30)
+    async def change_status(self):
+        choices = [
+            'with lines of code',
+            'Testing new InfiniBot features!',
+            'VALORANT',
+            f'watching {len(self.client.guilds)} server{"" if len(self.client.guilds) == 1 else "s"}',
+            'samosa gang gang IV out now',
+            f'%help | {self.client.user.name} Universe',
+            "New features coming soon!",
+            "Improving speed and efficiency",
+            'Google Chrome',
+            "With the API"
+        ]
+        status = random.choice(choices)
+        await self.client.change_presence(activity=discord.Game(name=status))
+
+    @change_status.before_loop
+    async def before_change_status(self):
+        await self.client.wait_until_ready()
+
 
 
     @commands.Cog.listener()

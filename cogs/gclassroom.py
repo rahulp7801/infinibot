@@ -12,6 +12,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
+
 import aiohttp
 
 with open('./mongourl.txt', 'r') as file:
@@ -33,24 +34,53 @@ class GoogleC(commands.Cog):
     @tasks.loop(minutes = 5)
     async def check_for_announcements(self):
         print("Checking for announcements...")
+        past = datetime.datetime.utcnow().timestamp()
         db = cluster['GOOGLECLASSROOM']
         collection = db['guilds']
         arr = []
+        creds = None
         res = collection.find()
         for i in res:
-            arr.append((i['classid'], i['gid'], i['channel']))
-            async with aiohttp.ClientSession() as session:
-                params = {
-                    'orderBy': 'updateTime',
-                    'pageSize': 5
-                }
+            try:
+                classid = i["classid"]
+                arr.append((i['classid'], i['gid'], i['channel']))
                 if os.path.exists('token.json'):
                     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+                if not creds or not creds.valid:
+                    if creds and creds.expired and creds.refresh_token:
+                        creds.refresh(Request())
+                    else:
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                            'credentials.json', SCOPES)
+                        creds = flow.run_local_server(port=0, open_browser=False)
+                    # Save the credentials for the next run
+                    try:
+                        with open('token.json', 'w') as token:
+                            token.write(creds.to_json())
+                    except Exception as e:
+                        raise ClassroomError(e)
+
                 service = build('classroom', 'v1', credentials=creds)
-                url = f'https://classroom.googleapis.com/v1/courses/{i["classid"]}/announcements'
-                async with session.get(url, params=params) as response:
-                    data = await    response.json()
-                    print(data)
+                results = service.courses().announcements().list(pageSize = 10, courseId = 154913452330).execute()
+                courses = results.get('announcements', [])
+                if not courses:
+                    print('this')
+                    continue
+                for k in courses:
+                    print(k)
+                    if k["state"] == 'PUBLISHED':
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25300)
+                        print(x)
+                        if x and k["assigneeMode"] == 'ALL_STUDENTS':
+                            embed = discord.Embed(color = discord.Color.green())
+                            embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                            embed.timestamp = pd.to_datetime(k["creationTime"])
+                            channel = i["channel"]
+                            channel = self.client.get_channel(channel)
+                            await channel.send(embed=embed)
+
+            except Exception as e:
+                print(e)
 
     @check_for_announcements.before_loop
     async def before_check_announcements(self):

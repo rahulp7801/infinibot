@@ -342,34 +342,34 @@ class Misc(commands.Cog, name="Miscellaneous"):
         res = utils.messagetoembed(message)
         await ctx.send(embed=res)
 
-    @commands.command()
-    async def talk(self, ctx):
-        if ctx.author.bot:
-            return
-        try:
-            def check(m):
-                return m.author == ctx.author and m.channel == ctx.channel
-            await ctx.send(
-                f'{ctx.author.mention}, before I start I\'d like to go over a few things. When you wish to end the chat session, type `bye`. \n'
-                f'I only wait for 30 seconds between messages. If you don\'t respond, I will end the session on my own.\n'
-                f'Finally, press `y` to confirm you want to talk. Anything else, and the chat session ends.')
-            message = await self.client.wait_for('message', check=check, timeout=30)
-            if message.content.lower().strip() == 'y':
-                await ctx.send(f"Great {ctx.author.mention}, let's get to it. What's on your mind?")
-                while message.content.lower().strip() != "bye":
-                    message = await self.client.wait_for('message', check=check, timeout=30)
-                    response = await rs.get_ai_response(message.content.strip())
-                    await message.reply(response)
-                    if message.content.lower() == 'bye':
-                        await ctx.send(f'{ctx.author.mention}, we will meet again soon')
-                        return
-
-            else:
-                await ctx.send(f'{ctx.author.mention}, we will meet again soon')
-                return
-        except asyncio.TimeoutError:
-            await ctx.reply("Your chat session has timed out. Use the command again to chat.")
-            return
+    # # @commands.command()
+    # # async def talk(self, ctx):
+    # #     if ctx.author.bot:
+    # #         return
+    # #     try:
+    # #         def check(m):
+    # #             return m.author == ctx.author and m.channel == ctx.channel
+    # #         await ctx.send(
+    # #             f'{ctx.author.mention}, before I start I\'d like to go over a few things. When you wish to end the chat session, type `bye`. \n'
+    # #             f'I only wait for 30 seconds between messages. If you don\'t respond, I will end the session on my own.\n'
+    # #             f'Finally, press `y` to confirm you want to talk. Anything else, and the chat session ends.')
+    # #         message = await self.client.wait_for('message', check=check, timeout=30)
+    # #         if message.content.lower().strip() == 'y':
+    # #             await ctx.send(f"Great {ctx.author.mention}, let's get to it. What's on your mind?")
+    # #             while message.content.lower().strip() != "bye":
+    # #                 message = await self.client.wait_for('message', check=check, timeout=30)
+    # #                 response = await rs.get_ai_response(message.content.strip())
+    # #                 await message.reply(response)
+    # #                 if message.content.lower() == 'bye':
+    # #                     await ctx.send(f'{ctx.author.mention}, we will meet again soon')
+    # #                     return
+    #
+    #         else:
+    #             await ctx.send(f'{ctx.author.mention}, we will meet again soon')
+    #             return
+    #     except asyncio.TimeoutError:
+    #         await ctx.reply("Your chat session has timed out. Use the command again to chat.")
+    #         return
 
     @commands.command()
     async def activities(self, ctx, member:discord.Member):
@@ -380,6 +380,18 @@ class Misc(commands.Cog, name="Miscellaneous"):
         html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query}")
         vidid = re.findall(r"watch\?v=(\S{11})", html.read().decode())
         await ctx.send(f"https://www.youtube.com/watch?v={vidid[0]}")
+
+    @commands.command()
+    async def echo(self, ctx, chanel: discord.TextChannel, *, message="Echo"):
+        channel = chanel.id
+        schannel = self.client.get_channel(channel)
+        if not channel.permissions_for(ctx.message.author).send_messages: #oops ppl abused this
+            return await ctx.reply(f'You don\'t have permission to send messages in {chanel.mention}!', mention_author = False)
+        await schannel.send(content=message, allowed_mentions=discord.AllowedMentions.none())
+        await ctx.message.add_reaction(str('✅'))
+        await asyncio.sleep(2)
+        await ctx.message.delete()
+
 
 def setup(client):
     client.add_cog(Misc(client))

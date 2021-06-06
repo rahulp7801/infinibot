@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import datetime
 import os
+from modules import utils
 
 
 async def is_dev(ctx):
@@ -86,6 +87,44 @@ class Developers(commands.Cog):
             await message.add_reaction('✅')
         except Exception as e:
             print(e)
+
+    @commands.command(aliases = ['changestatus'])
+    @commands.check(is_dev)
+    async def changepresence(self, ctx, *, presence):
+        await self.client.change_presence(activity=discord.Game(name=presence.strip()))
+        await ctx.message.add_reaction('👍🏽')
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def pm_user(self, ctx, user:discord.User, *, message = None):
+        if message is None:
+            await ctx.send("What would you like your message to be?")
+            while True:
+                message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel)
+                message = message.content
+                break
+        if len(message.content) > 2000:
+            await ctx.send(
+                f"That message was too long! Reduce your message by {len(message) - 2000} character{'' if len(message) == 2001 else 's'}!\nTry again...")
+            return
+        try:
+            await user.send(message)
+            await ctx.message.add_reaction('✅')
+        except discord.Forbidden:
+            return await ctx.send(f"It looks like {user.mention}\'s DMs are off. :(")
+        except Exception as e:
+            await ctx.send(e)
+            return
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def force_reset_guild(self, ctx, guild : discord.Guild= None):
+        if guild is None:
+            guild = ctx.guild
+        utils.force_reset_guild_db(guild)
+        await ctx.send("Success!")
+        owner = guild.owner_id
+        await ctx.send(f"The owner ID is {owner} for reference.")
 
 def setup(client):
     client.add_cog(Developers(client))

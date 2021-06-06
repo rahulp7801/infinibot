@@ -21,6 +21,8 @@ class Afk(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message):
+        if not message.guild:
+            return
         if message.mentions:
             name = f"GUILD{message.guild.id}"
             db = cluster[name]

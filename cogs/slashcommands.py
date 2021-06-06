@@ -45,24 +45,6 @@ url_shortener = pyshorteners.Shortener()
 class Slash(commands.Cog):
     def __init__(self, client):
         self.client = client
-    @commands.Cog.listener()
-    async def on_ready(self):
-        choices = [
-            'with lines of code',
-            'Testing new InfiniBot features!',
-            'VALORANT',
-            f'watching {len(self.client.guilds)} server{"" if len(self.client.guilds) == 1 else "s"}',
-            'samosa gang gang IV out now',
-            f'%help | {self.client.user.name} Universe',
-            "New features coming soon!",
-            "Improving speed and efficiency",
-            'Google Chrome',
-            "With the API"
-        ]
-        while True:
-            status = random.choice(choices)
-            await self.client.change_presence(activity=discord.Game(name=status))
-            await asyncio.sleep(30)
 
     @cog_ext.cog_slash(name='emojify', description='Emojify a phrase')
     async def emojify(self, ctx:SlashContext, *, text):

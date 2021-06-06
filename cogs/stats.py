@@ -10,6 +10,8 @@ from os import path
 import os
 import json
 import time
+import datetime
+import pandas as pd
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -87,6 +89,98 @@ class Stats(commands.Cog):
             json_cache = open('cache/stats.json', 'w')
             json_str = '{"guilds":'+ json.dumps(cache)
             json_cache.write(json_str + '}')
+    
+    @commands.Cog.listener()
+    async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
+        name = f"GUILD{member.guild.id}"
+        db = cluster[name]
+        collection = db['config']
+        res = collection.find({'_id': member.guild.id})
+        for i in res:
+            logenab = i['logging']
+            logchannel = i['logchannel']
+        if not before.channel and after.channel:
+            print('User Joined VC, Adding to Stats')
+        elif before.channel and after.channel:
+            if before.channel == after.channel:
+                return
+            collection = db['serverstats']
+            res = collection.find({'_id': member.id})
+            for i in res:
+                starttime = i['vcstart']
+            x = pd.to_datetime(starttime)
+            z = (abs(datetime.datetime.utcnow() - x))
+            vcsecs = int(z.total_seconds())
+            collection = db['serverstats']
+            res = collection.find({'_id': member.guild.id})
+            for i in res:
+                vcmins = i['vcsecs']
+            collection = db['serverstats']
+            ping_cm = {
+                "_id": member.id,
+                "name": member.name,
+                "guild": member.guild.id,
+                "gname": member.guild.name,
+                "vcstart": datetime.datetime.utcnow()
+            }
+            if logchannel == '' or logenab == '':
+                pass
+            else:
+                desc = f"{member.mention} left `{before.channel.name}`"
+                embed = discord.Embed(description=desc, color=discord.Color.red(), timestamp=datetime.datetime.utcnow())
+                embed.set_author(name=f"{member.display_name} has left a voice channel!", icon_url=member.avatar_url)
+                embed.set_thumbnail(url=member.guild.icon_url)
+                channel = self.client.get_channel(int(logchannel))
+                await channel.send(embed=embed)
+                desc = f"{member.mention} joined `{after.channel.name}`"
+                embed = discord.Embed(description=desc, color=discord.Color.green(),
+                                      timestamp=datetime.datetime.utcnow())
+                embed.set_author(name=f"{member.display_name} has joined a voice channel!", icon_url=member.avatar_url)
+                embed.set_thumbnail(url=member.guild.icon_url)
+                channel = self.client.get_channel(int(logchannel))
+                await channel.send(embed=embed)
+        elif before.channel and not after.channel:
+            collection = db['serverstats']
+            res = collection.find({'_id': member.id})
+            vcsecs = 0
+            for i in res:
+                starttime = i['vcstart']
+                x = pd.to_datetime(starttime)
+                z = (abs(datetime.datetime.utcnow() - x))
+                vcsecs = int(z.total_seconds())
+            collection = db['serverstats']
+            res = collection.find({'_id': member.guild.id})
+            for i in res:
+                vcmins = i['vcsecs']
+            if vcmins == "":
+                if any(x for x in cache if x["guildID"] == member.guild.id):
+                    for h in cache:
+                        if h["guildID"] == member.guild.id:
+                            h["vcsecdiff"] += vcsecs
+                            json_cache = open('cache/stats.json', 'w')
+                            json_str = '{"guilds":'+ json.dumps(cache)
+                            json_cache.write(json_str + '}')
+                else:
+                    print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
+                    cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": vcsecs, "engagedusers": []})
+                    json_cache = open('cache/stats.json', 'w')
+                    json_str = '{"guilds":'+ json.dumps(cache)
+                    json_cache.write(json_str + '}')
+            else:
+                if any(x for x in cache if x["guildID"] == member.guild.id):
+                    for h in cache:
+                        if h["guildID"] == member.guild.id:
+                            h["vcsecdiff"] += int(vcmins) + vcsecs
+                            json_cache = open('cache/stats.json', 'w')
+                            json_str = '{"guilds":'+ json.dumps(cache)
+                            json_cache.write(json_str + '}')
+                else:
+                    print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
+                    cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": int(vcmins) + vcsecs, "engagedusers": []})
+                    json_cache = open('cache/stats.json', 'w')
+                    json_str = '{"guilds":'+ json.dumps(cache)
+                    json_cache.write(json_str + '}')
+
 
 def cache_init():
     if path.exists("cache/stats.json"):

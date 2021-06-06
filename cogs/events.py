@@ -960,11 +960,13 @@ class Events(commands.Cog):
                     chan = self.client.get_channel(int(starchannel))
                 except Exception:
                     return
-                desc = f"{f'[Jump to the message!]({reaction.message.jump_url})'}"
-                embed = discord.Embed(description=f"{reaction.message.clean_content}\n{desc}",
-                                      color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+                embed = discord.Embed(color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
                 embed.set_author(name=reaction.message.author.name, icon_url=reaction.message.author.avatar_url)
                 embed.set_footer(text=f"Message ID: {reaction.message.id}")
+                if not message.content and not message.attachments:
+                    return
+                if message.content:
+                    embed.description = f"{reaction.message.clean_content}\n{f'[Jump to the message!]({reaction.message.jump_url})'}"
                 if message.attachments:
                     embed.set_image(url=message.attachments[0].proxy_url)
                 stars = reaction.count if reaction.count != 0 else '0'

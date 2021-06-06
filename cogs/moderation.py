@@ -46,7 +46,8 @@ class Moderation(commands.Cog):
                 return
             for i in user:
                 role = i['supportrole']
-            role = discord.utils.get(guild.roles, id=int(role))
+            if role == '': role = None
+            else: role = discord.utils.get(guild.roles, id=int(role))
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(read_messages=False),
                 guild.me: discord.PermissionOverwrite(read_messages=True),
@@ -55,7 +56,7 @@ class Moderation(commands.Cog):
             num = random.randint(0000, 1002222384031)
             name = f"open-ticket-{num}"
             channel = await guild.create_text_channel(name, overwrites=overwrites)
-            await channel.send(f"{member.mention}, you have opened a support ticket. {role.mention}")
+            await channel.send(f"{member.mention}, you have opened a support ticket. {role.mention if role is not None else ''}")
             desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem"
             embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
             embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {member.name}")
@@ -805,6 +806,11 @@ class Moderation(commands.Cog):
         if not res:
             return await ctx.send(str(res[1]))
         await ctx.message.add_reaction('✅')
+
+    @commands.command()
+    @commands.has_permissions(manage_guild = True)
+    async def closealltickets(self, ctx):
+        pass
 
 
 def setup(client):

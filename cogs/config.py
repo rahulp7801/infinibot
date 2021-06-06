@@ -74,8 +74,17 @@ class Configuration(commands.Cog):
     async def welcomechannel(self, ctx, channel: discord.TextChannel = None):
         db = cluster[f'GUILD{ctx.guild.id}']
         if channel is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                welcomechannel = i['welcomechannel']
+            if welcomechannel == '':
+                return await ctx.send("This server has not set a welcome channel yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomechannel': ''}})
+            return await ctx.send("The welcome channel for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             res = utils.channelperms(channel)
             if not res:
@@ -108,8 +117,17 @@ class Configuration(commands.Cog):
     async def welcometext(self, ctx, *, text: str = None):
         db=cluster[f'GUILD{ctx.guild.id}']
         if text is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                welcometext = i['welcomemsg']
+            if welcometext == '':
+                return await ctx.send("This server has not set a welcome message yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomemsg': ''}})
+            return await ctx.send("The welcome message for this server has successfully been removed.")
         membercount = ctx.guild.member_count
         member = ctx.author.mention
         user = ctx.author.name
@@ -140,8 +158,17 @@ class Configuration(commands.Cog):
     async def onjoinnick(self, ctx, *, nick=None):
         db = cluster[f"GUILD{ctx.guild.id}"]
         if nick is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                welcomenick = i['welcomenick']
+            if welcomenick == '':
+                return await ctx.send("This server has not set a welcome nickname yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': ''}})
+            return await ctx.send("The welcome nickname for this server has successfully been removed.")
         if len(nick.strip()) > 20:
             return await ctx.send(f"I cannot set this nickname due to Discord limitations.")
         collection = db['config']
@@ -164,8 +191,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                mcip = i['mcip']
+            if mcip == '':
+                return await ctx.send("This server has not set a Minecraft IP yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'mcip': ''}})
+            return await ctx.send("The Minecraft IP for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
             query = {'_id': ctx.guild.id}
@@ -190,8 +226,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                levels = i['levelups']
+            if levels == '':
+                return await ctx.send("This server has not set up leveling yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'levelups': ''}})
+            return await ctx.send("Leveling for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
             query = {'_id': ctx.guild.id}
@@ -218,8 +263,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                ghost = i['ghostpingon']
+            if ghost == '':
+                return await ctx.send("This server has not set up ghost ping detection yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'ghostpingon': ''}})
+            return await ctx.send("Ghost ping detection for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
             query = {'_id': ctx.guild.id}
@@ -246,8 +300,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                privmsg = i['priv_welcomemsg']
+            if privmsg == '':
+                return await ctx.send("This server has not set a private welcome message yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'priv_welcomemsg': ''}})
+            return await ctx.send("The private welcome message for this server has successfully been removed.")
         membercount = ctx.guild.member_count
         mention = ctx.author.mention
         user = ctx.author.name
@@ -279,9 +342,18 @@ class Configuration(commands.Cog):
     async def welcomerole(self, ctx, *, role: discord.Role = None):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
+        collection = db['config']
         if role is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            query = {'_id':ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                welcomerole = i['welcomerole']
+            if welcomerole == '':
+                return await ctx.send("This server has not set a welcome role yet!")
+            collection.update_one({'_id':ctx.guild.id}, {'$set' : {'welcomerole' : ''}})
+            return await ctx.send("The welcomerole for this server has successfully been removed.")
 
         if ctx.message.author.guild_permissions.manage_messages:
             rolez = discord.utils.get(ctx.guild.roles, name=role.name)
@@ -317,9 +389,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(enab).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
-
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                blak = i['blacklistenab']
+            if blak == '':
+                return await ctx.send("This server has not set up a blacklist yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'blacklistenab': ''}})
+            return await ctx.send("The blacklist for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
             query = {'_id': ctx.guild.id}
@@ -344,9 +424,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if text is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
-
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                leavemsg = i['leavemsg']
+            if leavemsg == '':
+                return await ctx.send("This server has not set a leave message yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'leavemsg': ''}})
+            return await ctx.send("The leave message for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             collection = db['config']
             query = {'_id': ctx.guild.id}
@@ -385,9 +473,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if channel is None:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
-
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                star = i['starchannel']
+            if star == '':
+                return await ctx.send("This server has not set a starboard channel yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'starchannel': ''}})
+            return await ctx.send("The starboard channel for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
             res = utils.channelperms(channel)
             if not res:
@@ -417,8 +513,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(text).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                capt = i['captchaon']
+            if capt == '':
+                return await ctx.send("This server has not set up captcha yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'captchaon': ''}})
+            return await ctx.send("Server captcha for this server has successfully been removed.")
         if text is None:
             return
         if ctx.message.author.guild_permissions.manage_messages:
@@ -446,8 +551,17 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(text).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                spamd = i['spamdetect']
+            if spamd == '':
+                return await ctx.send("This server has not set up spam detection yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'spamdetect': ''}})
+            return await ctx.send("Spam detection for this server has successfully been removed.")
         if text is None:
             return
         if ctx.message.author.guild_permissions.manage_messages:
@@ -475,8 +589,18 @@ class Configuration(commands.Cog):
         name = f"GUILD{ctx.guild.id}"
         db = cluster[name]
         if str(setup).lower() not in ['true', 'false']:
-            embed = utils.errmsg(ctx)
-            return await ctx.send(embed=embed)
+            collection = db['config']
+            query = {'_id': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                return await ctx.send("An error occurred, contact the developers immediately.")
+            res = collection.find(query)
+            for i in res:
+                logchannel = i['logchannel']
+                logging = i['logging']
+            if logchannel == '' or logging == '':
+                return await ctx.send("This server has not set up logging yet!")
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'logging': ''}})
+            return await ctx.send("Logging for this server has successfully been removed.")
         if channel is None:
             if not setup:
                 collection = db['config']

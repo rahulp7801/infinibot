@@ -23,7 +23,7 @@ mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
 SCOPES = ['https://www.googleapis.com/auth/classroom.course-work.readonly', 'https://www.googleapis.com/auth/classroom.courses.readonly', 'https://www.googleapis.com/auth/classroom.announcements.readonly', 'https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly', 'https://www.googleapis.com/auth/classroom.coursework.me']
-
+AUTHLINK = 'https://accounts.google.com/o/oauth2/auth/oauthchooseaccount?response_type=code&client_id=250731096823-ic06oic089jcv0kgnck91dmhcn0jg0tf.apps.googleusercontent.com&redirect_uri=http%3A%2F%2Flocalhost%3A55342%2F&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclassroom.course-work.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclassroom.courses.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclassroom.announcements.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclassroom.courseworkmaterials.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fclassroom.coursework.me&state=X5AHIXL7KxCC27TcxbE8PM8BqNOyUE&access_type=offline&flowName=GeneralOAuthFlow'
 
 class ErrorMessage(Exception):
     pass
@@ -227,7 +227,7 @@ async def send_command_help(ctx):
 async def send_group_help(ctx, group):
     await ctx.bot.help_command.send_group_help(group)
 
-def get_classes(ctx, limit :int= 10):
+async def get_classes(ctx, limit :int= 10):
     '''
     :param ctx: Context of the message
     :param limit: The limit of classes we want to retrieve information from
@@ -247,7 +247,10 @@ def get_classes(ctx, limit :int= 10):
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
-            creds = flow.run_local_server(port=0)
+            embed = discord.Embed(color = discord.Color.green())
+            embed.description = f"Please sign in [here]({AUTHLINK})\n"
+            await ctx.send(embed=embed)
+            creds = flow.run_local_server(port=0, open_browser=False)
         # Save the credentials for the next run
         try:
             with open('token.json', 'w') as token:
@@ -488,4 +491,11 @@ def fetch_starboard_message(message:discord.Message):
         channel = i['starboardchannel']
 
     return int(msg), int(channel)
+
+async def set_classroom_class(ctx, guild:discord.Guild):
+    res, service = await get_classes(ctx)
+    print(res, service)
+    if len(res) == 1:
+        return res[0]
+    return res
 

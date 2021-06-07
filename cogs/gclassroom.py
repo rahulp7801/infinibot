@@ -71,6 +71,8 @@ class GoogleC(commands.Cog):
                     if k["state"] == 'PUBLISHED':
                         x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
                         print(x)
+                        if not x:
+                            break
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
                             embed = discord.Embed(color = discord.Color.green())
                             embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
@@ -78,6 +80,8 @@ class GoogleC(commands.Cog):
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
+                            continue
+
 
             except Exception as e:
                 print(e)
@@ -126,12 +130,13 @@ class GoogleC(commands.Cog):
             print(e)
 
     @commands.command()
-    async def test2(self, ctx):
+    @commands.has_permissions(manage_guild = True)
+    async def setclass(self, ctx):
         res = await utils.set_classroom_class(ctx, ctx.guild)
         arr = []
         for i, k in enumerate(res):
             arr.append(f"{i + 1}. {res[i]['name']}")
-        await ctx.send('```' + '\n'.join(arr) + '\nRespond with the number of the class you would like to set.' + '```')
+        await ctx.send('```' + '\n'.join(arr) + '\n\nRespond with the number of the class you would like to set.' + '```')
         counter = 0
         while True:
             if counter > 5:

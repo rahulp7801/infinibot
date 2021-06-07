@@ -812,6 +812,32 @@ class Moderation(commands.Cog):
     async def closealltickets(self, ctx):
         pass
 
+    @commands.command()
+    @commands.has_permissions(manage_channels = True)
+    async def nuke(self, ctx, channel:discord.TextChannel = None):
+        if channel is None:
+            channel = ctx.channel
+
+        try:
+            embed = discord.Embed(color = discord.Color.green())
+            embed.description = f"Are you sure you want to nuke {channel.mention}? React to confirm."
+            message = await ctx.send(embed=embed)
+            await message.add_reaction('✅')
+            await message.add_reaction('❌')
+
+            def check(reaction, user):
+                return user == ctx.message.author and str(reaction.emoji) in ['✅', '❌']
+            reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=100)
+            if reaction.emoji == '❌':
+                return await ctx.send("Cancelling...")
+            newchannel = await channel.clone()
+            await channel.delete()
+            await newchannel.send(f"#{channel.name} has been nuked successfully!")
+            return
+        except discord.Forbidden:
+            return await ctx.send(f"I do not have the `Manage Channel` permission for {channel.mention}.")
+        except asyncio.TimeoutError:
+            return await ctx.reply("Timed out", mention_author = False)
 
 def setup(client):
     client.add_cog(Moderation(client))

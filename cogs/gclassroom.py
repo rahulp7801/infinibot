@@ -61,7 +61,7 @@ class GoogleC(commands.Cog):
                         raise ClassroomError(e)
 
                 service = build('classroom', 'v1', credentials=creds)
-                results = service.courses().announcements().list(pageSize = 10, courseId = 154913452330).execute() #replace that ID with "classid"
+                results = service.courses().announcements().list(pageSize = 10, courseId = classid).execute() #replace that ID with "classid"
                 courses = results.get('announcements', [])
                 if not courses:
                     print('this')

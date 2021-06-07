@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from discord.ext import commands, flags, tasks
+from discord.ext import commands, tasks
 import random
 import datetime
 from pymongo import MongoClient

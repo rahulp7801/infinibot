@@ -1,6 +1,6 @@
 import discord
 import asyncio
-from discord.ext import commands
+from discord.ext import commands, tasks
 from pymongo import MongoClient
 import time
 from modules import utils
@@ -12,6 +12,8 @@ import json
 import time
 import datetime
 import pandas as pd
+import datetime
+import math
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -19,10 +21,57 @@ with open('mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
+def seconds_until(hours, minutes):
+    given_time = datetime.time(hours, minutes)
+    now = datetime.datetime.now()
+    future_exec = datetime.datetime.combine(now, given_time)
+    if (future_exec - now).days < 0:  # If we are past the execution, it will take place tomorrow                future_exec = datetime.datetime.combine(now + datetime.timedelta(days=1), given_time) # days always >= 0
+        return (future_exec - now).total_seconds()
+    return (future_exec - now).total_seconds()
+        
+def round_up_to_even(f):
+    return math.ceil(f / 2.) * 2
+
 class Stats(commands.Cog):
+
     def __init__(self, client, cache):
         self.client = client
         self.cache = cache
+
+    def cog_unload(self):
+        self.update_database_stats.cancel()
+
+    def seconds_until(hours, minutes):
+        given_time = datetime.time(hours, minutes)
+        now = datetime.datetime.now()
+        future_exec = datetime.datetime.combine(now, given_time)
+        if (future_exec - now).days < 0:  # If we are past the execution, it will take place tomorrow
+            future_exec = datetime.datetime.combine(now + datetime.timedelta(days=1), given_time) # days always >= 0
+
+        return (future_exec - now).total_seconds()
+
+            
+    @tasks.loop(hours=2)
+    async def update_database_stats(self):
+        print(f'Uploading Stats to Database: LOG TIME: {datetime.datetime.utcnow()}')
+        for g in cache:
+            name = "GUILD" + str(g["guildID"])
+            db = cluster[name]
+            collection = db['serverstats']
+            collection.insert_one({
+                "messages": g["messages"],
+                "userdiff": g["userdiff"],
+                "vcsecdiff": g["vcsecdiff"],
+                "engagedusers": g["engagedusers"],
+                "timestamp": time.time()
+            })
+        cacheF = open("cache/stats.json", "w")
+        cacheF.write('{"guilds": []}')
+        cacheF.close()
+    
+    @update_database_stats.before_loop
+    async def beforedbupate(self):
+        await self.client.wait_until_ready()
 
     @commands.Cog.listener()
     async def on_message(self, message):
@@ -180,6 +229,17 @@ class Stats(commands.Cog):
                     json_cache = open('cache/stats.json', 'w')
                     json_str = '{"guilds":'+ json.dumps(cache)
                     json_cache.write(json_str + '}')
+    
+    @commands.Cog.listener()
+    async def on_ready(self):
+        if (datetime.datetime.now().time().hour % 2 == 0):
+            print(f'Uploading DB Data at: {datetime.datetime.now().time().hour + 2}:00')
+            await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 2 / 2.)), 0))
+            self.update_database_stats.start()
+        else:
+            print(f'Uploading DB Data at: {math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)}:00')
+            await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
+            self.update_database_stats.start()
 
 
 def cache_init():

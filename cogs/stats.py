@@ -1,6 +1,7 @@
 import discord
 import asyncio
 from discord.ext import commands, tasks
+from matplotlib import use
 from pymongo import MongoClient
 import time
 from modules import utils
@@ -259,21 +260,50 @@ class Stats(commands.Cog):
     
             # Collection name 
             col = db["serverstats"] 
+            msgcol = db["messages"]
 
             cacheData = {
                 "subID": [],
-                "messages": [],
-                "time": []
+                "Messages": [],
+                "Time": [],
             }
+
+            cacheActiveUsers = []
+
+            userMSGSDict = {}
+
+            msgdocs = msgcol.find_one({"_id": ctx.guild.id})
+            msgcount = msgdocs["count"]
       
             # if we don't want to print id then pass _id:0
             for x in col.find({}): 
                 if (x["_id"] != ctx.guild.id):
-                    print("Found Data!")
-                    print(x)
-                    cacheData["subID"].append(len(cacheData["subID"]))
-                    cacheData["messages"].append(x["messages"])
-                    cacheData["time"].append(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(x["timestamp"])))
+                    if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
+                        print("Found Data!")
+                        print(x)
+                        cacheData["subID"].append(len(cacheData["subID"]))
+                        cacheData["Messages"].append(x["messages"])
+                        cacheData["Time"].append(time.strftime('%-I %p', time.localtime(x["timestamp"])))
+                        print('Getting User Info...')
+                        print(userMSGSDict)
+                        for member in x["engagedusers"]:
+                            print('Got Active User!')
+                            print(member["messagesSent"])
+                            if member["uid"] in userMSGSDict:
+                                print('Existing Active Member!')
+                                userMSGSDict[member["uid"]]["msgs"] += member["messagesSent"]
+                                print(userMSGSDict)
+                            else:
+                                print(userMSGSDict)
+                                print('New Active Member!')
+                                userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
+                                print(userMSGSDict)
+            print(userMSGSDict)
+            for u in userMSGSDict:
+                print('Adding to Cache...')
+                cacheActiveUsers.append(userMSGSDict[u])
+            cacheActiveUsers.sort(key=lambda x: x["msgs"])
+            print(cacheActiveUsers)
             print('Done Loading Data!')
             print(cacheData)
             filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
@@ -295,12 +325,23 @@ class Stats(commands.Cog):
                 rc={'figure.figsize':(7,5)}, 
             )
             plt.style.use("dark_background")
+            plt.title(f'Messages Sent In {ctx.guild.name}')
+            # sns.set(rc={'axes.facecolor':'#2f3136', 'figure.facecolor':'#2f3136'})
             # data = json.load([{1: 12, 2: 1},{1: 1, 2: 13},{1: 1, 2: 12},])
             # df = pd.DataFrame(data)
-            sns.lineplot(data=df, x="time", y="messages")
-            plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            sns.lineplot(data=df, x="Time", y="Messages")
+            # plt.gca().axes.xaxis.set_visible(False)
+            plt.fill_between(df.Time.values, df.Messages.values)
+            # sns.set_context('talk', font_color = 'white')
+            plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
             print('Saved Graph')
-            await ctx.send(file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png"))
+            embed=discord.Embed(title=f"{ctx.guild.name} Stats", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
+            embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)
+            print(cacheActiveUsers[0]["msgs"])
+            embed.add_field(name="Top 5 Users", value="`1st.` <@!" + str(cacheActiveUsers[0]["id"]) + ">: `" + str(cacheActiveUsers[0]["msgs"]) + " messages`", inline=False)
+            file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            embed.set_image(url=f"attachment://guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            await ctx.send(embed=embed, file=file)
             print('Sent Graph')
 
 

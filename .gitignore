@@ -52,3 +52,4 @@ cogs/eastereggs.py
 /cogs/devonly.py
 /cogs/nba.py
 /cogs/gclassroom.py
+/sentAssets/*

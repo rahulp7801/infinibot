@@ -11,12 +11,20 @@ import os
 import json
 import time
 import datetime
+import plotly
 import pandas as pd
+import numpy as np
+import seaborn as sns
+import plotly.express as px
+import matplotlib.pyplot as plt
 import datetime
 import math
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
+
+async def is_dev(ctx):
+    return ctx.author.id in [645388150524608523, 759245009693704213]
 
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
@@ -88,7 +96,7 @@ class Stats(commands.Cog):
                                 p["messagesSent"] += 1
                     else:
                         h["engagedusers"].append({"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
-                    print(cache)
+                    # print(cache)
                     json_cache = open('cache/stats.json', 'w')
                     json_str = '{"guilds":'+ json.dumps(cache)
                     json_cache.write(json_str + '}')
@@ -240,6 +248,60 @@ class Stats(commands.Cog):
             print(f'Uploading DB Data at: {math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)}:00')
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
             self.update_database_stats.start()
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def serverStats(self, ctx):
+        print('Requested Server Stats')
+        async with ctx.typing():
+
+            db = cluster[f"GUILD{ctx.guild.id}"] 
+    
+            # Collection name 
+            col = db["serverstats"] 
+
+            cacheData = {
+                "subID": [],
+                "messages": [],
+                "time": []
+            }
+      
+            # if we don't want to print id then pass _id:0
+            for x in col.find({}): 
+                if (x["_id"] != ctx.guild.id):
+                    print("Found Data!")
+                    print(x)
+                    cacheData["subID"].append(len(cacheData["subID"]))
+                    cacheData["messages"].append(x["messages"])
+                    cacheData["time"].append(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(x["timestamp"])))
+            print('Done Loading Data!')
+            print(cacheData)
+            filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
+            json_cache = open(filePath, 'w')
+            json_cache.write(json.dumps(cacheData))
+            json_cache.close()
+            
+            print('Reading JSON File...')
+            print(filePath)
+            dataFile = open(filePath)
+            print(dataFile)
+            df = pd.read_json(dataFile, 'r')
+            # df = pd.read_json(filePath)
+            print(df)
+            df.set_index('subID', inplace=True)
+            print(df)
+            sns.reset_defaults()
+            sns.set(
+                rc={'figure.figsize':(7,5)}, 
+            )
+            plt.style.use("dark_background")
+            # data = json.load([{1: 12, 2: 1},{1: 1, 2: 13},{1: 1, 2: 12},])
+            # df = pd.DataFrame(data)
+            sns.lineplot(data=df, x="time", y="messages")
+            plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            print('Saved Graph')
+            await ctx.send(file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png"))
+            print('Sent Graph')
 
 
 def cache_init():

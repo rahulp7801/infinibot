@@ -61,7 +61,7 @@ class GoogleC(commands.Cog):
                         raise ClassroomError(e)
 
                 service = build('classroom', 'v1', credentials=creds)
-                results = service.courses().announcements().list(pageSize = 10, courseId = 154913452330).execute()
+                results = service.courses().announcements().list(pageSize = 10, courseId = 154913452330).execute() #replace that ID with "classid"
                 courses = results.get('announcements', [])
                 if not courses:
                     print('this')
@@ -69,7 +69,7 @@ class GoogleC(commands.Cog):
                 for k in courses:
                     print(k)
                     if k["state"] == 'PUBLISHED':
-                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25300)
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
                         print(x)
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
                             embed = discord.Embed(color = discord.Color.green())
@@ -85,8 +85,6 @@ class GoogleC(commands.Cog):
     @check_for_announcements.before_loop
     async def before_check_announcements(self):
         await self.client.wait_until_ready()
-
-
 
     @commands.command()
     #add an all param that does not filter out archived classes

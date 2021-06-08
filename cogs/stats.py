@@ -50,7 +50,7 @@ class Stats(commands.Cog):
     def cog_unload(self):
         self.update_database_stats.cancel()
 
-    def seconds_until(hours, minutes):
+    def seconds_until(self, hours, minutes):
         given_time = datetime.time(hours, minutes)
         now = datetime.datetime.now()
         future_exec = datetime.datetime.combine(now, given_time)
@@ -282,8 +282,13 @@ class Stats(commands.Cog):
                         print("Found Data!")
                         print(x)
                         cacheData["subID"].append(len(cacheData["subID"]))
+                        print('babatunde')
                         cacheData["Messages"].append(x["messages"])
-                        cacheData["Time"].append(time.strftime('%-I %p', time.localtime(x["timestamp"])))
+                        print('kekekeke')
+                        try:
+                            cacheData["Time"].append((time.strftime('%I %p', time.localtime(x["timestamp"]))))
+                        except Exception as e:
+                            print(e)
                         print('Getting User Info...')
                         print(userMSGSDict)
                         for member in x["engagedusers"]:

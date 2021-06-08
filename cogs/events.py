@@ -291,15 +291,6 @@ class Events(commands.Cog):
             logenab = i['logging']
             logchannel = i['logchannel']
         if not before.channel and after.channel:
-            collection = db['serverstats']
-            ping_cm = {
-                "_id": member.id,
-                "name": member.name,
-                "guild": member.guild.id,
-                "gname": member.guild.name,
-                "vcstart": datetime.datetime.utcnow()
-            }
-            x = collection.insert_one(ping_cm)
             if logenab == '' or logchannel == '':
                 pass
             else:
@@ -329,15 +320,6 @@ class Events(commands.Cog):
                 collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': vcsecs}})
             else:
                 collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': (int(vcmins) + vcsecs)}})
-            collection = db['serverstats']
-            ping_cm = {
-                "_id": member.id,
-                "name": member.name,
-                "guild": member.guild.id,
-                "gname": member.guild.name,
-                "vcstart": datetime.datetime.utcnow()
-            }
-            x = collection.insert_one(ping_cm)
             if logchannel == '' or logenab == '':
                 pass
             else:

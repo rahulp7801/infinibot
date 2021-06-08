@@ -77,6 +77,7 @@ class Stats(commands.Cog):
         cacheF = open("cache/stats.json", "w")
         cacheF.write('{"guilds": []}')
         cacheF.close()
+        self.cache = {"guilds": []}
     
     @update_database_stats.before_loop
     async def beforedbupate(self):
@@ -88,7 +89,6 @@ class Stats(commands.Cog):
             return ''
         if any(x for x in cache if x["guildID"] == message.guild.id):
             for h in cache:
-                print('Found Server Stats')
                 if h["guildID"] == message.guild.id:
                     h["messages"] += 1
                     if any(p for p in h["engagedusers"] if p["uid"] == message.author.id):
@@ -97,7 +97,6 @@ class Stats(commands.Cog):
                                 p["messagesSent"] += 1
                     else:
                         h["engagedusers"].append({"username":message.author.name + '#' + message.author.discriminator, "uid": message.author.id, "messagesSent": 1, "vcsecs": 0, "activetime": [time.time()]})
-                    # print(cache)
                     json_cache = open('cache/stats.json', 'w')
                     json_str = '{"guilds":'+ json.dumps(cache)
                     json_cache.write(json_str + '}')
@@ -110,7 +109,6 @@ class Stats(commands.Cog):
     
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        print('New Member, Adding to Stats')
         if any(x for x in cache if x["guildID"] == member.guild.id):
             if member.bot:
                 print('New Member is Bot, Escaping')
@@ -130,10 +128,8 @@ class Stats(commands.Cog):
     
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        print('Member Left, Adding to Stats')
         if any(x for x in cache if x["guildID"] == member.guild.id):
             if member.bot:
-                print('Member is Bot, Escaping')
                 return ''
             for h in cache:
                 if h["guildID"] == member.guild.id:
@@ -157,9 +153,7 @@ class Stats(commands.Cog):
         for i in res:
             logenab = i['logging']
             logchannel = i['logchannel']
-        if not before.channel and after.channel:
-            print('User Joined VC, Adding to Stats')
-        elif before.channel and after.channel:
+        if before.channel and after.channel:
             if before.channel == after.channel:
                 return
             collection = db['serverstats']
@@ -253,12 +247,10 @@ class Stats(commands.Cog):
     @commands.command()
     @commands.check(is_dev)
     async def serverStats(self, ctx):
-        print('Requested Server Stats')
         async with ctx.typing():
 
             db = cluster[f"GUILD{ctx.guild.id}"] 
     
-            # Collection name 
             col = db["serverstats"] 
             msgcol = db["messages"]
 
@@ -275,79 +267,50 @@ class Stats(commands.Cog):
             msgdocs = msgcol.find_one({"_id": ctx.guild.id})
             msgcount = msgdocs["count"]
       
-            # if we don't want to print id then pass _id:0
             for x in col.find({}): 
                 if (x["_id"] != ctx.guild.id):
                     if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
-                        print("Found Data!")
-                        print(x)
                         cacheData["subID"].append(len(cacheData["subID"]))
-                        print('babatunde')
                         cacheData["Messages"].append(x["messages"])
-                        print('kekekeke')
                         try:
                             cacheData["Time"].append((time.strftime('%I %p', time.localtime(x["timestamp"]))))
                         except Exception as e:
                             print(e)
-                        print('Getting User Info...')
-                        print(userMSGSDict)
                         for member in x["engagedusers"]:
-                            print('Got Active User!')
-                            print(member["messagesSent"])
                             if member["uid"] in userMSGSDict:
-                                print('Existing Active Member!')
                                 userMSGSDict[member["uid"]]["msgs"] += member["messagesSent"]
-                                print(userMSGSDict)
                             else:
-                                print(userMSGSDict)
-                                print('New Active Member!')
                                 userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
-                                print(userMSGSDict)
-            print(userMSGSDict)
             for u in userMSGSDict:
-                print('Adding to Cache...')
                 cacheActiveUsers.append(userMSGSDict[u])
             cacheActiveUsers.sort(key=lambda x: x["msgs"])
-            print(cacheActiveUsers)
-            print('Done Loading Data!')
-            print(cacheData)
             filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
             json_cache = open(filePath, 'w')
             json_cache.write(json.dumps(cacheData))
             json_cache.close()
             
-            print('Reading JSON File...')
-            print(filePath)
             dataFile = open(filePath)
-            print(dataFile)
             df = pd.read_json(dataFile, 'r')
-            # df = pd.read_json(filePath)
-            print(df)
             df.set_index('subID', inplace=True)
-            print(df)
             sns.reset_defaults()
             sns.set(
                 rc={'figure.figsize':(7,5)}, 
             )
             plt.style.use("dark_background")
-            plt.title(f'Messages Sent In {ctx.guild.name}')
-            # sns.set(rc={'axes.facecolor':'#2f3136', 'figure.facecolor':'#2f3136'})
-            # data = json.load([{1: 12, 2: 1},{1: 1, 2: 13},{1: 1, 2: 12},])
-            # df = pd.DataFrame(data)
             sns.lineplot(data=df, x="Time", y="Messages")
-            # plt.gca().axes.xaxis.set_visible(False)
-            plt.fill_between(df.Time.values, df.Messages.values)
-            # sns.set_context('talk', font_color = 'white')
+            plt.gca().axes.xaxis.grid(False)
+            plt.fill_between(df.Time.values, df.Messages.values, alpha=0.5)
+            sns.despine(fig=None, ax=None, top=True, right=True, left=True, bottom=True, offset=None, trim=False)
+            plt.xlabel(None)
+            plt.ylabel(None)
             plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
-            print('Saved Graph')
-            embed=discord.Embed(title=f"{ctx.guild.name} Stats", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
+            embed=discord.Embed(title=f"{ctx.guild.name} Stats Local", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
             embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)
             print(cacheActiveUsers[0]["msgs"])
             embed.add_field(name="Top 5 Users", value="`1st.` <@!" + str(cacheActiveUsers[0]["id"]) + ">: `" + str(cacheActiveUsers[0]["msgs"]) + " messages`", inline=False)
             file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             embed.set_image(url=f"attachment://guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             await ctx.send(embed=embed, file=file)
-            print('Sent Graph')
 
 
 def cache_init():
@@ -370,6 +333,7 @@ def cache_init():
         cache = open("cache/stats.json", "w")
         cache.write('{"guilds": []}')
         cache.close()
+        return []
 
 cache = cache_init()
 

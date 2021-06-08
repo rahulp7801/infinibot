@@ -1,0 +1,67 @@
+body.menu {
+    background-color: #202020;
+    color: white;
+    text-align: center;
+    justify-content: center;
+    display: flex;
+    flex-direction: row;
+}
+
+.menuPage {
+    /* position: absolute;
+  top: 50%; */
+  -ms-transform: translateY(55%);
+  transform: translateY(55%);
+}
+
+.menuPage h1 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.picture {
+    -webkit-box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    -moz-box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.4);
+    width: 150px;
+    height: 150px;
+    border: 5px solid white;
+    overflow: hidden;
+    text-align: center;
+    margin: 0 10px;
+    border-radius: 50%;
+    position:relative;
+    cursor: pointer;
+  }
+.picture img:hover:not(.addServerImage), .picture h5:hover + img {
+    filter: brightness(50%);
+}
+  .picture img {
+    height: 100%;
+    display: block;
+  }
+  .picture h5 {
+      z-index: 100;
+    left: 0;
+    position:absolute;
+    text-align:center;
+    top: 45px;
+    width: 100%;
+    display: none;
+    visibility: none;
+  }
+  
+  .picture img:hover + h5, .picture h5:hover{
+display: block;
+visibility: visible;
+  }
+
+  .serverList {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-around;
+  }
+
+  .addServer {
+    border: 5px dashed white;
+  }

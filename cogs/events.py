@@ -304,22 +304,6 @@ class Events(commands.Cog):
         elif before.channel and after.channel:
             if before.channel == after.channel:
                 return
-            collection = db['serverstats']
-            res = collection.find({'_id': member.id})
-            for i in res:
-                starttime = i['vcstart']
-            collection.delete_one({'_id': member.id})
-            x = pd.to_datetime(starttime)
-            z = (abs(datetime.datetime.utcnow() - x))
-            vcsecs = int(z.total_seconds())
-            collection = db['serverstats']
-            res = collection.find({'_id': member.guild.id})
-            for i in res:
-                vcmins = i['vcsecs']
-            if vcmins == "":
-                collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': vcsecs}})
-            else:
-                collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': (int(vcmins) + vcsecs)}})
             if logchannel == '' or logenab == '':
                 pass
             else:
@@ -337,22 +321,6 @@ class Events(commands.Cog):
                 channel = self.client.get_channel(int(logchannel))
                 await channel.send(embed=embed)
         elif before.channel and not after.channel:
-            collection = db['serverstats']
-            res = collection.find({'_id': member.id})
-            for i in res:
-                starttime = i['vcstart']
-            collection.delete_one({'_id': member.id})
-            x = pd.to_datetime(starttime)
-            z = (abs(datetime.datetime.utcnow() - x))
-            vcsecs = int(z.total_seconds())
-            collection = db['serverstats']
-            res = collection.find({'_id': member.guild.id})
-            for i in res:
-                vcmins = i['vcsecs']
-            if vcmins == "":
-                collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': vcsecs}})
-            else:
-                collection.update_one({'_id': member.guild.id}, {"$set": {'vcsecs': (int(vcmins) + vcsecs)}})
             if logchannel == '' or logenab == '':
                 pass
             else:

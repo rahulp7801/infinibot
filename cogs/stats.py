@@ -150,47 +150,9 @@ class Stats(commands.Cog):
         db = cluster[name]
         collection = db['config']
         res = collection.find({'_id': member.guild.id})
-        for i in res:
-            logenab = i['logging']
-            logchannel = i['logchannel']
         if before.channel and after.channel:
             if before.channel == after.channel:
                 return
-            collection = db['serverstats']
-            res = collection.find({'_id': member.id})
-            for i in res:
-                starttime = i['vcstart']
-            x = pd.to_datetime(starttime)
-            z = (abs(datetime.datetime.utcnow() - x))
-            vcsecs = int(z.total_seconds())
-            collection = db['serverstats']
-            res = collection.find({'_id': member.guild.id})
-            for i in res:
-                vcmins = i['vcsecs']
-            collection = db['serverstats']
-            ping_cm = {
-                "_id": member.id,
-                "name": member.name,
-                "guild": member.guild.id,
-                "gname": member.guild.name,
-                "vcstart": datetime.datetime.utcnow()
-            }
-            if logchannel == '' or logenab == '':
-                pass
-            else:
-                desc = f"{member.mention} left `{before.channel.name}`"
-                embed = discord.Embed(description=desc, color=discord.Color.red(), timestamp=datetime.datetime.utcnow())
-                embed.set_author(name=f"{member.display_name} has left a voice channel!", icon_url=member.avatar_url)
-                embed.set_thumbnail(url=member.guild.icon_url)
-                channel = self.client.get_channel(int(logchannel))
-                await channel.send(embed=embed)
-                desc = f"{member.mention} joined `{after.channel.name}`"
-                embed = discord.Embed(description=desc, color=discord.Color.green(),
-                                      timestamp=datetime.datetime.utcnow())
-                embed.set_author(name=f"{member.display_name} has joined a voice channel!", icon_url=member.avatar_url)
-                embed.set_thumbnail(url=member.guild.icon_url)
-                channel = self.client.get_channel(int(logchannel))
-                await channel.send(embed=embed)
         elif before.channel and not after.channel:
             collection = db['serverstats']
             res = collection.find({'_id': member.id})

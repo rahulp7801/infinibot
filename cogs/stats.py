@@ -283,7 +283,7 @@ class Stats(commands.Cog):
                                 userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
             for u in userMSGSDict:
                 cacheActiveUsers.append(userMSGSDict[u])
-            cacheActiveUsers.sort(key=lambda x: x["msgs"])
+            cacheActiveUsers.sort(key=lambda x: x["msgs"], reverse=True)
             filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
             json_cache = open(filePath, 'w')
             json_cache.write(json.dumps(cacheData))
@@ -306,8 +306,13 @@ class Stats(commands.Cog):
             plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
             embed=discord.Embed(title=f"{ctx.guild.name} Stats Local", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
             embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)
-            print(cacheActiveUsers[0]["msgs"])
-            embed.add_field(name="Top 5 Users", value="`1st.` <@!" + str(cacheActiveUsers[0]["id"]) + ">: `" + str(cacheActiveUsers[0]["msgs"]) + " messages`", inline=False)
+            counter = 0
+            arr = []
+            for i in range((len(cacheActiveUsers)) if (len(cacheActiveUsers) <= 5) else 5):
+                arr.append(f"`{counter + 1}.` <@!" + str(cacheActiveUsers[counter]["id"]) + ">: `" + str(
+                    cacheActiveUsers[counter]["msgs"]) + " messages`")
+                counter += 1
+            embed.add_field(name="Top 5 Users", value="\n".join(arr), inline=False)
             file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             embed.set_image(url=f"attachment://guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             await ctx.send(embed=embed, file=file)

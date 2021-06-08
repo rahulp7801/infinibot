@@ -29,7 +29,71 @@ class GoogleC(commands.Cog):
         self.icon = '🏫'
         self.description = 'Integration with Google Classroom!'
         self.check_for_announcements.start()
+        self.check_for_assignments.start()
 
+
+    @tasks.loop(minutes = 5)
+    async def check_for_assignments(self):
+        print("checking for assignments...")
+
+        past = datetime.datetime.utcnow().timestamp()
+        db = cluster['GOOGLECLASSROOM']
+        collection = db['guilds']
+        creds = None
+        res = collection.find()
+        for i in res:
+            try:
+                classid = i["classid"]
+                if os.path.exists('token.json'):
+                    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+                if not creds or not creds.valid:
+                    if creds and creds.expired and creds.refresh_token:
+                        creds.refresh(Request())
+                    else:
+                        flow = InstalledAppFlow.from_client_secrets_file(
+                            'credentials.json', SCOPES)
+                        creds = flow.run_local_server(port=0, open_browser=False)
+                    # Save the credentials for the next run
+                    try:
+                        with open('token.json', 'w') as token:
+                            token.write(creds.to_json())
+                    except Exception as e:
+                        raise ClassroomError(e)
+
+                service = build('classroom', 'v1', credentials=creds)
+                results = service.courses().courseWork().list(pageSize=10, courseId=classid).execute()  # replace that ID with "classid"
+                courses = results.get('courseWork', [])
+                if not courses:
+                    print('this')
+                    continue
+                for k in courses:
+                    print(k)
+                    if k["state"] == 'PUBLISHED':
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
+                        print(x)
+                        if not x:
+                            break #because the API returns it ordered most recent, no need to waste time checking older ones.
+                        if x and k["assigneeMode"] == 'ALL_STUDENTS':
+                            embed = discord.Embed(color=discord.Color.green())
+                            try:
+                                embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {i['dueDate']['year']}-{i['dueDate']['month']}-{i['dueDate']['day']}"
+                            except KeyError:
+                                embed.description = str(k["description"])[
+                                                    0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                            embed.title = str(k["title"])[0:2000]
+                            embed.timestamp = pd.to_datetime(k["creationTime"])
+                            channel = i["channel"]
+                            channel = self.client.get_channel(channel)
+                            await channel.send(embed=embed)
+                            continue
+
+
+            except Exception as e:
+                print(e)
+
+    @check_for_assignments.before_loop
+    async def before_check_assignments(self):
+        await self.client.wait_until_ready()
 
     @tasks.loop(minutes = 5)
     async def check_for_announcements(self):

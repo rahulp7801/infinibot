@@ -41,11 +41,13 @@ def seconds_until(hours, minutes):
 def round_up_to_even(f):
     return math.ceil(f / 2.) * 2
 
-class Stats(commands.Cog):
+class Stats(commands.Cog, name = "Server Statistics"):
 
     def __init__(self, client, cache):
         self.client = client
         self.cache = cache
+        self.icon = '📈'
+        self.description = 'See comprehensive server statistics for your server!'
 
     def cog_unload(self):
         self.update_database_stats.cancel()
@@ -206,9 +208,74 @@ class Stats(commands.Cog):
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
             self.update_database_stats.start()
 
-    @commands.command()
+    
+    @commands.group(pass_context=True, invoke_without_command=True, help="")
+    async def stats(self, ctx):
+        embed = discord.Embed(title="Incorrect Usage",
+            description=f'Please use one of the following subcommands:\n\n**general** *Aliases: g*\n**messages** *Aliases: m*',
+            color=discord.Color.blurple())
+        embed.set_footer(text=f"InfiniBot Help | Requested by {ctx.author.name}")
+        await ctx.reply(embed=embed)
+        pass
+
+    @stats.command(aliases=['g'], help="View the General Stats of your Server")
+    async def general(self, ctx):
+        name = f"GUILD{ctx.guild.id}"
+        db = cluster[name]
+        collection = db['messages']
+        results = collection.find({'_id': ctx.guild.id})
+        for i in results:
+            msgcount = i['count']
+        if msgcount == '':
+            msgcount = 0
+        collection = db['serverstats']
+        results = collection.find({'_id': ctx.guild.id})
+        for i in results:
+            vcsecs = i['vcsecs']
+        if vcsecs == '':
+            vcsecs = 0
+
+        collection = db['config']
+        results = collection.find({'_id': ctx.guild.id})
+        for i in results:
+            ghostcount = i['ghostcount']
+        if ghostcount == '':
+            ghostcount = 0
+        x = ctx.guild.created_at
+        y = x.strftime("%b %d %Y %H:%S")
+        print(y)
+        z = datetime.datetime.utcnow() - x
+        lm = str(abs(z))
+        print(lm)
+        q = lm.split(", ")
+        a = q[0]
+        desc = f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented."
+        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+        embed.add_field(name="Channels:", value=f"```{str(len(ctx.guild.channels))}```", inline=True)
+        embed.add_field(name="Users:", value=f"```{ctx.guild.member_count}```", inline=True)
+        embed.add_field(name="Messages Sent:", value=f"```{msgcount}```", inline=True)
+        # embed.add_field(name=f"In #{ctx.channel.name}:", value = f"```{smsgcfount}```", inline = True)
+        # embed.add_field(name=f"By {ctx.author.name}:", value = f"```{smsgcount}```", inline = True)
+        # embed.add_field(name=f"In #{ctx.channel.name} by {ctx.author.name}:", value=f"```{result3[0]}```", inline = False)
+        embed.add_field(name="Seconds in Voice Channels", value=f"```{vcsecs}```", inline=True)
+        embed.add_field(name=f"Server Creation Date:",
+                        value=f"```{f'{y} ({a} ago)' if lm[0:6] != '1 day,' else 'Today'}```", inline=True)
+        # embed.add_field(name=f"Most active text channel in **{ctx.guild.name}**: ", value = f"```#{topchannel.name} with {smsgcffount} messages.```", inline = False)
+        # figure out most active VC
+        ownerser = self.client.get_user(ctx.guild.owner_id)
+        embed.add_field(name=f"Number of Ghost Pings", value=f"```{ghostcount}```", inline=False)
+        embed.add_field(name="Server Owner:", value=ownerser.mention, inline=False)
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        embed.set_author(name=f"{ctx.guild.name}'s Statistics", icon_url=ctx.guild.icon_url)
+        embed.set_footer(text=f"Server ID: {ctx.guild.id}")
+        await ctx.send(embed=embed)
+        # add graphs https://www.tutorialspoint.com/graph-plotting-in-python
+        pass
+    
+    @stats.command(aliases=['m'], help="View the Leadership Boards of Messages, and a Graph showing Messages Sent Over Time")
     @commands.check(is_dev)
-    async def serverStats(self, ctx):
+    async def messages(self, ctx):
+        print('[STATS LOGGER]  Server Stats Requested')
         async with ctx.typing():
 
             db = cluster[f"GUILD{ctx.guild.id}"] 
@@ -246,6 +313,7 @@ class Stats(commands.Cog):
             for u in userMSGSDict:
                 cacheActiveUsers.append(userMSGSDict[u])
             cacheActiveUsers.sort(key=lambda x: x["msgs"], reverse=True)
+            print(cacheData)
             filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
             json_cache = open(filePath, 'w')
             json_cache.write(json.dumps(cacheData))
@@ -262,12 +330,19 @@ class Stats(commands.Cog):
             sns.lineplot(data=df, x="Time", y="Messages")
             plt.gca().axes.xaxis.grid(False)
             plt.fill_between(df.Time.values, df.Messages.values, alpha=0.5)
+            print('[STATS LOGGER] Standby...')
+            print(max(df.Messages))
+            plt.ylim(0,max(df.Messages))
             sns.despine(fig=None, ax=None, top=True, right=True, left=True, bottom=True, offset=None, trim=False)
             plt.xlabel(None)
             plt.ylabel(None)
-            plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
-            embed=discord.Embed(title=f"{ctx.guild.name} Stats", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
+            plt.savefig(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
+            print('[STATS LOGGER]  Server Graph Saved')
+            embed=discord.Embed(url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented. \n\nGo [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000, timestamp=datetime.datetime.utcnow())
             embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_author(name=f"{ctx.guild.name}'s Message Statistics", icon_url=ctx.guild.icon_url)
+            embed.set_footer(text=f"Server ID: {ctx.guild.id}")
             counter = 0
             arr = []
             for i in range((len(cacheActiveUsers)) if (len(cacheActiveUsers) <= 5) else 5):
@@ -275,9 +350,11 @@ class Stats(commands.Cog):
                     cacheActiveUsers[counter]["msgs"]) + " messages`")
                 counter += 1
             embed.add_field(name="Top 5 Users", value="\n".join(arr), inline=False)
-            file=discord.File(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            file=discord.File(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             embed.set_image(url=f"attachment://guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
             await ctx.send(embed=embed, file=file)
+            os.remove(filePath)
+            os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
 
 
 def cache_init():

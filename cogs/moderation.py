@@ -169,19 +169,22 @@ class Moderation(commands.Cog):
                         return await ctx.send(f"You can only use this moderation on a member below you.")
             except AttributeError:
                 return
-            if not member.bot:
-                await ctx.guild.ban(member, reason=reason)
-                await ctx.channel.send(embed=ban)
-                try:
-                    return await member.send(embed=uban)
-                except discord.Forbidden:
-                    return await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
-            else:
-                await ctx.guild.ban(member, reason=reason)
-                ban = discord.Embed(
-                    description=f"Reason: ```{reason}```\nBy: {ctx.author.mention}")
-                ban.set_author(name=f"{member.name} was banned", icon_url=member.avatar_url)
-                await ctx.channel.send(embed=ban)
+            try:
+                if not member.bot:
+                    await ctx.guild.ban(member, reason=reason)
+                    await ctx.channel.send(embed=ban)
+                    try:
+                        return await member.send(embed=uban)
+                    except discord.Forbidden:
+                        return await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
+                else:
+                    await ctx.guild.ban(member, reason=reason)
+                    ban = discord.Embed(
+                        description=f"Reason: ```{reason}```\nBy: {ctx.author.mention}")
+                    ban.set_author(name=f"{member.name} was banned", icon_url=member.avatar_url)
+                    await ctx.channel.send(embed=ban)
+            except discord.Forbidden:
+                return await ctx.send("I cannot ban this person.")
 
         except discord.errors.Forbidden:
             if member.id == ctx.guild.owner_id:
@@ -213,16 +216,19 @@ class Moderation(commands.Cog):
                 await ctx.send(f"You can only use this moderation on a member below you.")
                 return
             else:
-                if not member.bot:
-                    await ctx.guild.ban(member, reason='Naughty')
-                    await ctx.send(embed=embed)
-                    try:
-                        await member.send(embed=uembed)
-                    except:
-                        await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
-                else:
-                    await ctx.guild.ban(member, reason='Naughty')
-                    await ctx.send(embed=embed)
+                try:
+                    if not member.bot:
+                        await ctx.guild.ban(member, reason='Naughty')
+                        await ctx.send(embed=embed)
+                        try:
+                            await member.send(embed=uembed)
+                        except:
+                            await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
+                    else:
+                        await ctx.guild.ban(member, reason='Naughty')
+                        await ctx.send(embed=embed)
+                except discord.Forbidden:
+                    return await ctx.send("I cannot ban this person.")
 
                 db = cluster['TEMP']
                 collection = db['bans']
@@ -274,12 +280,15 @@ class Moderation(commands.Cog):
 
             else:
                 if not member.bot:
-                    await ctx.guild.kick(member, reason=reason)
-                    await ctx.channel.send(embed=kick)
                     try:
-                        await member.send(embed=ukick)
+                        await ctx.guild.kick(member, reason=reason)
+                        await ctx.channel.send(embed=kick)
+                        try:
+                            await member.send(embed=ukick)
+                        except discord.Forbidden:
+                            await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
                     except discord.Forbidden:
-                        await ctx.send(f'A reason could not be sent to `{member}` as they had their dms off.')
+                        return await ctx.send("I cannot kick this person.")
                 else:
                     await ctx.guild.kick(member, reason=reason)
                     await ctx.channel.send(embed=kick)

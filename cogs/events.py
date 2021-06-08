@@ -522,10 +522,13 @@ class Events(commands.Cog):
                 pass
 
         if str(captchaon) == "on":
-            res = await self.servercaptcha(member)
-            if res:
-                await member.add_roles(discord.utils.get(member.guild.roles, id=int(welcomerole)))
-            else:
+            try:
+                res = await self.servercaptcha(member)
+                if res:
+                    await member.add_roles(discord.utils.get(member.guild.roles, id=int(welcomerole)))
+                else:
+                    pass
+            except discord.HTTPException:
                 pass
         else:
             if str(welcomerole) == '':

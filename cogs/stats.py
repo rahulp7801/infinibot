@@ -304,7 +304,7 @@ class Stats(commands.Cog):
             plt.xlabel(None)
             plt.ylabel(None)
             plt.savefig(f"sentAssets/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
-            embed=discord.Embed(title=f"{ctx.guild.name} Stats Local", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
+            embed=discord.Embed(title=f"{ctx.guild.name} Stats", url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"Go [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000)
             embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)
             counter = 0
             arr = []

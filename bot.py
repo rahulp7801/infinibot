@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from discord.ext import commands
 import discord
 import os
@@ -8,11 +7,8 @@ import datetime
 from discord_slash import SlashCommand
 from modules import help, utils
 from discord_components import DiscordComponents
-import os.path
-from os import path
 import os
-import json
-import time
+import threading
 
 client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = True)
@@ -24,8 +20,14 @@ for filename in os.listdir('./cogs'):
 
 client.help_command = help.Help()
 
+def voiceChatMain():
+    os.system('cd DJFlame && node .')
+
+t1 = threading.Thread(target=voiceChatMain)
+
 @client.event
 async def on_ready():
+    t1.start()
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
     for i in client.guilds:
         print(i.name + "->" + str(i.owner_id))

@@ -3,6 +3,7 @@ from discord.ext import commands
 import datetime
 import os
 from modules import utils
+import asyncio
 
 
 async def is_dev(ctx):
@@ -125,6 +126,22 @@ class Developers(commands.Cog):
         await ctx.send("Success!")
         owner = guild.owner_id
         await ctx.send(f"The owner ID is {owner} for reference.")
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def reloadcog(self, ctx, cog):
+        try:
+            self.client.unload_extension(f"cogs.{cog.strip()}")
+            await asyncio.sleep(1)
+            self.client.load_extension(f"cogs.{cog.strip()}")
+        except FileNotFoundError:
+            return await ctx.reply("Are you sure you spelled the file name correctly?")
+        except Exception as e:
+            return await ctx.send(f"Error raised: {e}")
+        finally:
+            await ctx.send(f"`{cog.strip().capitalize()}` was successfully reloaded.")
+
+
 
 def setup(client):
     client.add_cog(Developers(client))

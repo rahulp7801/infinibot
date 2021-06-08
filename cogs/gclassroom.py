@@ -139,6 +139,7 @@ class GoogleC(commands.Cog):
                             embed = discord.Embed(color = discord.Color.green())
                             embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
                             embed.timestamp = pd.to_datetime(k["creationTime"])
+                            embed.title = 'New Announcement!'
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)

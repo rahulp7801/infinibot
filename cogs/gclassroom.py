@@ -69,14 +69,14 @@ class GoogleC(commands.Cog):
                 for k in courses:
                     print(k)
                     if k["state"] == 'PUBLISHED':
-                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25600)
                         print(x)
                         if not x:
                             break #because the API returns it ordered most recent, no need to waste time checking older ones.
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
                             embed = discord.Embed(color=discord.Color.green())
                             try:
-                                embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {i['dueDate']['year']}-{i['dueDate']['month']}-{i['dueDate']['day']}"
+                                embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {k['dueDate']['year']}-{k['dueDate']['month']}-{k['dueDate']['day']}"
                             except KeyError:
                                 embed.description = str(k["description"])[
                                                     0:2000] + f"\n[View Assignment]({k['alternateLink']})"
@@ -86,8 +86,6 @@ class GoogleC(commands.Cog):
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
                             continue
-
-
             except Exception as e:
                 print(e)
 

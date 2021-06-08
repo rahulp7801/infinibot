@@ -8,6 +8,7 @@ import wikipedia
 import string
 from googletrans import Translator
 import pyfiglet
+from googleapiclient import discovery
 from pymongo import MongoClient
 from modules import utils, help
 import re
@@ -17,6 +18,13 @@ with open('mongourl.txt', 'r') as file:
     url = file.read()
 
 mongo_url = url.strip()
+
+with open('perspectiveapis.txt', 'r') as file:
+    tokens = file.read()
+    keys = tokens.split('\n')
+PERSPECTIVE_KEYS = keys
+
+
 cluster = MongoClient(mongo_url)
 
 
@@ -391,6 +399,37 @@ class Misc(commands.Cog, name="Miscellaneous"):
         await ctx.message.add_reaction(str('✅'))
         await asyncio.sleep(2)
         await ctx.message.delete()
+
+    @commands.command()
+    async def analyze(self, ctx, *, message):
+        try:
+            j = discovery.build(
+                "commentanalyzer",
+                "v1alpha1",
+                developerKey=random.choice(PERSPECTIVE_KEYS),
+                discoveryServiceUrl="https://commentanalyzer.googleapis.com/$discovery/rest?version=v1alpha1",
+                static_discovery=False,
+            )
+
+            analyze_request = {
+                'comment': {'text': f'{message.strip()}'},
+                'requestedAttributes': {'TOXICITY': {}}
+            }
+            embed = discord.Embed()
+            embed.description = message.strip()
+            embed.set_author(name=ctx.message.author.name + "#" + ctx.message.author.discriminator,
+                             icon_url=ctx.message.author.avatar_url)
+            embed.timestamp = ctx.message.created_at
+            embed.colour = ctx.message.author.color
+            response = j.comments().analyze(body=analyze_request).execute()
+            tox = round((float(response['attributeScores']['TOXICITY']['summaryScore']['value']) * 100), 3)
+            embed.set_footer(text=f"Toxicity: {tox}%")
+            await ctx.send(embed=embed)
+
+
+        except Exception as e:
+            print(e)
+            pass
 
 
 def setup(client):

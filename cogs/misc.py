@@ -13,6 +13,7 @@ from pymongo import MongoClient
 from modules import utils, help
 import re
 import urllib.request
+import time
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -431,6 +432,15 @@ class Misc(commands.Cog, name="Miscellaneous"):
             print(e)
             pass
 
+
+    @commands.command(help='The ping of you to the bot (not the bot\'s ping)')
+    async def ping(self, ctx):
+        time_1 = time.perf_counter()
+        await ctx.trigger_typing()
+        time_2 = time.perf_counter()
+        ping = round((time_2 - time_1) * 1000)
+        await ctx.reply(f"Pong! 🏓 `{ping}ms`", mention_author=False)
+        return
 
 def setup(client):
     client.add_cog(Misc(client))

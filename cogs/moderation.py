@@ -450,7 +450,7 @@ class Moderation(commands.Cog):
         if isinstance(error, ValueError):
             return await ctx.send(f"I don't have the `Manage Channel` permission for {ctx.channel.mention}.")
 
-    @commands.command()
+    @commands.command(aliases = ['rename', 'nickname'])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames = True)
     async def nick(self, ctx, member:discord.Member, *, nick):
@@ -847,6 +847,23 @@ class Moderation(commands.Cog):
             return await ctx.send(f"I do not have the `Manage Channel` permission for {channel.mention}.")
         except asyncio.TimeoutError:
             return await ctx.reply("Timed out", mention_author = False)
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def vckick(self, ctx, member: discord.Member):
+        await member.edit(voice_channel=None)
+        await ctx.send(f"**{member.name}** has been successfully kicked from VC!")
+
+    @commands.command()
+    @commands.has_permissions(manage_guild = True)
+    async def move(self, ctx, member:discord.Member, channel:discord.VoiceChannel):
+        try:
+            await member.edit(voice_channel=channel)
+            await ctx.send(f"**{member.name}** has been successfully moved to {channel.mention}!")
+        except discord.Forbidden:
+            return await ctx.send(f"I don\'t have permission to move `{member.name}#{member.discriminator}` to {channel.mention}!")
+
+
 
 def setup(client):
     client.add_cog(Moderation(client))

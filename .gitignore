@@ -51,3 +51,5 @@ cogs/eastereggs.py
 /cogs/nba.py
 /cogs/gclassroom.py
 /sentAssets/*
+
+/cogs/economy.py

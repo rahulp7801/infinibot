@@ -274,7 +274,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
     
     @stats.command(aliases=['m'], help="View the Leadership Boards of Messages, and a Graph showing Messages Sent Over Time")
     @commands.check(is_dev)
-    async def messages(self, ctx):
+    async def messages(self, ctx, timeframe=''):
         print('[STATS LOGGER]  Server Stats Requested')
         async with ctx.typing():
 
@@ -292,28 +292,51 @@ class Stats(commands.Cog, name = "Server Statistics"):
             cacheActiveUsers = []
 
             userMSGSDict = {}
+            wTimeDict = {}
 
             msgdocs = msgcol.find_one({"_id": ctx.guild.id})
             msgcount = msgdocs["count"]
       
-            for x in col.find({}): 
-                if (x["_id"] != ctx.guild.id):
-                    if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
-                        cacheData["subID"].append(len(cacheData["subID"]))
-                        cacheData["Messages"].append(x["messages"])
-                        try:
-                            cacheData["Time"].append((time.strftime('%I %p', time.localtime(x["timestamp"]))))
-                        except Exception as e:
-                            print(e)
-                        for member in x["engagedusers"]:
-                            if member["uid"] in userMSGSDict:
-                                userMSGSDict[member["uid"]]["msgs"] += member["messagesSent"]
+            if timeframe == 'd' or timeframe == 'day' or timeframe == 'today':
+                for x in col.find({}): 
+                    if (x["_id"] != ctx.guild.id):
+                        if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
+                            cacheData["subID"].append(len(cacheData["subID"]))
+                            cacheData["Messages"].append(x["messages"])
+                            try:
+                                cacheData["Time"].append((time.strftime('%I %p', time.localtime(x["timestamp"]))))
+                            except Exception as e:
+                                print(e)
+                            for member in x["engagedusers"]:
+                                if member["uid"] in userMSGSDict:
+                                    userMSGSDict[member["uid"]]["msgs"] += member["messagesSent"]
+                                else:
+                                    userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
+            elif timeframe == 'w' or timeframe == 'week' or timeframe == '':
+                print('Getting Stats for Week')
+                for x in col.find({}): 
+                    if (x["_id"] != ctx.guild.id):
+                        if datetime.datetime.fromtimestamp(x["timestamp"]).isocalendar()[1] == datetime.datetime.today().isocalendar()[1]:
+                            if datetime.datetime.fromtimestamp(x["timestamp"]).date().day in wTimeDict:
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day]["Messages"] += x["messages"]
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day]["Time"] = time.strftime('%m/%d', time.localtime(x["timestamp"]))
                             else:
-                                userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day] = {"Messages": x["messages"], "Time": datetime.datetime.fromtimestamp(x["timestamp"]).date().day}
+                            for member in x["engagedusers"]:
+                                if member["uid"] in userMSGSDict:
+                                    userMSGSDict[member["uid"]]["msgs"] += member["messagesSent"]
+                                else:
+                                    userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
+                for d in wTimeDict:
+                    print('[STATS LOGGER] Adding Item to Cache... ')
+                    cacheData["subID"].append(len(cacheData["subID"]))
+                    cacheData["Messages"].append(wTimeDict[d]["Messages"])
+                    cacheData["Time"].append(wTimeDict[d]["Time"])
+            print('[STATS LOGGER] Done Gathering Data From Database')
             for u in userMSGSDict:
                 cacheActiveUsers.append(userMSGSDict[u])
+
             cacheActiveUsers.sort(key=lambda x: x["msgs"], reverse=True)
-            print(cacheData)
             filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
             json_cache = open(filePath, 'w')
             json_cache.write(json.dumps(cacheData))
@@ -337,6 +360,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             plt.xlabel(None)
             plt.ylabel(None)
             plt.savefig(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
+            plt.close()
             print('[STATS LOGGER]  Server Graph Saved')
             embed=discord.Embed(url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented. \n\nGo [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000, timestamp=datetime.datetime.utcnow())
             embed.add_field(name="Total Messages", value=f"In All: `{msgcount} messages`", inline=False)

@@ -238,8 +238,8 @@ async def get_classes(ctx, limit :int= 10):
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists('token.json'):
-        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
+        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -250,10 +250,10 @@ async def get_classes(ctx, limit :int= 10):
             embed = discord.Embed(color = discord.Color.green())
             embed.description = f"Please sign in [here]({AUTHLINK})\n"
             await ctx.send(embed=embed)
-            creds = flow.run_local_server(port=0, open_browser=False)
+            creds = flow.run_console()
         # Save the credentials for the next run
         try:
-            with open('token.json', 'w') as token:
+            with open(f'./temp/token{ctx.guild.id}.json', 'w') as token:
                 token.write(creds.to_json())
         except Exception as e:
             raise ClassroomError(e)

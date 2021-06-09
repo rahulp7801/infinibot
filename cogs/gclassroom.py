@@ -144,8 +144,6 @@ class GoogleC(commands.Cog):
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
                             continue
-
-
             except Exception as e:
                 print(e)
 

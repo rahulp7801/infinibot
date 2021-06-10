@@ -38,20 +38,21 @@ class YouTube(commands.Cog):
             service = build('youtube', 'v3', developerKey = ytapi)
             k = service.search().list(part = "snippet", channelId = ytchannel, maxResults = 5, order = 'date').execute()  # replace that ID with "classid"
             counter = 0
-            print(k)
             k = k['items']
-            print(type(k))
             while True:
-                x = (abs((pd.to_datetime(k[counter]["snippet"]["publishedAt"]).timestamp()) - past) <= 25600)
-                if x:
-                    print("[YOUTUBE] Uploads Found, Getting Data...")
-                    embed = discord.Embed(color = discord.Color.green())
-                    embed.description = k[counter]['snippet']['description']
-                    embed.title = k[counter]['snippet']['title']
-                    embed.set_thumbnail(url = k[counter]['snippet']['thumbnails']['default']['url'])
-                    await channel.send(content = sendmsg, embed=embed)
-                    counter += 1
-                else:
+                try:
+                    x = (abs((pd.to_datetime(k[counter]["snippet"]["publishedAt"]).timestamp()) - past) <= 25600)
+                    if x:
+                        print("[YOUTUBE] Uploads Found, Getting Data...")
+                        embed = discord.Embed(color = discord.Color.green())
+                        embed.description = k[counter]['snippet']['description']
+                        embed.title = k[counter]['snippet']['title']
+                        embed.set_image(url = k[counter]['snippet']['thumbnails']['default']['url'])
+                        await channel.send(content = sendmsg, embed=embed)
+                        counter += 1
+                    else:
+                        break
+                except KeyError:
                     break
 
     @check_for_yt_posts.before_loop
@@ -60,6 +61,7 @@ class YouTube(commands.Cog):
 
     @commands.command()
     @commands.guild_only()
+    @commands.has_permissions(manage_guild = True)
     async def youtubetest(self, ctx, *, query):
         youtube = build('youtube', 'v3', developerKey=ytapi)
         result = youtube.search().list(part="snippet", type="channel", q=query.strip()).execute()
@@ -88,13 +90,13 @@ class YouTube(commands.Cog):
                             await ctx.send("Did you mention a number and a number only? Try typing the `number` next to the channel.")
                             failcount += 1
                             continue
-                        except KeyError:
+                        except IndexError:
                             await ctx.send(f"It looks like the number `{msg.content.strip()}` was not found, try again?")
                             failcount += 1
                             continue
                 except asyncio.TimeoutError:
                     return await ctx.send("You took too long.")
-        await ctx.send(f"Success! `{chanarr[0][1]}` \n({str(chanarr[0][2])[0:200]}) has been saved as the channel for {ctx.guild.name}!\n\nNow, "
+        await ctx.send(f"Success! `{chanarr[0][1]}` \n({str(chanarr[0][2])[0:200]}) \nhas been saved as the channel for **{ctx.guild.name}**!\n\nNow, "
                        f"what channel would you like updates to be sent to? Mention it below.")
         try:
             failcount = 0
@@ -118,11 +120,14 @@ class YouTube(commands.Cog):
             return await ctx.send("You took too long, no preferences have been saved.")
 
         await ctx.send(f"Success, {channel.mention} has been saved as the YouTube Notifier Channel.\n\n"
-                       f"Finally, what message would you like to be sent when this happens? \n**KEEP IT UNDER 1900 CHARACTERS!**")
+                       f"Finally, what message would you like to be sent when this happens? Type `continue` to skip.\n**KEEP IT UNDER 1900 CHARACTERS!**")
 
         try:
             msg = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 120)
-            sendmsg = msg.content.strip()[0:1900]
+            if msg.content.lower().strip() == 'continue':
+                sendmsg = f'{chanarr[0][1]} has just uploaded a video!'
+            else:
+                sendmsg = msg.content.strip()[0:1900]
         except asyncio.TimeoutError:
             return await ctx.send("You took too long, no preferences have been saved.")
 

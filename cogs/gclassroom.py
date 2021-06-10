@@ -87,6 +87,10 @@ class GoogleC(commands.Cog):
                                 embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {k['dueDate']['year']}-{k['dueDate']['month']}-{k['dueDate']['day']}"
                             except KeyError:
                                 embed.description = "No description for this assignment."
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
                             embed.title = str(k["title"])[0:2000]
                             embed.timestamp = pd.to_datetime(k["creationTime"])
                             await channel.send(embed=embed)
@@ -138,19 +142,24 @@ class GoogleC(commands.Cog):
                 for k in courses:
                     print(k)
                     if k["state"] == 'PUBLISHED':
-                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25600)
                         print(x)
                         if not x:
                             break
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
                             embed = discord.Embed(color = discord.Color.green())
                             embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
                             embed.timestamp = pd.to_datetime(k["creationTime"])
                             embed.title = 'New Announcement!'
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
                             continue
+
             except Exception as e:
                 logging.basicConfig(filename='./errors.log')
                 errmsg = f"[GOOGLE CLASSROOM] [ANNOUNCEMENTS] While scraping through announcements, exception {e} was raised."

@@ -863,6 +863,22 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             return await ctx.send(f"I don\'t have permission to move `{member.name}#{member.discriminator}` to {channel.mention}!")
 
+    @commands.command(aliases = ['permissions'])
+    @commands.guild_only()
+    async def perms(self, ctx, member:discord.Member = None):
+        if member is None:
+            member = ctx.author
+        giv = []
+        den = []
+        for i in ctx.channel.permissions_for(member):
+            if i[1]:
+                giv.append(str(i[0]).replace('_', ' ').title())
+            else:
+                den.append(str(i[0]).replace('_', ' ').title())
+        embed = discord.Embed(color = discord.Color.green())
+        embed.add_field(name = "Given", value="\n".join(giv))
+        embed.add_field(name='Denied', value='\n'.join(den))
+        await ctx.send(embed=embed)
 
 
 def setup(client):

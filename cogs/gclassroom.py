@@ -11,6 +11,7 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import logging
 from google.oauth2.credentials import Credentials
 
 import aiohttp
@@ -91,7 +92,9 @@ class GoogleC(commands.Cog):
                             await channel.send(embed=embed)
                             continue
             except Exception as e:
-                print(e)
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ASSIGNMENTS] While scraping through assignments, exception {e} was raised."
+                logging.error(errmsg)
 
     @check_for_assignments.before_loop
     async def before_check_assignments(self):
@@ -149,7 +152,9 @@ class GoogleC(commands.Cog):
                             await channel.send(embed=embed)
                             continue
             except Exception as e:
-                print(e)
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ANNOUNCEMENTS] While scraping through announcements, exception {e} was raised."
+                logging.error(errmsg)
 
     @check_for_announcements.before_loop
     async def before_check_announcements(self):

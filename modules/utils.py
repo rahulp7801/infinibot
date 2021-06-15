@@ -1,4 +1,7 @@
 from __future__ import print_function
+
+import asyncio
+
 from durations_nlp import Duration
 from discord.ext import commands
 from pymongo import MongoClient
@@ -108,23 +111,36 @@ def channelperms(channel: discord.TextChannel):
     True if the bot has sufficient perms, or False and a reason if the Bot does not
     '''
     if channel.is_nsfw():
+        print('her3')
         return False
     if channel.guild.me.guild_permissions.administrator:
+        print('here2')
         return True
     y = channel.overwrites_for(channel.guild.default_role)
     if not y.send_messages or not y.read_messages or not y.embed_links:
+        print('here4')
         pass
     else:
+        print('here7')
         return True
     for role in channel.guild.me.roles:
+        print('here8')
         x = channel.overwrites_for(role)
         if not x.send_messages or not x.read_messages or not x.embed_links:
-            continue
+            if role == channel.guild.default_role:
+                print('nruj')
+                pass
+            else:
+                print('here9')
+                pass
         else:
+            print('here10')
             return True
+        break
 
     z = channel.overwrites_for(channel.guild.me)
     if not z.send_messages or not z.read_messages or not z.embed_links:
+        print('here1')
         return False
 
 def rolecheck(role:discord.Role, ctx):
@@ -498,4 +514,5 @@ async def set_classroom_class(ctx, guild:discord.Guild):
     if len(res) == 1:
         return res[0]
     return res
+
 

@@ -29,17 +29,31 @@ t1 = threading.Thread(target=voiceChatMain)
 async def on_ready():
     t1.start()
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
-    for i in client.guilds:
-        print(i.name + "->" + str(i.owner_id))
-        try:
-            utils.add_guild_to_db(i)
-        except:
-            continue
-    DiscordComponents(client, change_discord_methods=True)
-    while True:
-        await asyncio.sleep(10)
-        with open('spamdetect.txt', 'r+') as f:
-            f.truncate(0)
+    try:
+        for guild in client.guilds:
+            owner = guild.get_member(guild.owner_id)
+            embed = discord.Embed(color=discord.Color.red())
+            embed.description = f"New Guild Joined: `{guild.name}`\n({guild.id})\n\n" \
+                                f"Guild Owner: {owner.mention} ({owner.id})"
+            embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
+            embed.add_field(name='Member Count', value=f"{(guild.member_count)}", inline=False)
+            embed.add_field(name='Bot Count', value=f"{len([x for x in guild.members if x.bot])}", inline=False)
+            embed.add_field(name='Server Count', value=f"{len(client.guilds)}", inline=False)
+            embed.add_field(name='Total User Count', value=f"{len(client.users)}")
+            channel = client.get_channel(844611738133463121)
+            await channel.send(embed=embed)
+            await asyncio.sleep(1.5)
+            try:
+                utils.add_guild_to_db(guild)
+            except:
+                continue
+        DiscordComponents(client, change_discord_methods=True)
+        while True:
+            await asyncio.sleep(10)
+            with open('spamdetect.txt', 'r+') as f:
+                f.truncate(0)
+    except Exception as e:
+        print(e)
 
 @client.command(help='Gives the ping of the bot!', aliases = ['clientping'])
 async def botping(ctx):

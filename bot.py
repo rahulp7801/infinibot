@@ -31,18 +31,6 @@ async def on_ready():
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
     try:
         for guild in client.guilds:
-            owner = guild.get_member(guild.owner_id)
-            embed = discord.Embed(color=discord.Color.red())
-            embed.description = f"New Guild Joined: `{guild.name}`\n({guild.id})\n\n" \
-                                f"Guild Owner: {owner.mention} ({owner.id})"
-            embed.set_author(name=client.user.name, icon_url=client.user.avatar_url)
-            embed.add_field(name='Member Count', value=f"{(guild.member_count)}", inline=False)
-            embed.add_field(name='Bot Count', value=f"{len([x for x in guild.members if x.bot])}", inline=False)
-            embed.add_field(name='Server Count', value=f"{len(client.guilds)}", inline=False)
-            embed.add_field(name='Total User Count', value=f"{len(client.users)}")
-            channel = client.get_channel(844611738133463121)
-            await channel.send(embed=embed)
-            await asyncio.sleep(1.5)
             try:
                 utils.add_guild_to_db(guild)
             except:

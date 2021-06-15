@@ -33,43 +33,6 @@ with open('./youtubeapi.txt', 'r') as f:
 class YouTube(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.check_for_yt_posts.start()
-
-    @tasks.loop(minutes = 5)
-    async def check_for_yt_posts(self):
-        print("[YOUTUBE] Checking for upload loop started...")
-        past = datetime.datetime.utcnow().timestamp()
-        db = cluster['YOUTUBE']
-        col = db['guilds']
-        result = col.find()
-        for i in result:
-            channel = i["textchannel"]
-            ytchannel = i["channelid"]
-            sendmsg = i["sendmsg"]
-            channel = self.client.get_channel(channel)
-            service = build('youtube', 'v3', developerKey = ytapi)
-            k = service.search().list(part = "snippet", channelId = ytchannel, maxResults = 5, order = 'date').execute()  # replace that ID with "classid"
-            counter = 0
-            k = k['items']
-            while True:
-                try:
-                    x = (abs((pd.to_datetime(k[counter]["snippet"]["publishedAt"]).timestamp()) - past) <= 25600)
-                    if x:
-                        print("[YOUTUBE] Uploads Found, Getting Data...")
-                        embed = discord.Embed(color = discord.Color.green())
-                        embed.description = k[counter]['snippet']['description']
-                        embed.title = k[counter]['snippet']['title']
-                        embed.set_image(url = k[counter]['snippet']['thumbnails']['default']['url'])
-                        await channel.send(content = sendmsg, embed=embed)
-                        counter += 1
-                    else:
-                        break
-                except KeyError:
-                    break
-
-    @check_for_yt_posts.before_loop
-    async def before_yt(self):
-        await self.client.wait_until_ready()
 
     @commands.command()
     @commands.guild_only()
@@ -78,7 +41,7 @@ class YouTube(commands.Cog):
         print('ok')
         try:
             youtube = build('youtube', 'v3', developerKey=ytapi)
-            result = youtube.search().list(part="snippet", type="channel", q=query.strip()).execute()
+            result = youtube.channels().list(part="snippet", type="channel", q=query.strip()).execute()
             counter = 0
             arr = []
             for i in result.items():

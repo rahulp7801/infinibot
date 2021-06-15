@@ -880,6 +880,21 @@ class Moderation(commands.Cog):
         embed.add_field(name='Denied', value='\n'.join(den))
         await ctx.send(embed=embed)
 
+    @commands.command()
+    @commands.bot_has_permissions(manage_messages = True)
+    async def clearmine(self, ctx, limit:int = 50, user :discord.User= None):
+        if user:
+            check = lambda msg: msg.author == user and not msg.pinned
+        else:
+            user = ctx.author
+            check = lambda msg: msg.author == ctx.author and not msg.pinned
+        await ctx.message.delete()
+        try:
+            await ctx.channel.purge(limit=limit, check=check)
+            await ctx.send(f"`{limit}` messages deleted for `{user.name}#{user.discriminator}` in {ctx.channel.mention}.", delete_after = 5)
+        except discord.HTTPException:
+            await ctx.send("I cannot delete messages older than 2 weeks!", delete_after = 5)
+
 
 def setup(client):
     client.add_cog(Moderation(client))

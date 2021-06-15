@@ -41,21 +41,14 @@ async def on_message(message):
 
 @app.route("/feed", methods = ["GET", "POST"])
 async def feed():
-    print('e')
     challenge = request.args.get("hub.challenge")
     if challenge:
-        print('yes')
         return challenge
     try:
-        print('ok1')
         xml_dict = xmltodict.parse(await request.data)
-        print(xml_dict )
-        print('ok2')
         channel_id = xml_dict["feed"]["entry"]["yt:channelId"]
-        print('ok3')
         if (col.count_documents({'channelid': channel_id}) == 0):
-            print('ok4')
-            return "okokokok", 403
+            return "No servers found for this channel", 403
         video_url = xml_dict['feed']['entry']['link']['@href']
         video_author = xml_dict['feed']['entry']['author']['name']
         try:
@@ -64,7 +57,6 @@ async def feed():
             description = "No Description"
 
         title = xml_dict['feed']['entry']['title']
-        print('ok5')
         print(f"New video url: {video_url}")
         embed = discord.Embed(color=discord.Color.green(), url=video_url)
         embed.title = title
@@ -72,7 +64,6 @@ async def feed():
         embed.set_author(name=video_author)
         result = col.find({'channelid': channel_id})
         for i in result:
-            print(i)
             channel = i["textchannel"]
             sendmsg = i["sendmsg"]
             channel = client.get_channel(channel)
@@ -80,7 +71,7 @@ async def feed():
 
     except (ExpatError, LookupError) as e:
         print(e)
-        return "yesthis", 403
+        return f"Error while parsing though Pub/Sub: {e}", 403
 
     return "", 204
 

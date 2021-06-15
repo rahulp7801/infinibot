@@ -49,6 +49,7 @@ async def feed():
     try:
         print('ok1')
         xml_dict = xmltodict.parse(await request.data)
+        print(xml_dict )
         print('ok2')
         channel_id = xml_dict["feed"]["entry"]["yt:channelId"]
         print('ok3')
@@ -71,13 +72,10 @@ async def feed():
         embed.set_author(name=video_author)
         result = col.find({'channelid': channel_id})
         for i in result:
+            print(i)
             channel = i["textchannel"]
-            print(channel)
             sendmsg = i["sendmsg"]
-            print(sendmsg)
             channel = client.get_channel(channel)
-            print(client.user.name)
-            print(channel)
             client.loop.create_task(channel.send(content=sendmsg, embed=embed))
 
     except (ExpatError, LookupError) as e:

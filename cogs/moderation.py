@@ -139,9 +139,13 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_messages = True)
-    async def clear(self, ctx, amount:int):
+    async def clear(self, ctx, amount:int, user:discord.User = None):
         try:
-            await ctx.channel.purge(limit = amount + 1)
+            if user is None:
+                await ctx.channel.purge(limit=amount + 1)
+            else:
+                check = lambda msg: msg.author == user and msg.channel == ctx.channel
+                await ctx.channel.purge(limit=amount + 1, check=check)
             await asyncio.sleep(2)
             await ctx.send(f"Cleared {amount + 1} messages!", delete_after = 5)
         except discord.errors.HTTPException:
@@ -882,12 +886,9 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.bot_has_permissions(manage_messages = True)
-    async def clearmine(self, ctx, limit:int = 50, user :discord.User= None):
-        if user:
-            check = lambda msg: msg.author == user and not msg.pinned
-        else:
-            user = ctx.author
-            check = lambda msg: msg.author == ctx.author and not msg.pinned
+    async def clearmine(self, ctx, limit:int = 50):
+        user = ctx.author
+        check = lambda msg: msg.author == ctx.author and not msg.pinned
         await ctx.message.delete()
         try:
             await ctx.channel.purge(limit=limit, check=check)

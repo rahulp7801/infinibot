@@ -442,5 +442,30 @@ class Misc(commands.Cog, name="Miscellaneous"):
         await ctx.reply(f"Pong! 🏓 `{ping}ms`", mention_author=False)
         return
 
+    @commands.command(aliases = ['discriminator'])
+    async def discrim(self, ctx, discrim = None):
+        try:
+            if discrim is None:
+                discrim = (ctx.author.discriminator)
+            if len(discrim) != 4:
+                return await ctx.send("That\'s not a valid disciminator!")
+            if not discrim.isdigit() :
+                return await ctx.send("That is not a number!!!")
+            users = self.client.get_all_members()
+            members = list(set(list(filter(lambda m: str(m.discriminator) == str(discrim), users))))
+            embed = discord.Embed(color = discord.Color.red())
+            desc = []
+            if (len(members) == 1 and discrim == ctx.author.discriminator):
+                return await ctx.send("It looks like you are the only person with this discriminator who uses InfiniBot!")
+            if len(members) == 0:
+                return await ctx.send("Looks like no one has that discriminator :(")
+            for i in range((len(members) if len(members) <= 8 else 8)):
+                desc.append(f"{members[i].name}#{members[i].discriminator}")
+            embed.description = "\n".join(desc)
+            embed.title = f"Members with the discriminator #{discrim}"
+            await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
 def setup(client):
     client.add_cog(Misc(client))

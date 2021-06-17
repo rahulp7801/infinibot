@@ -72,9 +72,9 @@ class Configuration(commands.Cog):
     @setup.command(help='Setup a channel for welcome messages!')
     @commands.has_permissions(manage_messages=True)
     async def welcomechannel(self, ctx, channel: discord.TextChannel = None):
-        db = cluster[f'GUILD{ctx.guild.id}']
+        db = cluster['CONFIGURATON']
         if channel is None:
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -94,20 +94,12 @@ class Configuration(commands.Cog):
             if channel.is_nsfw():
                 return await ctx.send(
                     f"{channel.mention} is marked as NSFW, so I cannot send welcome messages in this channel.")
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "welcomechannel": channel.id
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(f"{channel.mention} has been set as the welcome channel for {ctx.guild.name}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomechannel': channel.id}})
-                return await ctx.send(
-                    f"{channel.mention} has been updated as the welcome channel for {ctx.guild.name}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id':ctx.guild.id}, {'$set': {'welcomechannel':channel.id}})
+            return await ctx.send(f"{channel.mention} has been set as the welcome channel for {ctx.guild.name}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -115,9 +107,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomemsg', 'welcomemessage'], help='Setup text for welcome messages!')
     @commands.has_permissions(manage_messages=True)
     async def welcometext(self, ctx, *, text: str = None):
-        db=cluster[f'GUILD{ctx.guild.id}']
+        db = cluster['CONFIGURATON']
         if text is None:
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -135,7 +127,7 @@ class Configuration(commands.Cog):
         if len(text) > 2000:
             return await ctx.send(f"I cannot send this message due to discord limitations.")
         if ctx.message.author.guild_permissions.manage_messages:
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 ping_cm = {
@@ -156,9 +148,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['welcomenick', 'welconickname'], help = 'Setup a nickname for users to get on join!')
     @commands.has_permissions(manage_nicknames=True)
     async def onjoinnick(self, ctx, *, nick=None):
-        db = cluster[f"GUILD{ctx.guild.id}"]
+        db = cluster['CONFIGURATON']
         if nick is None:
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -171,27 +163,19 @@ class Configuration(commands.Cog):
             return await ctx.send("The welcome nickname for this server has successfully been removed.")
         if len(nick.strip()) > 20:
             return await ctx.send(f"I cannot set this nickname due to Discord limitations.")
-        collection = db['config']
+        collection = db['guilds']
         query = {'_id': ctx.guild.id}
         if collection.count_documents(query) == 0:
-            ping_cm = {
-                "_id": ctx.guild.id,
-                "name": ctx.guild.name,
-                "welcomenick": nick.strip()
-            }
-            collection.insert_one(ping_cm)
-            return await ctx.send(f"The welcomenick for {ctx.guild.name} has been set to {nick.strip()}")
-        else:
-            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': nick.strip()}})
-            return await ctx.send(f"The welcomenick for {ctx.guild.name} has been updated to {nick.strip()}")
+            utils.add_guild_to_db(ctx.guild)
+        collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': nick.strip()}})
+        return await ctx.send(f"The welcomenick for {ctx.guild.name} has been updated to {nick.strip()}")
 
     @setup.command(aliases=['minecraftip'], help = 'Set a Minecraft IP!')
     @commands.has_permissions(manage_guild = True)
     async def mcip(self, ctx, *, text: str = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
         if text is None:
-            collection = db['config']
+            collection = db['guilds']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -206,16 +190,9 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "mcip": text.strip()
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(f"The Minecraft IP for {ctx.guild.name} has been set to {text.strip()}")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'mcip': text.strip()}})
-                return await ctx.send(f"The Minecraft IP for {ctx.guild.name} has been updated to {text.strip()}")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'mcip': text.strip()}})
+            return await ctx.send(f"The Minecraft IP for {ctx.guild.name} has been updated to {text.strip()}")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -223,10 +200,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['XP', 'levelups'], help = 'Enable leveling!')
     @commands.has_permissions(manage_guild = True)
     async def levels(self, ctx, enab=True):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(enab).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -241,18 +217,10 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "levelups": f"{'on' if enab else ''}"
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(
-                    f"Levelups have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'levelups': f"{'on' if enab else ''}"}})
-                return await ctx.send(
-                    f"Levelups have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'levelups': f"{'on' if enab else ''}"}})
+            return await ctx.send(
+                f"Levelups have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -260,10 +228,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['antighostping', 'antighost', 'ghostpingdetection'], help='Setup ghostping detection!')
     @commands.has_permissions(manage_guild = True)
     async def ghostping(self, ctx, enab=True):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(enab).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -275,21 +242,12 @@ class Configuration(commands.Cog):
             collection.update_one({'_id': ctx.guild.id}, {'$set': {'ghostpingon': ''}})
             return await ctx.send("Ghost ping detection for this server has successfully been removed.")
         if ctx.message.author.guild_permissions.manage_messages:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "ghostpingon": f"{'on' if enab else ''}"
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(
-                    f"Ghostpings have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'ghostpingon': f"{'on' if enab else ''}"}})
-                return await ctx.send(
-                    f"Ghostpings have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'ghostpingon': f"{'on' if enab else ''}"}})
+            return await ctx.send(
+                f"Ghostpings have been toggled to `{'on' if enab else 'off'}` for {ctx.guild.name}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -297,10 +255,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['dmset', 'privmsg', 'privset', 'privatemsg', 'privatemessage', 'dmmsg', 'dmsg'], help = 'Set up a private DM message for when a member joins!')
     @commands.has_permissions(manage_guild = True)
     async def privatewelcomemessage(self, ctx, *, text: str = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if text is None:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -319,14 +276,8 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "priv_welcomemsg": text.strip()
-                }
-                collection.insert_one(ping_cm)
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'priv_welcomemsg': text.strip()}})
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'priv_welcomemsg': text.strip()}})
             embed = discord.Embed(
                 description=str(text).format(members=membercount, mention=mention, user=user, guild=guild),
                 color=discord.Color.blurple(), timestamp=datetime.datetime.utcnow())
@@ -340,9 +291,8 @@ class Configuration(commands.Cog):
     @setup.command(help = 'Set a role to be given when a user joins your server!')
     @commands.has_permissions(manage_guild = True)
     async def welcomerole(self, ctx, *, role: discord.Role = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if role is None:
             query = {'_id':ctx.guild.id}
             if collection.count_documents(query) == 0:
@@ -360,17 +310,10 @@ class Configuration(commands.Cog):
             res = utils.rolecheck(rolez, ctx)
             if not res:
                 return await ctx.send(res[1])
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "welcomerole": role.id
-                }
-                collection.insert_one(ping_cm)
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomerole': role.id}})
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomerole': role.id}})
             desc = f'Welcome role: **{role.mention}**\n\n' \
                    f'Make sure that **{role.mention}** is the exact name of the role, as it is case-sensitive. \nUse the command again if you wish to update.\n\n' \
                    f'Also, please make my highest role higher than **{role.mention}** so I can assign it.'
@@ -386,10 +329,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['bl', 'blackl'], help = 'Toggle the blacklisted word detection!')
     @commands.has_permissions(manage_guild = True)
     async def blacklist(self, ctx, enab: bool = False):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(enab).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -404,16 +346,9 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "blacklistenab": f"{'on' if enab else ''}"
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(f"Blacklist for {ctx.guild.name} has been toggled to {'on' if enab else 'off'}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'blacklistenab': f"{'on' if enab else ''}"}})
-                return await ctx.send(f"Blacklist for {ctx.guild.name} has been toggled to {'on' if enab else 'off'}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'blacklistenab': f"{'on' if enab else ''}"}})
+            return await ctx.send(f"Blacklist for {ctx.guild.name} has been toggled to {'on' if enab else 'off'}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -421,10 +356,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'], help = 'Setup a leave message.')
     @commands.has_permissions(manage_guild = True)
     async def goodbyemsg(self, ctx, *, text: str = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if text is None:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -439,18 +373,10 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "leavemsg": text.strip()
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(
-                    f"The goodbye message for {ctx.guild.name} has been set to {text.strip()}! \nExample usage:")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'leavemsg': text.strip()}})
-                await ctx.send(
-                    f"The goodbye message for {ctx.guild.name} has been updated to {text.strip()}! \nExample Usage:")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'leavemsg': text.strip()}})
+            await ctx.send(
+                f"The goodbye message for {ctx.guild.name} has been updated to {text.strip()}! \nExample Usage:")
             membercount = ctx.guild.member_count
             mention = ctx.author.mention
             user = ctx.author.name
@@ -470,10 +396,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['starchannel', 'starchan'], help = 'Setup a starboard channel.')
     @commands.has_permissions(manage_guild = True)
     async def starboardchannel(self, ctx, channel: discord.TextChannel = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if channel is None:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -492,17 +417,10 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "starchannel": channel.id
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(f"The starboard channel for {ctx.guild.name} has been set to {channel.mention}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'starchannel': channel.id}})
-                await ctx.send(
-                    f"The starboard channel for {ctx.guild.name} has been updated to {channel.mention}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'starchannel': channel.id}})
+            await ctx.send(
+                f"The starboard channel for {ctx.guild.name} has been updated to {channel.mention}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -510,10 +428,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['servercaptcha'], help = 'Set a captcha that users need to solve before verifying!')
     @commands.has_permissions(manage_guild = True)
     async def captcha(self, ctx, text: bool = True):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(text).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -530,17 +447,10 @@ class Configuration(commands.Cog):
             collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "captchaon": f"{'on' if text else ''}"
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(f"Server captcha for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'captchaon': f"{'on' if text else ''}"}})
-                await ctx.send(
-                    f"Server captcha for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'captchaon': f"{'on' if text else ''}"}})
+            await ctx.send(
+                f"Server captcha for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -548,10 +458,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['spamdetect'], help = 'Setup spam detection!')
     @commands.has_permissions(manage_guild = True)
     async def spamdetection(self, ctx, text: bool = False):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(text).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -565,20 +474,12 @@ class Configuration(commands.Cog):
         if text is None:
             return
         if ctx.message.author.guild_permissions.manage_messages:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "spamdetect": f"{'on' if text else ''}"
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(f"Spam detection for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'spamdetect': f"{'on' if text else ''}"}})
-                await ctx.send(
-                    f"Spam detection for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'spamdetect': f"{'on' if text else ''}"}})
+            await ctx.send(
+                f"Spam detection for {ctx.guild.name} has been toggled to {'on' if text else 'off'}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -586,10 +487,9 @@ class Configuration(commands.Cog):
     @setup.command(aliases=['logs', 'log'], help = 'Setup logging!')
     @commands.has_permissions(manage_guild = True)
     async def logging(self, ctx, setup: bool = True, channel: discord.TextChannel = None):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if str(setup).lower() not in ['true', 'false']:
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 return await ctx.send("An error occurred, contact the developers immediately.")
@@ -603,21 +503,12 @@ class Configuration(commands.Cog):
             return await ctx.send("Logging for this server has successfully been removed.")
         if channel is None:
             if not setup:
-                collection = db['config']
                 query = {'_id': ctx.guild.id}
                 if collection.count_documents(query) == 0:
-                    ping_cm = {
-                        "_id": ctx.guild.id,
-                        "name": ctx.guild.name,
-                        "logging": f"{'on' if setup else ''}"
-                    }
-                    collection.insert_one(ping_cm)
-                    return await ctx.send(
-                        f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
-                else:
-                    collection.update_one({'_id': ctx.guild.id}, {'$set': {'logging': f"{'on' if setup else ''}"}})
-                    return await ctx.send(
-                        f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
+                    utils.add_guild_to_db(ctx.guild)
+                collection.update_one({'_id': ctx.guild.id}, {'$set': {'logging': f"{'on' if setup else ''}"}})
+                return await ctx.send(
+                    f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
 
             embed = utils.errmsg(ctx)
             return await ctx.send(embed=embed)
@@ -629,34 +520,18 @@ class Configuration(commands.Cog):
                     f"Please give me permission to `View Channel`, `Send Messages`, and `Embed Links` in {channel.mention} before proceeding.")
             if channel.is_nsfw():
                 return await ctx.send(f"{channel.mention} is an NSFW channel, so I cannot send log messages here.")
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "logging": f"{'on' if setup else ''}"
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'logging': f"{'on' if setup else ''}"}})
-                await ctx.send(
-                    f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
-            collection = db['config']
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'logging': f"{'on' if setup else ''}"}})
+            await ctx.send(
+                f"Logging for {ctx.guild.name} has been toggled to {'on' if setup else 'off'}!")
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "logchannel": channel.id
-                }
-                collection.insert_one(ping_cm)
-                return await ctx.send(f"Logging channel for {ctx.guild.name} has been set to {channel.mention}!")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'logchannel': channel.id}})
-                return await ctx.send(
-                    f"Logging channel for {ctx.guild.name} has been updated to {channel.mention}!")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'logchannel': channel.id}})
+            return await ctx.send(
+                f"Logging channel for {ctx.guild.name} has been updated to {channel.mention}!")
         else:
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
@@ -666,8 +541,8 @@ class Configuration(commands.Cog):
     async def muterole(self, ctx, *, name="Muted"):
         if len(name) > 20:
             return await ctx.send(f"Make sure that `{name}` is kept under 20 characters.")
-        named = f"GUILD{ctx.guild.id}"
-        db = cluster[named]
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         if ctx.author.guild_permissions.manage_roles:
             message = await ctx.send("Updating channel overrides...")
             skipcount = 0
@@ -683,59 +558,55 @@ class Configuration(commands.Cog):
                         continue
                 if str(channel.type).lower() == 'voice':
                     continue
-            collection = db['config']
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
-                ping_cm = {
-                    "_id": ctx.guild.id,
-                    "name": ctx.guild.name,
-                    "muterole": mutedRole.id
-                }
-                collection.insert_one(ping_cm)
-                await ctx.send(f"The muterole for {ctx.guild.name} has been set to {mutedRole.mention}! With {skipcount} channel{'' if skipcount == 1 else 's'} skipped.")
-            else:
-                collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
-                await ctx.send(
-                    f"The muterole for {ctx.guild.name} has been updated to {mutedRole.mention}! With {skipcount} channel{'' if skipcount == 1 else 's'} skipped.")
+                utils.add_guild_to_db(ctx.guild)
+            collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
+            await ctx.send(
+                f"The muterole for {ctx.guild.name} has been updated to {mutedRole.mention}! With {skipcount} channel{'' if skipcount == 1 else 's'} skipped.")
 
     @commands.command(help = 'Change the prefix!')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def changeprefix(self, ctx, prefix):
-        if len(prefix) > 10:
-            return await ctx.reply(f"The prefix `{prefix}` is larger than 10 characters.", mention_author=False)
-        if prefix == "":
-            return await ctx.reply("You must specify a prefix!", mention_author=False)
-        if prefix.startswith(" "):
-            return await ctx.reply(
-                f"The prefix `{prefix}` starts with a space. Rerun the command, and don't put a space next time.",
-                mention_author=False)
-        if prefix.mentions:
-            await ctx.send("Bruh seriously")
-            return
         try:
-            prefix = prefix.lstrip()
+            if len(prefix) > 10:
+                return await ctx.reply(f"The prefix `{prefix}` is larger than 10 characters.", mention_author=False)
+            if prefix == "":
+                return await ctx.reply("You must specify a prefix!", mention_author=False)
+            if prefix.startswith(" "):
+                return await ctx.reply(
+                    f"The prefix `{prefix}` starts with a space. Rerun the command, and don't put a space next time.",
+                    mention_author=False)
+            if ('@everyone' or '@here') in prefix:
+                await ctx.send("Bruh seriously")
+                return
+            try:
+                prefix = prefix.strip()
+            except Exception as e:
+                print(e)
+                pass
+
+            db = cluster['CONFIGURATION']
+            collection = db['guilds']
+            collection.update_one({"_id": ctx.guild.id}, {"$set": {'prefix': str(prefix)}})
+            x = utils.imgdraw(photo='./Images/prefiximg.png', font = 'arial.ttf', fontsize=15, xy=(75, 45), text=f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", rgb=(255, 255, 255))
+            desc = f"Prefix for **{ctx.guild.name}** has been updated to `{prefix}`. \n\n**NOTE:** If you want a word prefix with a space after it, you must surround it in quotes due to a Discord limitation.\n\nEXAMPLE: {prefix}changeprefix \"yo \""
+            embed = discord.Embed(description=desc, color=discord.Color.green())
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            file = discord.File("./profile.png", filename='image.png')
+            embed.set_image(url='attachment://image.png')
+            await ctx.send(file=file, embed=embed)
         except Exception as e:
             print(e)
-            pass
-
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
-        collection.update_one({"_id": ctx.guild.id}, {"$set": {'prefix': str(prefix)}})
-        x = utils.imgdraw(photo='./Images/prefiximg.png', font = 'arial.ttf', fontsize=15, xy=(75, 45), text=f"{prefix}tinyurl https://www.youtube.com/watch?v=dQw4w9WgXcQ", rgb=(255, 255, 255))
-        desc = f"Prefix for **{ctx.guild.name}** has been updated to `{prefix}`. \n\n**NOTE:** If you want a word prefix with a space after it, you must surround it in quotes due to a Discord limitation.\n\nEXAMPLE: {prefix}changeprefix \"yo \""
-        embed = discord.Embed(description=desc, color=discord.Color.green())
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        file = discord.File("./profile.png", filename='image.png')
-        embed.set_image(url='attachment://image.png')
-        await ctx.send(file=file, embed=embed)
 
     @setup.command(help='Setup all of the setup commands in one, interactive session!')
     @commands.cooldown(1, 90000, commands.BucketType.guild)
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def all(self, ctx):
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         try:
             desc = f"Hi {ctx.author.mention}, welcome to the all-in-one setup for {self.client.user.name}! Just take 5 minutes to complete this setup, and leave your server in the hands of {self.client.user.name}." \
                    f"To begin, react with the ✅. At any point in time if you would like to cancel, react with the ❌. \nReady to get started? Hit the checkmark below!"
@@ -799,7 +670,7 @@ class Configuration(commands.Cog):
                         except discord.Forbidden:
                             pass
                         if len(msg.content) > 2000:
-                            # idk how this can happen
+                            # nitro users :(
                             desc = f"Your message was longer than 2000 characters! `{len(msg.content)}` > 2000. \nPlease start over from the beginning."
                             embed = discord.Embed(description=desc, color=discord.Color.red())
                             return await message.edit(embed=embed)
@@ -826,21 +697,13 @@ class Configuration(commands.Cog):
 
                         reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=180)
                         if reaction.emoji == '✅':
-                            name = f"GUILD{ctx.guild.id}"
-                            db = cluster[name]
+
                             if ctx.message.author.guild_permissions.manage_messages:
-                                collection = db['config']
                                 query = {'_id': ctx.guild.id}
                                 if collection.count_documents(query) == 0:
-                                    ping_cm = {
-                                        "_id": ctx.guild.id,
-                                        "name": ctx.guild.name,
-                                        "welcomemsg": msg.content.strip()
-                                    }
-                                    collection.insert_one(ping_cm)
-                                else:
-                                    collection.update_one({'_id': ctx.guild.id},
-                                                          {'$set': {'welcomemsg': msg.content.strip()}})
+                                    utils.add_guild_to_db(ctx.guild)
+                                collection.update_one({'_id': ctx.guild.id},
+                                                      {'$set': {'welcomemsg': msg.content.strip()}})
                                 desc = f"Success! Your welcome message has been saved and will apply as soon as setup is complete. Moving on ..."
                                 embed = discord.Embed(description=desc, color=discord.Color.green())
                                 await message.edit(embed=embed)
@@ -859,7 +722,7 @@ class Configuration(commands.Cog):
                             continue
                 break
             while True:
-                desc = f"Excellent! Now that we've gotten that out of the way, lets specify the channel in which this message should be sent. \n" \
+                desc = f"Excellent! Now that we've gotten that out of the way, let\'s specify the channel in which this message should be sent. \n" \
                        f"React with the ✅ if you want to proceed or ❌ if you wish to cancel, or ⏩ to skip this segment."
                 embed = discord.Embed(description = desc, color = discord.Color.green())
                 await message.edit(embed=embed)
@@ -901,20 +764,11 @@ class Configuration(commands.Cog):
                             await asyncio.sleep(6)
                             continue
                         else:
-                            name = f"GUILD{ctx.guild.id}"
-                            db = cluster[name]
-                            collection = db['config']
                             query = {'_id': ctx.guild.id}
                             if collection.count_documents(query) == 0:
-                                ping_cm = {
-                                    "_id": ctx.guild.id,
-                                    "name": ctx.guild.name,
-                                    "welcomechannel": channel.id
-                                }
-                                collection.insert_one(ping_cm)
-                            else:
-                                collection.update_one({'_id': ctx.guild.id},
-                                                      {'$set': {'welcomechannel': channel.id}})
+                                utils.add_guild_to_db(ctx.guild)
+                            collection.update_one({'_id': ctx.guild.id},
+                                                  {'$set': {'welcomechannel': channel.id}})
                             desc = f"We have saved {channel.mention} as the channel that welcome messages will be sent in!"
                             embed = discord.Embed(description = desc, color = discord.Color.green())
                             await message.edit(embed=embed)
@@ -979,7 +833,7 @@ class Configuration(commands.Cog):
                     except discord.Forbidden:
                         pass
                     if len(msg.content) > 2000:
-                        # idk how this can happen
+                        # nitro
                         desc = f"Your message was longer than 2000 characters! `{len(msg.content)}` > 2000. \nAll your preferences have been saved. If you want to continue setup, run the command again."
                         embed = discord.Embed(description=desc, color=discord.Color.red())
                         return await message.edit(embed=embed)
@@ -989,7 +843,7 @@ class Configuration(commands.Cog):
                     guild = ctx.guild.name
                     mention = ctx.author.mention
                     uembed = discord.Embed(
-                        description=str(msg.content.strip()).format(members=membercount, member=mention, mention=mention, user=user,
+                        description=str(msg.content.strip()).format(members=membercount, member=member, mention=mention, user=user,
                                                         guild=guild) + "\n\nIf you like "
                                                                                    "this format, react with the ✅. React with the ❌ to cancel. Or react with the ◀ to go back.",
                         color=discord.Color.green())
@@ -1015,20 +869,10 @@ class Configuration(commands.Cog):
                         await message.clear_reactions()
                         return
                     elif reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "priv_welcomemsg": msg.content.strip()
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id}, {'$set': {'priv_welcomemsg': msg.content.strip()}})
-
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id}, {'$set': {'priv_welcomemsg': msg.content.strip()}})
                         await message.clear_reactions()
                         desc = "I have saved your private DM welcome message. Let's move on."
                         embed = discord.Embed(description=desc, color = discord.Color.red())
@@ -1097,19 +941,10 @@ class Configuration(commands.Cog):
                                 await asyncio.sleep(3)
                                 continue
                             else:
-                                name = f"GUILD{ctx.guild.id}"
-                                db = cluster[name]
-                                collection = db['config']
                                 query = {'_id': ctx.guild.id}
                                 if collection.count_documents(query) == 0:
-                                    ping_cm = {
-                                        "_id": ctx.guild.id,
-                                        "name": ctx.guild.name,
-                                        "welcomerole": role.id
-                                    }
-                                    collection.insert_one(ping_cm)
-                                else:
-                                    collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomerole': role.id}})
+                                   utils.add_guild_to_db(ctx.guild)
+                                collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomerole': role.id}})
                                 desc = f"Success! {role.mention} has been set as the welcome role for {ctx.guild.name}. \nMoving on to next segment!"
                                 embed = discord.Embed(description=desc, color = discord.Color.green())
                                 await message.edit(embed=embed)
@@ -1162,20 +997,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "captchaon": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'captchaon': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'captchaon': 'on'}})
                         desc = "Captcha has been toggled to on!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color = discord.Color.green())
                         await message.clear_reactions()
@@ -1183,20 +1009,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "captchaon": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'captchaon': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'captchaon': ''}})
                         desc = "Captcha has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1255,19 +1072,10 @@ class Configuration(commands.Cog):
                                     await channel.set_permissions(mutedRole, send_messages=False)
                                 if str(channel.type).lower() == 'voice':
                                     continue
-                            name = f"GUILD{ctx.guild.id}"
-                            db = cluster[name]
-                            collection = db['config']
                             query = {'_id': ctx.guild.id}
                             if collection.count_documents(query) == 0:
-                                ping_cm = {
-                                    "_id": ctx.guild.id,
-                                    "name": ctx.guild.name,
-                                    "muterole": mutedRole.id
-                                }
-                                collection.insert_one(ping_cm)
-                            else:
-                                collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
+                                utils.add_guild_to_db(ctx.guild)
+                            collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
                             desc = f"Success! The muterole for {ctx.guild.name} has been set to {mutedRole.mention}!\nMoving on to the next segment!"
                             embed = discord.Embed(description = desc, color = discord.Color.green())
                             await message.clear_reactions()
@@ -1319,19 +1127,10 @@ class Configuration(commands.Cog):
                                     await asyncio.sleep(3)
                                     continue
                                 else:
-                                    name = f"GUILD{ctx.guild.id}"
-                                    db = cluster[name]
-                                    collection = db['config']
                                     query = {'_id': ctx.guild.id}
                                     if collection.count_documents(query) == 0:
-                                        ping_cm = {
-                                            "_id": ctx.guild.id,
-                                            "name": ctx.guild.name,
-                                            "muterole": role.id
-                                        }
-                                        collection.insert_one(ping_cm)
-                                    else:
-                                        collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': role.id}})
+                                        utils.add_guild_to_db(ctx.guild)
+                                    collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': role.id}})
                                     desc = f"Success! {role.mention} has been set as the muterole for {ctx.guild.name}. \nMoving on to next segment!"
                                     embed = discord.Embed(description=desc, color=discord.Color.green())
                                     await message.edit(embed=embed)
@@ -1427,21 +1226,12 @@ class Configuration(commands.Cog):
 
                         reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=180)
                         if reaction.emoji == '✅':
-                            name = f"GUILD{ctx.guild.id}"
-                            db = cluster[name]
                             if ctx.message.author.guild_permissions.manage_messages:
-                                collection = db['config']
                                 query = {'_id': ctx.guild.id}
                                 if collection.count_documents(query) == 0:
-                                    ping_cm = {
-                                        "_id": ctx.guild.id,
-                                        "name": ctx.guild.name,
-                                        "leavemsg": msg.content.strip()
-                                    }
-                                    collection.insert_one(ping_cm)
-                                else:
-                                    collection.update_one({'_id': ctx.guild.id},
-                                                          {'$set': {'leavemsg': msg.content.strip()}})
+                                    utils.add_guild_to_db(ctx.guild)
+                                collection.update_one({'_id': ctx.guild.id},
+                                                      {'$set': {'leavemsg': msg.content.strip()}})
                                 desc = f"Success! Your leave message has been saved and will apply as soon as setup is complete. Moving on ..."
                                 embed = discord.Embed(description=desc, color=discord.Color.green())
                                 await message.edit(embed=embed)
@@ -1451,11 +1241,11 @@ class Configuration(commands.Cog):
                                 # continue from here!
                         elif reaction.emoji == '❌':
                             # create a go back thing here
-                            desc = f"The leave message has not been saved and setup has been cancelled."
+                            desc = f"The leave message has not been saved and restarting leave message segment..."
                             embed = discord.Embed(description=desc, color=discord.Color.green())
                             await message.edit(embed=embed)
                             await message.clear_reactions()
-                            return
+                            continue
                         elif reaction.emoji == '◀️':
                             continue
 
@@ -1499,20 +1289,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "spamdetect": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'spamdetect': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'spamdetect': 'on'}})
                         desc = "Spam detection has been toggled to on!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1520,20 +1301,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "spamdetect": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'spamdetect': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'spamdetect': ''}})
                         desc = "Spam detection has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1581,20 +1353,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "logging": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'logging': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'logging': 'on'}})
                         desc = "Logging has been toggled to on!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1625,20 +1388,11 @@ class Configuration(commands.Cog):
                                 await asyncio.sleep(6)
                                 continue
                             else:
-                                name = f"GUILD{ctx.guild.id}"
-                                db = cluster[name]
-                                collection = db['config']
                                 query = {'_id': ctx.guild.id}
                                 if collection.count_documents(query) == 0:
-                                    ping_cm = {
-                                        "_id": ctx.guild.id,
-                                        "name": ctx.guild.name,
-                                        "logchannel": channel.id
-                                    }
-                                    collection.insert_one(ping_cm)
-                                else:
-                                    collection.update_one({'_id': ctx.guild.id},
-                                                          {'$set': {'logchannel': channel.id}})
+                                    utils.add_guild_to_db(ctx.guild)
+                                collection.update_one({'_id': ctx.guild.id},
+                                                      {'$set': {'logchannel': channel.id}})
                                 desc = f"We have saved {channel.mention} as the channel that logs will be sent to!"
                                 embed = discord.Embed(description=desc, color=discord.Color.green())
                                 await message.edit(embed=embed)
@@ -1653,20 +1407,11 @@ class Configuration(commands.Cog):
                             await asyncio.sleep(3)
                             continue
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "logging": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'logging': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'logging': ''}})
                         desc = "Logging has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1714,20 +1459,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "ghostpingon": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'ghostpingon': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'ghostpingon': 'on'}})
                         desc = "Ghost ping detection has been toggled to on!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1735,20 +1471,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "ghostpingon": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'ghostpingon': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'ghostpingon': ''}})
                         desc = "Ghost ping detection has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1795,20 +1522,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "blacklistenab": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'blacklistenab': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'blacklistenab': 'on'}})
                         desc = "Blacklist has been toggled to on!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1816,20 +1534,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "blacklistenab": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'blacklistenab': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'blacklistenab': ''}})
                         desc = "Blacklist has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1896,10 +1605,10 @@ class Configuration(commands.Cog):
                     if msg.mentions:
                         await ctx.send("Bruh seriously")
                         continue
+                    if '@everyone' in msg or '@here' in msg:
+                        await ctx.send("Bruh seriously")
+                        continue
                     else:
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         collection.update_one({"_id": ctx.guild.id}, {"$set": {'prefix': str(pref)}})
                         desc = f"Prefix for **{ctx.guild.name}** has been updated to `{pref}`. \n\nNext segment in 5 seconds..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
@@ -1946,20 +1655,11 @@ class Configuration(commands.Cog):
 
                     reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
                     if reaction.emoji == '✅':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "levelups": 'on'
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'levelups': 'on'}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'levelups': 'on'}})
                         desc = "Leveling has been toggled to on!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -1967,20 +1667,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "levelups": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'levelups': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'levelups': ''}})
                         desc = "Leveling has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -2034,23 +1725,14 @@ class Configuration(commands.Cog):
                         def check(m):
                             return m.author == ctx.author and m.channel == ctx.channel
                         msg = await self.client.wait_for('message', check=check, timeout = 120)
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if msg.content.strip() == "":
                             nick = "you tried"
                         else:
                             nick = msg.content.strip()
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "welcomenick": nick
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': nick}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id}, {'$set': {'welcomenick': nick}})
                         desc = f"The welcome nickname has been set to {nick}!\n\nMoving on to the next segment..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -2058,20 +1740,11 @@ class Configuration(commands.Cog):
                         await asyncio.sleep(3)
                         break
                     elif reaction.emoji == '❌':
-                        name = f"GUILD{ctx.guild.id}"
-                        db = cluster[name]
-                        collection = db['config']
                         query = {'_id': ctx.guild.id}
                         if collection.count_documents(query) == 0:
-                            ping_cm = {
-                                "_id": ctx.guild.id,
-                                "name": ctx.guild.name,
-                                "welcomenick": ''
-                            }
-                            collection.insert_one(ping_cm)
-                        else:
-                            collection.update_one({'_id': ctx.guild.id},
-                                                  {'$set': {'welcomenick': ''}})
+                            utils.add_guild_to_db(ctx.guild)
+                        collection.update_one({'_id': ctx.guild.id},
+                                              {'$set': {'welcomenick': ''}})
                         desc = "Welcome nickname has been toggled to off!"
                         embed = discord.Embed(description=desc, color=discord.Color.green())
                         await message.clear_reactions()
@@ -2119,20 +1792,11 @@ class Configuration(commands.Cog):
                             await asyncio.sleep(6)
                             continue
                         else:
-                            name = f"GUILD{ctx.guild.id}"
-                            db = cluster[name]
-                            collection = db['config']
                             query = {'_id': ctx.guild.id}
                             if collection.count_documents(query) == 0:
-                                ping_cm = {
-                                    "_id": ctx.guild.id,
-                                    "name": ctx.guild.name,
-                                    "starchannel": channel.id
-                                }
-                                collection.insert_one(ping_cm)
-                            else:
-                                collection.update_one({'_id': ctx.guild.id},
-                                                      {'$set': {'starchannel': channel.id}})
+                                utils.add_guild_to_db(ctx.guild)
+                            collection.update_one({'_id': ctx.guild.id},
+                                                  {'$set': {'starchannel': channel.id}})
                             desc = f"We have saved {channel.mention} as the starboard channel!"
                             embed = discord.Embed(description=desc, color=discord.Color.green())
                             await message.edit(embed=embed)

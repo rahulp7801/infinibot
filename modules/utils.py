@@ -78,9 +78,8 @@ def serverprefix(ctx):
     try:
         return ctx.prefix
     except Exception:
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             prefix = i['prefix']

@@ -308,8 +308,6 @@ def add_guild_to_db(guild:discord.Guild):
     add the guild to the database, but if it already exists just pass (we don't need duplicates)
     '''
     try:
-        name = f"GUILD{guild.id}"
-        print('HERE')
         db = cluster[name]
         collection = db['config']
         ping_cm = {
@@ -416,6 +414,107 @@ def add_guild_to_db(guild:discord.Guild):
             "_id": guild.id
         }
         x = collection.insert_one(ping_cm)
+    except Exception:
+        pass
+
+def add_guild_to_db(guild:discord.Guild):
+    '''
+    :param guild: The guild (server) we need to add to the database.
+    :return:
+    add the guild to the database, but if it already exists just pass (we don't need duplicates)
+    '''
+    try:
+        db = cluster['CONFIGURATION']
+        col = db['guilds']
+        query = {'_id':guild.id}
+        if col.count_documents(query) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'prefix': '%',
+                'welcomemsg': "",
+                "welcomechannel": "",
+                'priv_welcomemsg': "",
+                'leavemsg': "",
+                'captchaon': "",
+                'muterole': "",
+                'spamdetect': "",
+                'logging': "",
+                'logchannel': "",
+                'levelups': "",
+                'ghostpingon': "",
+                'ghostcount': '',
+                'blacklistenab': "",
+                'mcip': "",
+                'starchannel': '',
+                'welcomenick': '',
+                'welcomerole': '',
+                'enablestats': True
+            }
+            col.insert_one(payload)
+        db = cluster['LEVELING']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name
+            }
+            col.insert_one(payload)
+        db = cluster['CUSTOMCMND']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'commandname': ""
+            }
+            col.insert_one(payload)
+        db = cluster['STATS']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                '_id':guild.id,
+                'name':guild.name,
+                'vcsecs': 0,
+                'msgcount': 0
+            }
+            col.insert_one(payload)
+        db = cluster['COMMANDCOUNT']
+        col = db['commandcount']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'commandname': "",
+                'commandcount': '',
+                'commandchannel': ''
+            }
+            col.insert_one(payload)
+        db = cluster['MESSAGES']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'author': "",
+                'date': '',
+                'channel': '',
+                'count': ''
+            }
+            col.insert_one(payload)
+
     except Exception:
         pass
 

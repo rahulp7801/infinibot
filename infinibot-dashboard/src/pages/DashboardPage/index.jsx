@@ -6,8 +6,9 @@ import $ from 'jquery'
 import jQuery from 'jquery'
 import ReactMarkdown from 'react-markdown'
 
-import { getUserDetails, postNewPrefix, getGuildInfo, getGuildModInfo, getPersonInfo } from '../../utils/api'
+import { getUserDetails, postNewPrefix, getGuildInfo, getGuildModInfo, getPersonInfo, getGuildStats } from '../../utils/api'
 import auditTypeDict from '../../utils/auditDict';
+import { Line } from 'react-chartjs-2';
 
 
 export function DashboardPage(props) {
@@ -21,6 +22,18 @@ export function DashboardPage(props) {
     const [welcomeMsg, setWelcomeMsg] = React.useState("")
     const [modInfo, setModInfo] = React.useState({ warns: [], bans: [], logs: [] })
     const [personInfoDict, setPersonInfoDict] = React.useState(new Map())
+    const [msgStatsData, setMsgStatsData] = React.useState({
+        labels: [],
+        datasets: [
+            {
+                label: 'Messages',
+                data: [],
+                fill: false,
+                backgroundColor: 'rgb(255, 99, 132)',
+                borderColor: 'rgba(255, 99, 132, 0.2)',
+            },
+        ],
+    })
 
     async function getDataFromDiscord(uID) {
         getPersonInfo(uID).then((d) => {
@@ -56,26 +69,6 @@ export function DashboardPage(props) {
                     })
                 }
             })
-            // data.logs.slice(0,26).forEach((log) => {
-            // if (personInfoDict.get(log.user_id) == undefined || personInfoDict.get(log.user_id) == null) {
-            //     getPersonInfo(log.user_id).then(async (personInfo) => {
-            //         console.log(personInfo.data)
-            //         personInfoDict.set(log.user_id, personInfo.data)
-            //         // setPersonInfoDict(personInfoDict)
-            //     })
-            // }
-            // })
-
-            // data.logs.slice(0,26).forEach((log) => {
-            // if (personInfoDict.get(log.target_id) == undefined || personInfoDict.get(log.target_id) == null) {
-            //     getPersonInfo(log.target_id).then(async (personInfo) => {
-            //         console.log(personInfo.data)
-            //         personInfoDict.set(log.target_id, personInfo.data)
-            //         // setPersonInfoDict(personInfoDict)
-            //     })
-            // }
-            // })
-
             data.log_users.forEach((u) => {
                 personInfoDict.set(u.id, u)
                 setPersonInfoDict(personInfoDict)
@@ -84,6 +77,28 @@ export function DashboardPage(props) {
             setModInfo(data)
             console.log(data)
         })
+
+        console.log('Init Guild Stats');
+        getGuildStats(guildID).then(({ data }) => {
+            console.log('Init Guild Stats');
+            data.forEach((stat) => {
+                console.log('Got Data!')
+                var theDay = new Date(Math.round(stat.timestamp));
+                var today = new Date;
+
+                console.log(theDay.toISOString().substr(0,10))
+                console.log(Math.round(stat.timestamp))
+                console.log(today.toISOString().substr(0,10))
+
+                if (theDay.toISOString().substr(0,10) == today.toISOString().substr(0,10)) {
+                    msgStatsData.labels.append(stat.timestamp)
+                    msgStatsData.datasets[0].data.append(stat.timestamp)
+                    setMsgStatsData(msgStatsData)
+                    console.log('Got Today Stat Data!')
+                }
+            })
+        })
+
         const timer = setTimeout(() => {
             console.log(personInfoDict)
             var warnsEle = document.querySelectorAll(".warn")
@@ -663,7 +678,7 @@ export function DashboardPage(props) {
                                                     <div className="warnList">
 
                                                         {
-                                                            modInfo.logs.slice(0,26).map((log) => (
+                                                            modInfo.logs.slice(0, 26).map((log) => (
                                                                 <div className="warn" id={`log-${log.id}`}>
                                                                     <div className="warnInfo">
                                                                         <p>{auditTypeDict.get(log.action_type)} <span class="modText">CODE {log.action_type}</span></p>
@@ -729,7 +744,113 @@ export function DashboardPage(props) {
                                 </div>
 
 
-                            </div>) : page == 'stats' ? (<h1>Statistics</h1>) : (<h1>404</h1>)
+                            </div>) : page == 'stats' ? (
+
+                                <div className="card-row">
+
+                                    <div className="col-sm-12 col-md-6">
+                                        <div className="card">
+                                            <header className="card-header">
+                                                <div><i className="icon-settings">
+                                                </i> Messages Stats</div>
+                                            </header>
+                                            <div className="card-body">
+                                                <fieldset className="form-group" id="__BVID__130">
+                                                    <div tabIndex="-1" role="group">
+                                                        <h4 className="smalltitle">Message Stats</h4>
+                                                        <p>The following players have been warned, you can change the reason, revoke, or add a warn by pressing the designated buttons</p>
+                                                        <Line data={msgStatsData} />
+                                                    </div>
+                                                </fieldset>
+                                            </div>
+                                        </div>
+
+                                        <div className="card">
+                                            <header className="card-header">
+                                                <div><i className="icon-settings">
+                                                </i> Logs</div>
+                                            </header>
+                                            <div className="card-body">
+                                                <fieldset className="form-group" id="__BVID__130">
+                                                    <div tabIndex="-1" role="group">
+                                                        <h4 className="smalltitle">Moderation Log</h4>
+                                                        <p>Get instant messages when something happens in your server for better moderation and managment!</p>
+                                                        {/* <div role="group" className="input-group pb-1">
+                                                <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
+                                                <div className="input-group-append">
+                                                </div>
+                                            </div> */}
+                                                        <div className="warnList">
+
+                                                            {
+                                                                modInfo.logs.slice(0, 26).map((log) => (
+                                                                    <div className="warn" id={`log-${log.id}`}>
+                                                                        <div className="warnInfo">
+                                                                            <p>{auditTypeDict.get(log.action_type)} <span class="modText">CODE {log.action_type}</span></p>
+                                                                            <p className="modText">Target: {personInfoDict.get(log.target_id) != undefined ? personInfoDict.get(log.target_id).username + '#' + personInfoDict.get(log.target_id).discriminator : '--'}</p>
+                                                                            <p className="modText">Moderator: {personInfoDict.get(log.user_id) != undefined ? personInfoDict.get(log.user_id).username + '#' + personInfoDict.get(log.user_id).discriminator : '--'}</p>
+                                                                            {/* <p className="modText">4/11/12</p> */}
+                                                                            <div className="expandable" id={`expandable-log-${log.id}`}>
+                                                                                <p>{log.action}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </fieldset>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="col-sm-12 col-md-6">
+                                        <div className="card">
+                                            <header className="card-header">
+                                                <div><i className="icon-settings">
+                                                </i> Bans</div>
+                                            </header>
+                                            <div className="card-body">
+                                                <fieldset className="form-group" id="__BVID__130">
+                                                    <div tabIndex="-1" role="group">
+                                                        <h4 className="smalltitle">Bans </h4>
+                                                        <p>The following players have been banned, you can change the reason, revoke, or add a ban by pressing the designated buttons</p>
+                                                        <div role="group" className="input-group pb-1">
+                                                            <input type="text" placeholder="Enter a prefix" className="col-12 form-control" pattern=".{1,50}" maxLength="50" id="__BVID__131" defaultValue={prefix} />
+                                                            <div className="input-group-append">
+                                                                <button type="button" className="btn btn-primary">Warn</button>
+                                                            </div>
+                                                        </div>
+                                                        <div className="warnList">
+
+                                                            {
+                                                                modInfo.bans.map((ban) => (
+                                                                    <div className="warn" id={`ban-${ban.user.id}`}>
+                                                                        <div className="warnInfo">
+                                                                            <p>{ban.user.username}#{ban.user.discriminator}</p>
+                                                                            <p className="modText">uID: {ban.user.id}</p>
+                                                                            {/* <p className="modText">Moderator: kidsonfilms</p>
+                                                                    <p className="modText">4/11/12</p> */}
+                                                                            <div className="expandable" id={`expandable-ban-${ban.user.id}`}>
+                                                                                <p>{ban.reason}</p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <div className="warnActions">
+                                                                            {/* <i className="fas fa-edit fa-lg"></i>*/}
+                                                                            <i className="fas fa-ban fa-lg"></i>
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </fieldset>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                                </div>
+                            ) : (<h1>404</h1>)
                     }
 
 

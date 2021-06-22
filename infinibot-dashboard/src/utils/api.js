@@ -27,3 +27,7 @@ export function getGuildModInfo(guildID) {
 export function getPersonInfo(uID) {
     return axios.get(`http://localhost:3001/api/discord/user/${uID}/info`, {withCredentials: true})
 }
+
+export function getGuildStats(guildID) {
+    return axios.get(`http://localhost:3001/api/discord/guilds/${guildID}/stats`, {withCredentials: true})
+}

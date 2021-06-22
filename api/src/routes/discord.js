@@ -150,6 +150,40 @@ router.get('/guilds/:guildId/modinfo', async (req, res) => {
     }
 })
 
+
+router.get('/guilds/:guildId/stats', async (req, res) => {
+    const { guildId } = req.params;
+
+    if (!req.user || !checkUserGuildPerms(req.user.guilds, guildId)) return res.status(401).send({ "msg": "User Does not have Sufficent Permissions" })
+
+    const guilds = await getBotGuilds()
+    var done = false
+    await guilds.forEach(async (guild) => {
+        if (guild.id == guildId) {
+            done = true
+            const url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@infinibot.f381p.mongodb.net/`;
+            MongoClient.connect(url, async (err, guildDBO) => {
+                if (err) {
+                    console.error(err)
+                    res.status(500).send({ msg: "We could not connect to your Server Config, try again later. If this persists, contact us" })
+                    return err
+                } else {
+                    const guildDB = guildDBO.db(`GUILD${guildId}`)
+                    const guildStats = await guildDB.collection("serverstats").find().toArray()
+                    guildStats.splice(0, 1)
+                    guildDBO.close()
+                    return guildStats ? res.status(200).send(guildStats) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })
+                }
+            })
+            return true
+        }
+    })
+
+    if (!done) {
+        return res.status(400).send({ msg: "InfiniBot is Not In the Provided Server" })
+    }
+})
+
 router.get('/user/:uID/info', async (req, res) => {
     const {uID} = req.params
 

@@ -66,15 +66,16 @@ class Stats(commands.Cog, name = "Server Statistics"):
     async def update_database_stats(self):
         print(f'Uploading Stats to Database: LOG TIME: {datetime.datetime.utcnow()}')
         for g in cache:
-            name = "GUILD" + str(g["guildID"])
+            name = "STATS"
             db = cluster[name]
-            collection = db['serverstats']
+            collection = db['data']
             collection.insert_one({
                 "messages": g["messages"],
                 "userdiff": g["userdiff"],
                 "vcsecdiff": g["vcsecdiff"],
                 "engagedusers": g["engagedusers"],
-                "timestamp": time.time()
+                "timestamp": time.time(),
+                "guildID": g["guildID"]
             })
         cacheF = open("cache/stats.json", "w")
         cacheF.write('{"guilds": []}')
@@ -148,15 +149,15 @@ class Stats(commands.Cog, name = "Server Statistics"):
     
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        name = f"GUILD{member.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         res = collection.find({'_id': member.guild.id})
         if before.channel and after.channel:
             if before.channel == after.channel:
                 return
         elif before.channel and not after.channel:
-            collection = db['serverstats']
+            collection = cluster['STATS']['guilds']
             res = collection.find({'_id': member.id})
             vcsecs = 0
             for i in res:
@@ -200,11 +201,11 @@ class Stats(commands.Cog, name = "Server Statistics"):
     @commands.Cog.listener()
     async def on_ready(self):
         if (datetime.datetime.now().time().hour % 2 == 0):
-            print(f'Uploading DB Data at: {datetime.datetime.now().time().hour + 2}:00')
+            print(f'Uploading DB Data at: {datetime.datetime.now().time().hour + 2}:00, in {seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 2 / 2.)), 0)}s')
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 2 / 2.)), 0))
             self.update_database_stats.start()
         else:
-            print(f'Uploading DB Data at: {math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)}:00')
+            print(f'Uploading DB Data at: {math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)}:00, in {seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0)}s')
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
             self.update_database_stats.start()
 
@@ -220,12 +221,12 @@ class Stats(commands.Cog, name = "Server Statistics"):
 
     @stats.command(aliases=['g'], help="View the General Stats of your Server")
     async def general(self, ctx):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"STATS"
         db = cluster[name]
-        collection = db['messages']
+        collection = db['guilds']
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
-            msgcount = i['count']
+            msgcount = i['msgcount']
         if msgcount == '':
             msgcount = 0
         collection = db['serverstats']
@@ -235,7 +236,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         if vcsecs == '':
             vcsecs = 0
 
-        collection = db['config']
+        collection = cluster['CONFIGURATION']["guilds"]
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             ghostcount = i['ghostcount']
@@ -278,10 +279,10 @@ class Stats(commands.Cog, name = "Server Statistics"):
         print('[STATS LOGGER]  Server Stats Requested')
         async with ctx.typing():
 
-            db = cluster[f"GUILD{ctx.guild.id}"] 
+            db = cluster[f"STATS"] 
     
-            col = db["serverstats"] 
-            msgcol = db["messages"]
+            col = db["data"] 
+            msgcol = db["guilds"]
 
             cacheData = {
                 "subID": [],
@@ -295,10 +296,10 @@ class Stats(commands.Cog, name = "Server Statistics"):
             wTimeDict = {}
 
             msgdocs = msgcol.find_one({"_id": ctx.guild.id})
-            msgcount = msgdocs["count"]
+            msgcount = msgdocs["msgcount"]
       
             if timeframe == 'd' or timeframe == 'day' or timeframe == 'today':
-                for x in col.find({}): 
+                for x in col.find({"guildID": ctx.guild.id}): 
                     if (x["_id"] != ctx.guild.id):
                         if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
                             cacheData["subID"].append(len(cacheData["subID"]))
@@ -314,7 +315,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
                                     userMSGSDict[member["uid"]] = {"msgs": member["messagesSent"], "id": member["uid"]}
             elif timeframe == 'w' or timeframe == 'week' or timeframe == '':
                 print('Getting Stats for Week')
-                for x in col.find({}): 
+                for x in col.find({"guildID": ctx.guild.id}): 
                     if (x["_id"] != ctx.guild.id):
                         if datetime.datetime.fromtimestamp(x["timestamp"]).isocalendar()[1] == datetime.datetime.today().isocalendar()[1]:
                             if datetime.datetime.fromtimestamp(x["timestamp"]).date().day in wTimeDict:
@@ -343,7 +344,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             json_cache.close()
             
             dataFile = open(filePath)
-            df = pd.read_json(dataFile, 'r')
+            df = pd.read_json(dataFile)
             df.set_index('subID', inplace=True)
             sns.reset_defaults()
             sns.set(
@@ -354,8 +355,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             plt.gca().axes.xaxis.grid(False)
             plt.fill_between(df.Time.values, df.Messages.values, alpha=0.5)
             print('[STATS LOGGER] Standby...')
-            print(max(df.Messages))
-            plt.ylim(0,max(df.Messages))
+            plt.ylim(0,max(df.Messages) + 20)
             sns.despine(fig=None, ax=None, top=True, right=True, left=True, bottom=True, offset=None, trim=False)
             plt.xlabel(None)
             plt.ylabel(None)

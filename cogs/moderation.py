@@ -139,9 +139,13 @@ class Moderation(commands.Cog):
 
     @commands.command()
     @commands.has_permissions(manage_messages = True)
-    async def clear(self, ctx, amount:int):
+    async def clear(self, ctx, amount:int, user:discord.User = None):
         try:
-            await ctx.channel.purge(limit = amount + 1)
+            if user is None:
+                await ctx.channel.purge(limit=amount + 1)
+            else:
+                check = lambda msg: msg.author == user and msg.channel == ctx.channel
+                await ctx.channel.purge(limit=amount + 1, check=check)
             await asyncio.sleep(2)
             await ctx.send(f"Cleared {amount + 1} messages!", delete_after = 5)
         except discord.errors.HTTPException:
@@ -450,7 +454,7 @@ class Moderation(commands.Cog):
         if isinstance(error, ValueError):
             return await ctx.send(f"I don't have the `Manage Channel` permission for {ctx.channel.mention}.")
 
-    @commands.command()
+    @commands.command(aliases = ['rename', 'nickname'])
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames = True)
     async def nick(self, ctx, member:discord.Member, *, nick):
@@ -847,6 +851,51 @@ class Moderation(commands.Cog):
             return await ctx.send(f"I do not have the `Manage Channel` permission for {channel.mention}.")
         except asyncio.TimeoutError:
             return await ctx.reply("Timed out", mention_author = False)
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def vckick(self, ctx, member: discord.Member):
+        await member.edit(voice_channel=None)
+        await ctx.send(f"**{member.name}** has been successfully kicked from VC!")
+
+    @commands.command()
+    @commands.has_permissions(manage_guild = True)
+    async def move(self, ctx, member:discord.Member, channel:discord.VoiceChannel):
+        try:
+            await member.edit(voice_channel=channel)
+            await ctx.send(f"**{member.name}** has been successfully moved to {channel.mention}!")
+        except discord.Forbidden:
+            return await ctx.send(f"I don\'t have permission to move `{member.name}#{member.discriminator}` to {channel.mention}!")
+
+    @commands.command(aliases = ['permissions'])
+    @commands.guild_only()
+    async def perms(self, ctx, member:discord.Member = None):
+        if member is None:
+            member = ctx.author
+        giv = []
+        den = []
+        for i in ctx.channel.permissions_for(member):
+            if i[1]:
+                giv.append(str(i[0]).replace('_', ' ').title())
+            else:
+                den.append(str(i[0]).replace('_', ' ').title())
+        embed = discord.Embed(color = discord.Color.green())
+        embed.add_field(name = "Given", value="\n".join(giv))
+        embed.add_field(name='Denied', value='\n'.join(den))
+        await ctx.send(embed=embed)
+
+    @commands.command()
+    @commands.bot_has_permissions(manage_messages = True)
+    async def clearmine(self, ctx, limit:int = 50):
+        user = ctx.author
+        check = lambda msg: msg.author == ctx.author and not msg.pinned
+        await ctx.message.delete()
+        try:
+            await ctx.channel.purge(limit=limit, check=check)
+            await ctx.send(f"`{limit}` messages deleted for `{user.name}#{user.discriminator}` in {ctx.channel.mention}.", delete_after = 5)
+        except discord.HTTPException:
+            await ctx.send("I cannot delete messages older than 2 weeks!", delete_after = 5)
+
 
 def setup(client):
     client.add_cog(Moderation(client))

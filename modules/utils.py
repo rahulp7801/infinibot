@@ -1,4 +1,7 @@
 from __future__ import print_function
+
+import asyncio
+
 from durations_nlp import Duration
 from discord.ext import commands
 from pymongo import MongoClient
@@ -75,9 +78,8 @@ def serverprefix(ctx):
     try:
         return ctx.prefix
     except Exception:
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['config']
+        db = cluster['CONFIGURATON']
+        collection = db['guilds']
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             prefix = i['prefix']
@@ -108,23 +110,36 @@ def channelperms(channel: discord.TextChannel):
     True if the bot has sufficient perms, or False and a reason if the Bot does not
     '''
     if channel.is_nsfw():
+        print('her3')
         return False
     if channel.guild.me.guild_permissions.administrator:
+        print('here2')
         return True
     y = channel.overwrites_for(channel.guild.default_role)
     if not y.send_messages or not y.read_messages or not y.embed_links:
+        print('here4')
         pass
     else:
+        print('here7')
         return True
     for role in channel.guild.me.roles:
+        print('here8')
         x = channel.overwrites_for(role)
         if not x.send_messages or not x.read_messages or not x.embed_links:
-            continue
+            if role == channel.guild.default_role:
+                print('nruj')
+                pass
+            else:
+                print('here9')
+                pass
         else:
+            print('here10')
             return True
+        break
 
     z = channel.overwrites_for(channel.guild.me)
     if not z.send_messages or not z.read_messages or not z.embed_links:
+        print('here1')
         return False
 
 def rolecheck(role:discord.Role, ctx):
@@ -293,8 +308,6 @@ def add_guild_to_db(guild:discord.Guild):
     add the guild to the database, but if it already exists just pass (we don't need duplicates)
     '''
     try:
-        name = f"GUILD{guild.id}"
-        print('HERE')
         db = cluster[name]
         collection = db['config']
         ping_cm = {
@@ -404,6 +417,107 @@ def add_guild_to_db(guild:discord.Guild):
     except Exception:
         pass
 
+def add_guild_to_db(guild:discord.Guild):
+    '''
+    :param guild: The guild (server) we need to add to the database.
+    :return:
+    add the guild to the database, but if it already exists just pass (we don't need duplicates)
+    '''
+    try:
+        db = cluster['CONFIGURATION']
+        col = db['guilds']
+        query = {'_id':guild.id}
+        if col.count_documents(query) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'prefix': '%',
+                'welcomemsg': "",
+                "welcomechannel": "",
+                'priv_welcomemsg': "",
+                'leavemsg': "",
+                'captchaon': "",
+                'muterole': "",
+                'spamdetect': "",
+                'logging': "",
+                'logchannel': "",
+                'levelups': "",
+                'ghostpingon': "",
+                'ghostcount': '',
+                'blacklistenab': "",
+                'mcip': "",
+                'starchannel': '',
+                'welcomenick': '',
+                'welcomerole': '',
+                'enablestats': True
+            }
+            col.insert_one(payload)
+        db = cluster['LEVELING']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name
+            }
+            col.insert_one(payload)
+        db = cluster['CUSTOMCMND']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'commandname': ""
+            }
+            col.insert_one(payload)
+        db = cluster['STATS']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                '_id':guild.id,
+                'name':guild.name,
+                'vcsecs': 0,
+                'msgcount': 0
+            }
+            col.insert_one(payload)
+        db = cluster['COMMANDCOUNT']
+        col = db['commandcount']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'commandname': "",
+                'commandcount': '',
+                'commandchannel': ''
+            }
+            col.insert_one(payload)
+        db = cluster['MESSAGES']
+        col = db['guilds']
+        if col.count_documents({'_id':guild.id}) != 0:
+            pass
+        else:
+            payload = {
+                "_id": guild.id,
+                "name": guild.name,
+                'author': "",
+                'date': '',
+                'channel': '',
+                'count': ''
+            }
+            col.insert_one(payload)
+
+    except Exception:
+        pass
+
 separators = [" ", " ", " ", "  ", "  ", " "]
 font = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀꜱᴛᴜᴠᴡxʏᴢ1234567890"
 
@@ -498,4 +612,5 @@ async def set_classroom_class(ctx, guild:discord.Guild):
     if len(res) == 1:
         return res[0]
     return res
+
 

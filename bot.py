@@ -10,7 +10,7 @@ from discord_components import DiscordComponents
 import os
 import threading
 
-client = commands.Bot(command_prefix='.', intents = discord.Intents.all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
+client = commands.Bot(command_prefix=commands.when_mentioned_or('.'), intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = True)
 
 for filename in os.listdir('./cogs'):
@@ -29,20 +29,22 @@ t1 = threading.Thread(target=voiceChatMain)
 async def on_ready():
     t1.start()
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
-    for i in client.guilds:
-        print(i.name + "->" + str(i.owner_id))
-        try:
-            utils.add_guild_to_db(i)
-        except:
-            continue
-    DiscordComponents(client, change_discord_methods=True)
-    while True:
-        await asyncio.sleep(10)
-        with open('spamdetect.txt', 'r+') as f:
-            f.truncate(0)
+    try:
+        for guild in client.guilds:
+            try:
+                utils.add_guild_to_db(guild)
+            except:
+                continue
+        DiscordComponents(client, change_discord_methods=True)
+        while True:
+            await asyncio.sleep(10)
+            with open('spamdetect.txt', 'r+') as f:
+                f.truncate(0)
+    except Exception as e:
+        print(e)
 
-@client.command(help='Gives the ping of the bot!')
-async def ping(ctx):
+@client.command(help='Gives the ping of the bot!', aliases = ['clientping'])
+async def botping(ctx):
     return await ctx.send(f"{round(client.latency * 1000)}ms")
 
 @client.command()

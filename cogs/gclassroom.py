@@ -11,6 +11,7 @@ import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
+import logging
 from google.oauth2.credentials import Credentials
 
 import aiohttp
@@ -34,7 +35,7 @@ class GoogleC(commands.Cog):
 
     @tasks.loop(minutes = 5)
     async def check_for_assignments(self):
-        print("checking for assignments...")
+        print("[GOOGLE CLASSROOM] Assignment Check Loop Started...")
 
         past = datetime.datetime.utcnow().timestamp()
         db = cluster['GOOGLECLASSROOM']
@@ -42,29 +43,35 @@ class GoogleC(commands.Cog):
         creds = None
         res = collection.find()
         for i in res:
+            channel = i["channel"]
+            channel = self.client.get_channel(channel)
             try:
                 classid = i["classid"]
                 if os.path.exists('token.json'):
                     creds = Credentials.from_authorized_user_file('token.json', SCOPES)
                 if not creds or not creds.valid:
                     if creds and creds.expired and creds.refresh_token:
+                        print('[GOOGLE CLASSROOM] Requesting Refresh of User-Authorization')
                         creds.refresh(Request())
                     else:
                         flow = InstalledAppFlow.from_client_secrets_file(
                             'credentials.json', SCOPES)
+                        #should not happen!
+                        print('[GOOGLE CLASSROOM] ERROR: Unauthorized User Set Up Google Classroom!')
                         creds = flow.run_local_server(port=0, open_browser=False)
                     # Save the credentials for the next run
                     try:
                         with open('token.json', 'w') as token:
                             token.write(creds.to_json())
                     except Exception as e:
+                        print(f'[GOOGLE CLASSROOM] Exception Raised: {e}')
                         raise ClassroomError(e)
 
                 service = build('classroom', 'v1', credentials=creds)
                 results = service.courses().courseWork().list(pageSize=10, courseId=classid).execute()  # replace that ID with "classid"
                 courses = results.get('courseWork', [])
                 if not courses:
-                    print('this')
+                    print(f'[GOOGLE CLASSROOM] No Courses Found For {channel.guild.name} [{channel.guild.id}], Breaking...')
                     continue
                 for k in courses:
                     print(k)
@@ -74,20 +81,24 @@ class GoogleC(commands.Cog):
                         if not x:
                             break #because the API returns it ordered most recent, no need to waste time checking older ones.
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
+                            print("[GOOGLE CLASSROOM] New Assignments Found, updating...")
                             embed = discord.Embed(color=discord.Color.green())
                             try:
                                 embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {k['dueDate']['year']}-{k['dueDate']['month']}-{k['dueDate']['day']}"
                             except KeyError:
-                                embed.description = str(k["description"])[
-                                                    0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                                embed.description = "No description for this assignment."
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
                             embed.title = str(k["title"])[0:2000]
                             embed.timestamp = pd.to_datetime(k["creationTime"])
-                            channel = i["channel"]
-                            channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
                             continue
             except Exception as e:
-                print(e)
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ASSIGNMENTS] While scraping through assignments, exception {e} was raised."
+                logging.error(errmsg)
 
     @check_for_assignments.before_loop
     async def before_check_assignments(self):
@@ -131,21 +142,28 @@ class GoogleC(commands.Cog):
                 for k in courses:
                     print(k)
                     if k["state"] == 'PUBLISHED':
-                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25700)
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25600)
                         print(x)
                         if not x:
                             break
                         if x and k["assigneeMode"] == 'ALL_STUDENTS':
                             embed = discord.Embed(color = discord.Color.green())
                             embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
                             embed.timestamp = pd.to_datetime(k["creationTime"])
                             embed.title = 'New Announcement!'
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
                             await channel.send(embed=embed)
                             continue
+
             except Exception as e:
-                print(e)
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ANNOUNCEMENTS] While scraping through announcements, exception {e} was raised."
+                logging.error(errmsg)
 
     @check_for_announcements.before_loop
     async def before_check_announcements(self):

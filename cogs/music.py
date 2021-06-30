@@ -1,416 +1,127 @@
 import discord
 from discord.ext import commands
-from pymongo import MongoClient
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-import datetime
-import pandas as pd
-import aiohttp
+import DiscordUtils
+import youtube_dl
+import urllib.request
 from modules import utils
+import re
 
-sp = spotipy.Spotify(auth_manager=SpotifyClientCredentials(
-        client_secret='1e52b491d90e4c858ad914b5b2741f23',
-        client_id='61e47cc943bd4bd2b1c828a06f5fb2b0'
-    ))
+music = DiscordUtils.Music()
 
-with open('./mongourl.txt', 'r') as file:
-    url = file.read()
-
-mongo_url = url.strip()
-cluster = MongoClient(mongo_url)
-
-class Spotifys(commands.Cog, name="Music"):
+class Music(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.icon = '🎶'
-        self.description = f"Listen to music in VC with InfiniBot\'s never seen before audio recognition technology!"
 
     @commands.command()
-    async def artistsearch(self, ctx, *, query:str = None):
-        if query is None:
-            name = f"GUILD{ctx.guild.id}"
-            db = cluster[name]
-            collection = db['config']
-            user = collection.find({'_id': ctx.guild.id})
-            for i in user:
-                prefix = i['prefix']
-            desc = f"```{prefix}artistsearch [artist]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-        results = sp.search(q=query.strip(), limit=10)
-        print(results)
-        arr = []
-        for i, k in enumerate(results['tracks']['items']):
-            st = k['name']
-            prvurl = k['preview_url']
-            popl = k['popularity']
-            arr.append(f"{i + 1}. [{st}]({prvurl}) -> Popularity {popl}%")
-        desc = "\n".join(arr)
-        title = f"Search results for {query.strip()}"
-        song = results['tracks']['items'][0]
-        albumcov = results['tracks']['items'][0]['album']['images'][-1]['url']
-        embed = discord.Embed(title = title, description = desc, color = discord.Color.green())
-        embed.set_thumbnail(url=albumcov)
-
-        await ctx.send(embed=embed)
-
-    @commands.group(invoke_without_command = True)
-    async def fm(self, ctx, member: discord.Member = None):
-        if member is None:
-            member = ctx.author
-
-        await ctx.trigger_typing()
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {"_id": member.id}
-        if collection.count_documents(query) == 0:
-            return await ctx.send(f"**{member.name}** has not set their Last FM profile with InfiniBot!")
-        else:
-            user = collection.find(query)
-            for result in user:
-                username = result['username']
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'user': f'{username}',
-            'api_key': key,
-            'method': 'user.getrecenttracks',
-            'format': 'json',
-            'limit': 1
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-        x = (data['recenttracks']['track'])
-        if not x:
-            return await ctx.send(f"**{member.name}** has not listened to any tracks!")
-
-        username = data['recenttracks']['@attr']['user']
-        track = x[0]['name']
-        trackurl = x[0]['url']
-        album = x[0]['album']['#text']
-        artist = x[0]['artist']['#text']
-        thumbnail = x[0]['image'][-1]['#text']
+    async def join(self, ctx):
+        if ctx.author.voice.channel is None:
+            return await ctx.send("You must be connected to a voice channel!")
+        res = utils.vcperms(ctx.author.voice.channel)
+        if not res:
+            return await ctx.send(f"I am missing permissions to connect to {ctx.author.voice.channel.mention}")
         try:
-            timestamp = x[0]['date']['#text']
-            z = pd.to_datetime(timestamp)
-            desc = f"{f'[{track}]({trackurl})'} \n**{artist}** | *{album}*"
-            embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=z)
-            embed.set_author(name=f"{username}'s last track:", icon_url=member.avatar_url)
-            embed.set_thumbnail(url=str(thumbnail))
-            embed.set_footer(
-                text=f"{member.name} has {data['recenttracks']['@attr']['total']} total scrobbles | Last scrobble: ")
-        except KeyError:
-            z = datetime.datetime.utcnow()
-            desc = f"{f'[{track}]({trackurl})'} \n**{artist}** | *{album}*"
-            embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=z)
-            embed.set_author(name=f"{username}'s currently playing track:", icon_url=member.avatar_url)
-            embed.set_thumbnail(url=str(thumbnail))
-            embed.set_footer(text=f"{member.name} has {data['recenttracks']['@attr']['total']} total scrobbles")
-        message = await ctx.send(embed=embed)
-        await message.add_reaction("👍🏽")
-        await message.add_reaction("👎🏽")
+            await ctx.author.voice.channel.connect()
+        except discord.Forbidden:
+            return await ctx.send("I cannot connect to this Voice Channel!")
+        except Exception as e:
+            print(e)
 
-    @fm.command()
-    async def set(self, ctx, username):
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {"_id": ctx.author.id}
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        if collection.count_documents(query) == 0:
-            params = {
-                'user': f'{username.strip()}',
-                'api_key': key,
-                'method': 'user.getinfo',
-                'format': 'json',
-                'limit': 1
-            }
-            async with aiohttp.ClientSession() as session:
-                url = 'https://ws.audioscrobbler.com/2.0/'
-                async with session.get(url, params=params) as response:
-                    data = await response.json()
-                    try:
-                        if data['error'] == 6:
-                            desc = f"❌ User `{username.strip()}` was not found in the Last FM database."
-                            embed = discord.Embed(description=desc, color=discord.Color.red(),
-                                                  timestamp=datetime.datetime.utcnow())
-                            return await ctx.send(embed=embed)
-                    except Exception as e:
-                        print(e)
-                        pass
-            ping_cm = {
-                "_id": ctx.author.id,
-                "username": username.strip()
-            }
-            try:
-                x = collection.insert_one(ping_cm)
-            except Exception:
-                return
-            imgurl = (data['user']['image'][-1]['#text'])
-            desc = f"Success! Your Last FM username has been set as `{username}`!"
-            embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-            embed.set_thumbnail(url=imgurl)
-            embed.set_author(name=f"Your profile has been saved!", icon_url=ctx.author.avatar_url)
+    @commands.command()
+    async def leave(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        if player:
+            player.delete()
+        await ctx.voice_client.disconnect()
+        await ctx.message.add_reaction('👋🏽')
+
+    @commands.command() #add lfm integration, should be pretty easy from here
+    async def play(self, ctx, *, query):
+        if not ctx.guild.me.voice:
+            return await ctx.send("I am not in a voice channel!")
+        embed = discord.Embed(color = discord.Color.green())
+        try:
+            await ctx.send('Searching for `{url}`...'.format(url=query.strip()))
+            if ('www.' or '.be' or '.com' or 'youtu') not in query.lower():
+                html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query.strip().replace(' ', '+')}")
+                vidid = re.findall(r"watch\?v=(\S{11})", html.read().decode())
+                query = (f"https://www.youtube.com/watch?v={vidid[0]}")
+            player = music.get_player(guild_id=ctx.guild.id)
+            if not player:
+                player = music.create_player(ctx, ffmpeg_error_betterfix=True)
+            if not ctx.voice_client.is_playing():
+                await player.queue(query.strip(), search=True)
+                song = await player.play()
+                embed.set_author(name='Now Playing', icon_url=ctx.author.avatar_url)
+            else:
+                song = await player.queue(query.strip(), search=True)
+                embed.set_author(name='Added to Queue', icon_url=ctx.author.avatar_url)
+            dur = song.duration
+            dur = utils.stringfromtime(int(dur))
+            embed.add_field(name='Duration', value=f"{dur}")
+            embed.add_field(name='Channel', value=f"{song.channel}")
+            embed.description = f"[{song.name}]({song.url})"
+            embed.set_thumbnail(url=song.thumbnail)
             await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command()
+    async def pause(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        song = await player.pause()
+        await ctx.send(f"Paused: **{song.name}**!")
+
+    @commands.command()
+    async def resume(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        song = await player.resume()
+        await ctx.send(f"Resumed: **{song.name}**")
+
+    @commands.command()
+    async def loop(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        song = await player.toggle_song_loop()
+        if song.is_looping:
+            await ctx.send(f"Enabled loop for : **{song.name}**")
         else:
-            params = {
-                'user': f'{username.strip()}',
-                'api_key': key,
-                'method': 'user.getinfo',
-                'format': 'json',
-                'limit': 1
-            }
-            async with aiohttp.ClientSession() as session:
-                url = 'https://ws.audioscrobbler.com/2.0/'
-                async with session.get(url, params=params) as response:
-                    data = await response.json()
-                    print(data)
-                    try:
-                        if data['error'] == 6:
-                            desc = f"❌ User `{username}` was not found in the Last FM database."
-                            embed = discord.Embed(description=desc, color=discord.Color.red(),
-                                                  timestamp=datetime.datetime.utcnow())
-                            return await ctx.send(embed=embed)
-                    except Exception as e:
-                        print(e)
-                        pass
-            collection.update_one({"_id": ctx.author.id}, {"$set": {'username': username}})
-            imgurl = (data['user']['image'][-1]['#text'])
-            desc = f"Success! Your Last FM username has been updated to `{username}`!"
-            embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-            embed.set_thumbnail(url=imgurl)
-            embed.set_author(name=f"Your profile has been saved!", icon_url=ctx.author.avatar_url)
-            await ctx.send(embed=embed)
+            await ctx.send(f"Disabled loop for: **{song.name}**")
 
-    @set.error
-    async def set_error(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}fm set [username]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
+    @commands.command()
+    async def queue(self, ctx):
+        q = []
+        player = music.get_player(guild_id=ctx.guild.id)
+        i = 0
+        for song in player.current_queue():
+            i += 1
+            dur = song.duration
+            dur = utils.stringfromtime(int(dur))
+            q.append(f"{i}. {song.name} | {dur}")
+        qlen = len(player.current_queue())
+        fin = "\n"+ "\n".join(q) + f"\n\n{qlen} song{'' if qlen == 1 else 's'}"
+        await ctx.send(f"```py"
+                       f"{fin}```")
 
-    @fm.command(aliases=['remove'])
-    async def unset(self, ctx):
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {'_id': ctx.author.id}
-        if collection.count_documents(query) == 0:
-            return await ctx.send("You haven't set your LASTFM profile with InfiniBot!")
-        collection.delete_one({'_id': ctx.author.id})
-        desc = f"You have removed your Last FM username from InfiniBot."
-        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-        await ctx.send(embed=embed)
+    @commands.command(aliases = ['nowplaying'])
+    async def np(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        song = player.now_playing()
+        await ctx.send('Now Playing : **' + song.name + '**')
 
-    @fm.command(aliases=['ta'])
-    async def topartists(self, ctx, member: discord.Member = None):
-        # add a time period param
-        await ctx.trigger_typing()
-        if member is None:
-            member = ctx.author
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {"_id": member.id}
-        if collection.count_documents(query) == 0:
-            return await ctx.send(f"**{member.name}** has not set their Last FM profile with InfiniBot!")
-        user = collection.find(query)
-        for result in user:
-            username = result['username']
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'user': f'{username}',
-            'api_key': key,
-            'method': 'user.gettopartists',
-            'format': 'json',
-            'limit': 10,
-            'period': '12month'
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-        counter = 0
+    @commands.command()
+    async def skip(self, ctx):
+        player = music.get_player(guild_id=ctx.guild.id)
+        data = await player.skip(force=True)
+        await ctx.send(f"Skipped **{data[0].name}**.")
 
-        descarr = []
-        for i in range(0, 10):
-            descarr.append(
-                f"{counter + 1}. {data['topartists']['artist'][counter]['name']} - {data['topartists']['artist'][counter]['playcount']} plays")
-            counter += 1
+    @commands.command()
+    async def remove(self, ctx, index):
+        player = music.get_player(guild_id=ctx.guild.id)
+        try:
+            song = await player.remove_from_queue((int(index) - 1))
+        except:
+            return await ctx.send("Are you sure you specified a correct number?")
+        await ctx.send(f"Removed {song.name} from queue!")
 
-        x = "\n".join(descarr)
-        # img = data['topartists']['artist'][0]['image'][-1]['#text']
-        embed = discord.Embed(description=x, color=discord.Color.green())
-        embed.set_author(name=f"{member.name}'s top 10 yearly artists", icon_url=member.avatar_url)
-        embed.set_thumbnail(url=member.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author.name}")
-        await ctx.send(embed=embed)
-
-    @fm.command(aliases=['tt'])
-    async def toptracks(self, ctx, member: discord.Member = None):
-        # add a time period param
-        await ctx.trigger_typing()
-        if member is None:
-            member = ctx.author
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {"_id": member.id}
-        if collection.count_documents(query) == 0:
-            return await ctx.send(f"**{member.name}** has not set their Last FM profile with InfiniBot!")
-        user = collection.find(query)
-        for result in user:
-            username = result['username']
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'user': f'{username}',
-            'api_key': key,
-            'method': 'user.gettoptracks',
-            'format': 'json',
-            'limit': 10,
-            'period': '12month'
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-        counter = 0
-
-        descarr = []
-        for i in range(0, 10):
-            descarr.append(
-                f"{counter + 1}. {data['toptracks']['track'][counter]['name']} - {data['toptracks']['track'][counter]['artist']['name']} - **{data['toptracks']['track'][counter]['playcount']} plays**")
-            counter += 1
-
-        x = "\n".join(descarr)
-        # img = data['topartists']['artist'][0]['image'][-1]['#text']
-        embed = discord.Embed(description=x, color=discord.Color.green())
-        embed.set_author(name=f"{member.name}'s top 10 yearly tracks", icon_url=member.avatar_url)
-        embed.set_thumbnail(url=member.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author.name}")
-        await ctx.send(embed=embed)
-
-    @fm.command(aliases=['talb', 'topalb'])
-    async def topalbums(self, ctx, member: discord.Member = None):
-        # add a time period paramom {name} WHERE user_id = {ctx.guild.id}")
-        await ctx.trigger_typing()
-        if member is None:
-            member = ctx.author
-        db = cluster['LASTFM']
-        collection = db['usernames']
-        query = {"_id": member.id}
-        if collection.count_documents(query) == 0:
-            return await ctx.send(f"**{member.name}** has not set their Last FM profile with InfiniBot!")
-        user = collection.find(query)
-        for result in user:
-            username = result['username']
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'user': f'{username}',
-            'api_key': key,
-            'method': 'user.gettopalbums',
-            'format': 'json',
-            'limit': 10,
-            'period': '12month'
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-        counter = 0
-
-        descarr = []
-        for i in range(0, 10):
-            descarr.append(
-                f"{counter + 1}. {data['topalbums']['album'][counter]['name']} - **{data['topalbums']['album'][counter]['artist']['name']}** - {data['topalbums']['album'][counter]['playcount']} plays")
-            counter += 1
-
-        x = "\n".join(descarr)
-        # img = data['topartists']['artist'][0]['image'][-1]['#text']
-        embed = discord.Embed(description=x, color=discord.Color.green())
-        embed.set_author(name=f"{member.name}'s top 10 yearly albums", icon_url=member.avatar_url)
-        embed.set_thumbnail(url=member.avatar_url)
-        embed.set_footer(text=f"Requested by {ctx.author.name}")
-        await ctx.send(embed=embed)
-
-    @fm.command(aliases=['artinfo', 'artistinfo'])
-    async def artist(self, ctx, *, name):
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'api_key': key,
-            'method': 'artist.getinfo',
-            'format': 'json',
-            'autocorrect': 1,
-            'lang': 'eng',
-            'artist': f'{name}'
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-                print(data)
-
-        artt = data["artist"]["name"]
-        artlink = data['artist']['url']
-        learnmore = f"**{f'[{artt}]({artlink})'}**"
-        listeners = data['artist']['stats']['listeners']
-        playscount = data['artist']['stats']['playcount']
-        img = data['artist']['image'][-1]['#text']
-        similarart = f"[{data['artist']['similar']['artist'][0]['name']}]({data['artist']['similar']['artist'][0]['url']})"
-        print(data['artist']['similar']['artist'][1]['name'])
-        similarart1 = f"[{data['artist']['similar']['artist'][1]['name']}]({data['artist']['similar']['artist'][1]['url']})"
-        print(similarart1)
-        embed = discord.Embed(title=f"Information about {name}", color=discord.Color.green())
-        embed.set_thumbnail(url=img)
-        embed.add_field(name="Similar Artists:", value=f"{similarart}, \n{similarart1}")
-        embed.set_footer(text=f"{listeners} listeners | {playscount} plays")
-        await ctx.send(embed=embed)
-
-    @artist.error
-    async def art_error(self, ctx, error):
-        prefix = utils.serverprefix(ctx)
-        if isinstance(error, commands.MissingRequiredArgument):
-            desc = f"```{prefix}fm artist [artist]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
-
-    @fm.command(aliases=['cta'])
-    async def charttopartista(self, ctx):
-        with open('lfapi.txt', 'r') as f:
-            key = f.read()
-        params = {
-            'api_key': key,
-            'method': 'chart.gettopartists',
-            'limit': 10,
-            'format': 'json',
-        }
-        async with aiohttp.ClientSession() as session:
-            url = 'https://ws.audioscrobbler.com/2.0/'
-            async with session.get(url, params=params) as response:
-                data = await response.json()
-                print(data)
-        counter = 0
-
-        descarr = []
-        for i in range(0, 10):
-            descarr.append(
-                f"{counter + 1}. {data['artists']['artist'][counter]['name']} - **{data['artists']['artist'][counter]['listeners']} listeners** - {data['artists']['artist'][counter]['playcount']} plays")
-            counter += 1
-
-        x = "\n".join(descarr)
-        # img = data['topartists']['artist'][0]['image'][-1]['#text']
-        embed = discord.Embed(description=x, color=discord.Color.green())
-        embed.set_author(name="Last FM's top 10 artists", icon_url=ctx.author.avatar_url)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.set_footer(text=f"Requested by {ctx.author.name}")
-        await ctx.send(embed=embed)
 
 def setup(client):
-    client.add_cog(Spotifys(client))
+    client.add_cog(Music(client))

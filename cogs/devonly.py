@@ -131,6 +131,7 @@ class Developers(commands.Cog):
     @commands.check(is_dev)
     async def reloadcog(self, ctx, cog):
         try:
+            print('here')
             self.client.unload_extension(f"cogs.{cog.strip()}")
             await asyncio.sleep(1)
             self.client.load_extension(f"cogs.{cog.strip()}")
@@ -161,7 +162,7 @@ class Developers(commands.Cog):
                         break
                     await channel.send(message)
                     break
-            await self.client.leave_guild(guild)
+            await guild.leave()
             await ctx.message.add_reaction('✅')
         except Exception as e:
             print(e)

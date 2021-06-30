@@ -896,6 +896,33 @@ class Moderation(commands.Cog):
         except discord.HTTPException:
             await ctx.send("I cannot delete messages older than 2 weeks!", delete_after = 5)
 
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def voicemute(self, ctx, member: discord.Member, on):
+        if on.lower() not in ['true', 'false']:
+            raise commands.MissingRequiredArgument
+        try:
+            mute = False if on.title() == 'False' else True
+            await member.edit(mute=mute)
+            await ctx.send(f"**{member.name}** has been successfully {'muted' if mute else 'unmuted'}!")
+        except discord.Forbidden:
+            return await ctx.send(
+                f"I don\'t have permission to {'mute' if mute else 'unmute'} `{member.name}#{member.discriminator}`!")
+
+    @commands.command()
+    @commands.has_permissions(manage_guild=True)
+    async def voicedeafen(self, ctx, member: discord.Member, on):
+        if on.lower() not in ['true', 'false']:
+            raise commands.MissingRequiredArgument
+        try:
+            mute = False if on.title() == 'False' else True
+            await member.edit(deafen=mute)
+            await ctx.send(f"**{member.name}** has been successfully {'deafened' if mute else 'undeafened'}!")
+        except discord.Forbidden:
+            return await ctx.send(
+                f"I don\'t have permission to {'deafen' if mute else 'undeafen'} `{member.name}#{member.discriminator}`!")
+
+
 
 def setup(client):
     client.add_cog(Moderation(client))

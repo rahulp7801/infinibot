@@ -467,5 +467,6 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except Exception as e:
             print(e)
 
+
 def setup(client):
     client.add_cog(Misc(client))

@@ -613,4 +613,33 @@ async def set_classroom_class(ctx, guild:discord.Guild):
         return res[0]
     return res
 
+def vcperms(channel:discord.VoiceChannel):
+    if channel.guild.me.guild_permissions.administrator:
+        return True
+
+    if len(channel.members) >= channel.user_limit != 0:
+        return False, "The max number of people are already in VC!"
+
+    y = channel.overwrites_for(channel.guild.default_role)
+    if not y.speak or not y.view_channel or not y.connect:
+        pass
+    else:
+        return True
+    for role in channel.guild.me.roles:
+        x = channel.overwrites_for(role)
+        if not x.speak or not x.view_channel or not x.connect:
+            if role == channel.guild.default_role:
+                pass
+            else:
+                pass
+        else:
+            return True
+        break
+
+    z = channel.overwrites_for(channel.guild.me)
+    if not z.speak or not z.view_channel or not z.connect:
+        return False
+    return True
+
+
 

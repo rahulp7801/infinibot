@@ -21,13 +21,12 @@ cluster = MongoClient(mongo_url)
 class Events(commands.Cog):
     def __init__(self, client):
         self.client = client
-        self.change_status.start()
+        # self.change_status.start()
 
 
     async def servercaptcha(self, member: discord.Member):
-        name = f"GUILD{member.guild.id}"
-        db = cluster[name]
-        collection = db['config']
+        db = cluster['CONFIGURATION']
+        collection = db['guilds']
         results = collection.find({'_id': member.guild.id})
         for i in results:
             welcomerole = i['welcomerole']
@@ -96,8 +95,8 @@ class Events(commands.Cog):
                 f"{member.name}, you did not answer within 5 minutes, so you must ask a server moderator to manually give you a role.")
             return False
 
-    def cog_unload(self):
-        self.change_status.close()
+    # def cog_unload(self):
+    #     self.change_status.close()
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -107,28 +106,30 @@ class Events(commands.Cog):
             with open('spamdetect.txt', 'r+') as f:
                 f.truncate(0)
 
-    @tasks.loop(seconds=30)
-    async def change_status(self):
-        choices = [
-            'with lines of code',
-            'Testing new InfiniBot features!',
-            'VALORANT',
-            f'watching {len(self.client.guilds)} server{"" if len(self.client.guilds) == 1 else "s"}',
-            'samosa gang gang IV out now',
-            f'%help | {self.client.user.name} Universe',
-            "New features coming soon!",
-            "Improving speed and efficiency",
-            'Google Chrome',
-            "With the API"
-        ]
-        status = random.choice(choices)
-        await self.client.change_presence(activity=discord.Game(name=status))
+    '''
+    Because if I change it manually it goes away
+    '''
+    # @tasks.loop(seconds=30)
+    # async def change_status(self):
+    #     choices = [
+    #         'with lines of code',
+    #         'Testing new InfiniBot features!',
+    #         'VALORANT',
+    #         f'watching {len(self.client.guilds)} server{"" if len(self.client.guilds) == 1 else "s"}',
+    #         'samosa gang gang IV out now',
+    #         f'%help | {self.client.user.name} Universe',
+    #         "New features coming soon!",
+    #         "Improving speed and efficiency",
+    #         'Google Chrome',
+    #         "With the API"
+    #     ]
+    #     status = random.choice(choices)
+    #     await self.client.change_presence(activity=discord.Game(name=status))
 
-    @change_status.before_loop
-    async def before_change_status(self):
-        await self.client.wait_until_ready()
-
-
+    # @change_status.before_loop
+    # async def before_change_status(self):
+    #     await self.client.wait_until_ready()
+    #
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):

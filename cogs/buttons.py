@@ -14,32 +14,6 @@ class Buttons(commands.Cog):
     async def on_ready(self):
         DiscordComponents(self.client, change_discord_methods=True)
 
-    @commands.Cog.listener()
-    async def on_message(self, msg):
-        if msg.author.bot:
-            return
-
-        if '64gb ram' in msg.content.lower():
-            await msg.channel.send(
-                "That's insane my guy!",
-                components=[
-                    Button(style=ButtonStyle.blue, label="Blue"),
-                    Button(style=ButtonStyle.red, label="Red"),
-                    Button(style=ButtonStyle.URL, label="url", url="https://example.org"),
-                ],
-            )
-
-            while True:
-                res = await self.client.wait_for("button_click")
-                if res.channel == msg.channel:
-                    await res.respond(
-                        type=InteractionType.ChannelMessageWithSource,
-                        content=f'{res.component.label} clicked'
-                    )
-                    break
-                else:
-                    continue
-
     @commands.command(aliases=['terms', 'privacypolicy', 'termsofservice'], help = 'Get a link to the terms of service!')
     @commands.cooldown(5, 120, commands.BucketType.user)
     async def tos(self, ctx):

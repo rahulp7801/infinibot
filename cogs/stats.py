@@ -169,35 +169,37 @@ class Stats(commands.Cog, name = "Server Statistics"):
             res = collection.find({'_id': member.guild.id})
             for i in res:
                 vcmins = i['vcsecs']
-            if vcmins == "":
-                if any(x for x in cache if x["guildID"] == member.guild.id):
-                    for h in cache:
-                        if h["guildID"] == member.guild.id:
-                            h["vcsecdiff"] += vcsecs
-                            json_cache = open('cache/stats.json', 'w')
-                            json_str = '{"guilds":'+ json.dumps(cache)
-                            json_cache.write(json_str + '}')
+            try:
+                if vcmins == "":
+                    if any(x for x in cache if x["guildID"] == member.guild.id):
+                        for h in cache:
+                            if h["guildID"] == member.guild.id:
+                                h["vcsecdiff"] += vcsecs
+                                json_cache = open('cache/stats.json', 'w')
+                                json_str = '{"guilds":'+ json.dumps(cache)
+                                json_cache.write(json_str + '}')
+                    else:
+                        print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
+                        cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": vcsecs, "engagedusers": []})
+                        json_cache = open('cache/stats.json', 'w')
+                        json_str = '{"guilds":'+ json.dumps(cache)
+                        json_cache.write(json_str + '}')
                 else:
-                    print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
-                    cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": vcsecs, "engagedusers": []})
-                    json_cache = open('cache/stats.json', 'w')
-                    json_str = '{"guilds":'+ json.dumps(cache)
-                    json_cache.write(json_str + '}')
-            else:
-                if any(x for x in cache if x["guildID"] == member.guild.id):
-                    for h in cache:
-                        if h["guildID"] == member.guild.id:
-                            h["vcsecdiff"] += int(vcmins) + vcsecs
-                            json_cache = open('cache/stats.json', 'w')
-                            json_str = '{"guilds":'+ json.dumps(cache)
-                            json_cache.write(json_str + '}')
-                else:
-                    print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
-                    cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": int(vcmins) + vcsecs, "engagedusers": []})
-                    json_cache = open('cache/stats.json', 'w')
-                    json_str = '{"guilds":'+ json.dumps(cache)
-                    json_cache.write(json_str + '}')
-    
+                    if any(x for x in cache if x["guildID"] == member.guild.id):
+                        for h in cache:
+                            if h["guildID"] == member.guild.id:
+                                h["vcsecdiff"] += int(vcmins) + vcsecs
+                                json_cache = open('cache/stats.json', 'w')
+                                json_str = '{"guilds":'+ json.dumps(cache)
+                                json_cache.write(json_str + '}')
+                    else:
+                        print(f"Cache Not Found for Guild {member.guild.id}, Writing it Now")
+                        cache.append({"guildID": member.guild.id, "messages": 0, "userdiff": 0, "vcsecdiff": int(vcmins) + vcsecs, "engagedusers": []})
+                        json_cache = open('cache/stats.json', 'w')
+                        json_str = '{"guilds":'+ json.dumps(cache)
+                        json_cache.write(json_str + '}')
+            except UnboundLocalError:
+                pass
     @commands.Cog.listener()
     async def on_ready(self):
         if (datetime.datetime.now().time().hour % 2 == 0):

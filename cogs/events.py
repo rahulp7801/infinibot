@@ -237,9 +237,9 @@ class Events(commands.Cog):
             return
         if message.author.system:
             return
-        name = f"GUILD{message.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         counter = 0
         with open('spamdetect.txt', 'r+') as f:
             for lines in f:
@@ -267,10 +267,11 @@ class Events(commands.Cog):
                     pass
         # add option to blacklist channels for spam detection
         x = datetime.datetime.utcnow().strftime('%b%e, %Y')
-        name = f"GUILD{message.guild.id}"
+        name = f"STATS"
+        db = cluster[name]
         # add more messages params
         # maybe the author param can be the user_id
-        collection = db['messages']
+        collection = db['guilds']
         query = {'_id': message.guild.id}
         if collection.count_documents(query) == 0:
             ping_cm = {
@@ -282,13 +283,13 @@ class Events(commands.Cog):
         else:
             user = collection.find(query)
             for result in user:
-                count = result['count']
+                count = result['msgcount']
             if count == '':
                 count = 1
             else:
                 count = int(count)
                 count += 1
-            collection.update_one({'_id': message.guild.id}, {'$set': {'count': str(count)}})
+            collection.update_one({'_id': message.guild.id}, {'$set': {'msgcount': str(count)}})
 
 
 

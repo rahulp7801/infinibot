@@ -16,7 +16,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
 import discord
-from .exceptions import ClassroomError
+from modules.exceptions import ClassroomError
 import pandas as pd
 
 with open('./mongourl.txt', 'r') as file:
@@ -301,121 +301,121 @@ def current_tzar(index:int, arr):
     current_admin = arr[index]
     return embed, current_admin
 
-def add_guild_to_db(guild:discord.Guild):
-    '''
-    :param guild: The guild (server) we need to add to the database.
-    :return:
-    add the guild to the database, but if it already exists just pass (we don't need duplicates)
-    '''
-    try:
-        db = cluster[name]
-        collection = db['config']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'prefix': '%',
-            'welcomemsg': "",
-            "welcomechannel": "",
-            'priv_welcomemsg': "",
-            'leavemsg': "",
-            'captchaon': "",
-            'muterole': "",
-            'spamdetect': "",
-            'logging': "",
-            'logchannel': "",
-            'levelups': "",
-            'ghostpingon': "",
-            'ghostcount': '',
-            'blacklistenab': "",
-            'mcip': "",
-            'starchannel': '',
-            'welcomenick': '',
-            'welcomerole': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['levels']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['customcmnd']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'commandname': ""
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['reactionroles']
-        ping_cm = {
-            "name": 'placeholder',
-            'commandname': ""
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['afk']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'afkstatus': "",
-            'startafk': '',
-            'preafknick': '',
-            'afkid': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['serverstats']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'vcsecs': "",
-            'msgcount': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['commands']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'commandname': "",
-            'commandcount': '',
-            'commandchannel': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['warns']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'reason': "",
-            'time': '',
-            'mod': '',
-            'offender': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['messages']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'author': "",
-            'date': '',
-            'channel': '',
-            'count': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['typing']
-        ping_cm = {
-            "_id": guild.id,
-            "name": guild.name,
-            'uid': '',
-            'date': "",
-            'accuracy': '',
-            'wpm': ''
-        }
-        x = collection.insert_one(ping_cm)
-        collection = db['starboard']
-        ping_cm = {
-            "_id": guild.id
-        }
-        x = collection.insert_one(ping_cm)
-    except Exception:
-        pass
+# def add_guild_to_db(guild:discord.Guild):
+#     '''
+#     :param guild: The guild (server) we need to add to the database.
+#     :return:
+#     add the guild to the database, but if it already exists just pass (we don't need duplicates)
+#     '''
+#     try:
+#         db = cluster[name]
+#         collection = db['config']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'prefix': '%',
+#             'welcomemsg': "",
+#             "welcomechannel": "",
+#             'priv_welcomemsg': "",
+#             'leavemsg': "",
+#             'captchaon': "",
+#             'muterole': "",
+#             'spamdetect': "",
+#             'logging': "",
+#             'logchannel': "",
+#             'levelups': "",
+#             'ghostpingon': "",
+#             'ghostcount': '',
+#             'blacklistenab': "",
+#             'mcip': "",
+#             'starchannel': '',
+#             'welcomenick': '',
+#             'welcomerole': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['levels']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['customcmnd']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'commandname': ""
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['reactionroles']
+#         ping_cm = {
+#             "name": 'placeholder',
+#             'commandname': ""
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['afk']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'afkstatus': "",
+#             'startafk': '',
+#             'preafknick': '',
+#             'afkid': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['serverstats']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'vcsecs': "",
+#             'msgcount': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['commands']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'commandname': "",
+#             'commandcount': '',
+#             'commandchannel': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['warns']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'reason': "",
+#             'time': '',
+#             'mod': '',
+#             'offender': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['messages']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'author': "",
+#             'date': '',
+#             'channel': '',
+#             'count': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['typing']
+#         ping_cm = {
+#             "_id": guild.id,
+#             "name": guild.name,
+#             'uid': '',
+#             'date': "",
+#             'accuracy': '',
+#             'wpm': ''
+#         }
+#         x = collection.insert_one(ping_cm)
+#         collection = db['starboard']
+#         ping_cm = {
+#             "_id": guild.id
+#         }
+#         x = collection.insert_one(ping_cm)
+#     except Exception:
+#         pass
 
 def add_guild_to_db(guild:discord.Guild):
     '''

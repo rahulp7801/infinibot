@@ -141,6 +141,30 @@ class Developers(commands.Cog):
         finally:
             await ctx.send(f"`{cog.strip().capitalize()}` was successfully reloaded.")
 
+    @commands.command()
+    @commands.check(is_dev)
+    async def leaveguild(self, ctx, guild:discord.Guild, *, message = None):
+        try:
+            if message is None:
+                await ctx.send("Would you like me to send a message to the server?")
+                message = await self.client.wait_for('message', check = lambda m: m.author == ctx.author and m.channel == ctx.channel)
+                if message.content.lower() == 'no':
+                    await ctx.send('OK')
+                    message = ''
+                else:
+                    message = message.content
+            if len(message) > 2000:
+                return await ctx.send("That message is too long, I cannot set it. Please try again.")
+            for channel in guild.text_channels:
+                if channel.permissions_for(guild.me).send_messages:
+                    if message == '':
+                        break
+                    await channel.send(message)
+                    break
+            await self.client.leave_guild(guild)
+            await ctx.message.add_reaction('✅')
+        except Exception as e:
+            print(e)
 
 
 def setup(client):

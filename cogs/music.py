@@ -1,16 +1,104 @@
 import discord
+import pylast
 from discord.ext import commands
 import DiscordUtils
 import youtube_dl
 import urllib.request
 from modules import utils
 import re
+import requests
+import asyncio
+import datetime
+from pymongo import MongoClient
+import lastpy
+from DiscordUtils.Music import event
 
 music = DiscordUtils.Music()
+
+with open('./mongourl.txt', 'r') as file:
+    url = file.read()
+
+mongo_url = url.strip()
+cluster = MongoClient(mongo_url)
+
+with open('lfapi.txt', 'r') as f:
+    key = f.read()
+
+SECRET = '3fc2809a9fc31fed3ea94864398cdd1b'
 
 class Music(commands.Cog):
     def __init__(self, client):
         self.client = client
+
+    @staticmethod
+    @event.on("songstart")
+    def _start_scrobble_song(ctx, song):
+        loop = ctx.bot.loop
+        embed = discord.Embed(color = discord.Color.blurple())
+        voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+        voice_channel = voice_client.channel
+        count = 0
+        for i in voice_channel.members:
+            if not i.bot:
+                db = cluster["LASTFM"]
+                col = db["usernames"]
+                if col.count_documents({'_id':i.id}) != 0:
+                    count += 1
+        if count == 0:
+            return
+        params = {
+            'limit': 1,
+            'track': song.name,   # could sometimes not work :(
+            'api_key': '35722626b405419c84e916787e6bf949',
+            'method': 'track.search',
+            'format': 'json'
+        }
+        data = requests.get(url='https://ws.audioscrobbler.com/2.0/', params=params)
+        data = data.json()
+        if int(data["results"]["opensearch:totalResults"]) != 0:
+            embed.description = f"Scrobbling **{song.name}** for {count} user{'' if count == 1 else 's'}"
+            loop.create_task(ctx.send(embed=embed))
+        print("success")
+
+    @staticmethod
+    @event.on("songend")
+    def _scrobble_song(ctx, song):
+        assert song.duration > 30
+        voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
+        voice_channel = voice_client.channel
+        params = {
+            'limit': 1,
+            'track': song.name, # could sometimes not work :(
+            'api_key': '35722626b405419c84e916787e6bf949',
+            'method': 'track.search',
+            'format': 'json'
+        }
+        data = requests.get(url='https://ws.audioscrobbler.com/2.0/', params=params)
+        data = data.json()
+        if int(data["results"]["opensearch:totalResults"]) == 0:
+            return
+        for i in voice_channel.members:
+            if not i.bot:
+                db = cluster["LASTFM"]
+                col = db["usernames"]
+                if col.count_documents({'_id':i.id}) != 0:
+                    res = col.find({'_id':i.id})
+                    for k in res:
+                        try:
+                            network = pylast.LastFMNetwork(
+                                api_key=key,
+                                api_secret=SECRET,
+                                session_key=k["sessionkey"]
+                            )
+                            network.scrobble(title=data["results"]["trackmatches"]["track"][0]["name"],
+                                             artist=data["results"]["trackmatches"]["track"][0]["artist"],
+                                             timestamp=datetime.datetime.utcnow())
+                        except Exception as e:
+                            print(e)
+                            continue
+
+
+
 
     @commands.command()
     async def join(self, ctx):

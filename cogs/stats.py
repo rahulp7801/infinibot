@@ -20,6 +20,9 @@ import plotly.express as px
 import matplotlib.pyplot as plt
 import datetime
 import math
+from modules import invitetrack
+
+
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -48,6 +51,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self.cache = cache
         self.icon = '📈'
         self.description = 'See comprehensive server statistics for your server!'
+        self._tracker = invitetrack.InviteTracker(self.client)
 
     def cog_unload(self):
         self.update_database_stats.cancel()
@@ -128,7 +132,27 @@ class Stats(commands.Cog, name = "Server Statistics"):
             json_cache = open('cache/stats.json', 'w')
             json_str = '{"guilds":'+ json.dumps(cache)
             json_cache.write(json_str + '}')
-    
+
+        inviter = await self._tracker.fetch_inviter(member)
+        print(inviter.id)
+        db = cluster['INVITES']
+        col = db['guilds']
+        if col.count_documents({'gid':member.guild.id, "userid":inviter.id}) == 0:
+            payload = {
+                'gid':member.guild.id,
+                "userid": inviter.id,
+                "invites": 1
+            }
+            col.insert_one(payload)
+        else:
+            res = col.find({'gid':member.guild.id, "userid":inviter.id})
+            for i in res:
+                _count = i["invites"]
+
+            _newcount = _count + 1
+            col.update_one({'gid':member.guild.id, "userid": inviter.id}, {'$set': {"invites":_newcount}})
+
+
     @commands.Cog.listener()
     async def on_member_remove(self, member):
         if any(x for x in cache if x["guildID"] == member.guild.id):
@@ -210,7 +234,23 @@ class Stats(commands.Cog, name = "Server Statistics"):
             print(f'Uploading DB Data at: {math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)}:00, in {seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0)}s')
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
             self.update_database_stats.start()
+        await self._tracker.cache_invites()
 
+    @commands.Cog.listener()
+    async def on_invite_create(self, invite):
+        await self._tracker.update_invite_cache(invite)
+
+    @commands.Cog.listener()
+    async def on_invite_delete(self, invite):
+        await self._tracker.remove_invite_cache(invite)
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        await self._tracker.add_guild_cache(guild)
+
+    @commands.Cog.listener()
+    async def on_guild_remove(self, guild):
+        await self._tracker.remove_guild_cache(guild)
     
     @commands.group(pass_context=True, invoke_without_command=True, help="")
     async def stats(self, ctx):
@@ -381,6 +421,20 @@ class Stats(commands.Cog, name = "Server Statistics"):
             await ctx.send(embed=embed, file=file)
             os.remove(filePath)
             os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+
+    @commands.command()
+    async def invleaderboard(self, ctx):
+        print('here')
+        try:
+            db = cluster['INVITES']
+            col = db['guilds']
+            if col.count_documents({'gid':ctx.guild.id}) == 0:
+                return await ctx.send(f"I have not documented any invites in **{ctx.guild.name}**!")
+            res = col.find({"gid":ctx.guild.id}).sort("invites", -1).limit(10)
+            for i in res:
+                print(i) #gtg
+        except Exception as e:
+            print(e)
 
 
 def cache_init():

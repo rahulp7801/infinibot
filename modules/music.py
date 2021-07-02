@@ -2,7 +2,7 @@ import asyncio
 import aiohttp
 import re
 from pymitter import EventEmitter
-from exceptions import *
+from .exceptions import *
 
 event = EventEmitter() #our event emitter
 

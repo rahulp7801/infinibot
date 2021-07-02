@@ -424,15 +424,24 @@ class Stats(commands.Cog, name = "Server Statistics"):
 
     @commands.command()
     async def invleaderboard(self, ctx):
-        print('here')
         try:
             db = cluster['INVITES']
             col = db['guilds']
             if col.count_documents({'gid':ctx.guild.id}) == 0:
                 return await ctx.send(f"I have not documented any invites in **{ctx.guild.name}**!")
             res = col.find({"gid":ctx.guild.id}).sort("invites", -1).limit(10)
+            embed = discord.Embed(title = f"Top Inviters in {ctx.guild.name}")
+            descarr = []
+            counter = 0
             for i in res:
-                print(i) #gtg
+                counter += 1
+                member = ctx.guild.get_member(i["userid"])
+                descarr.append(f"{counter}. **{member.name}** ({i['invites']} invite{'' if i['invites'] == 1 else 's'})")
+            embed.description = "\n".join(descarr)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_footer(text="This is only from when I joined the server.")
+            embed.colour = discord.Color.green()
+            await ctx.send(embed=embed)
         except Exception as e:
             print(e)
 

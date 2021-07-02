@@ -436,7 +436,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             for i in res:
                 counter += 1
                 member = ctx.guild.get_member(i["userid"])
-                descarr.append(f"{counter}. **{member.name}** ({i['invites']} invite{'' if i['invites'] == 1 else 's'})")
+                descarr.append(f"{counter}. **{member.name}#{member.discriminator}** ({i['invites']} invite{'' if i['invites'] == 1 else 's'})")
             embed.description = "\n".join(descarr)
             embed.set_thumbnail(url=ctx.guild.icon_url)
             embed.set_footer(text="This is only from when I joined the server.")

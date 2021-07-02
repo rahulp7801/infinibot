@@ -29,6 +29,8 @@ t1 = threading.Thread(target=voiceChatMain)
 async def on_ready():
     t1.start()
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
+    await client.change_presence(activity=discord.Game(name=f'Watching {len(client.guilds)} servers'))
+
     try:
         for guild in client.guilds:
             try:
@@ -75,101 +77,6 @@ async def botinv(ctx):
                           color=discord.Color.blurple())
     embed.set_footer(text=f"InfiniBot Help | Requested by {ctx.author.name}")
     await ctx.reply(embed=embed)
-
-
-import os
-import discord
-from discord.ext import commands
-import DiscordUtils
-
-bot = commands.AutoShardedBot(command_prefix="m ")
-music = DiscordUtils.Music()
-
-
-@bot.command()
-async def join(ctx):
-    await ctx.author.voice.channel.connect()
-    await ctx.send('**Succsesfully Joined!!** Now Play Some Music <a:party:834824007860617270>')
-
-
-@bot.command()
-async def leave(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    if player: player.delete()
-    await ctx.voice_client.disconnect()
-    await ctx.send('All Good Things Must Come To An End <a:bye:834762050403172393>')
-
-
-@bot.command()
-async def play(ctx, *, url):
-    await ctx.send('searching for the song........')
-    player = music.get_player(guild_id=ctx.guild.id)
-    if not player:
-        player = music.create_player(ctx, ffmpeg_error_betterfix=True)
-    if not ctx.voice_client.is_playing():
-        await player.queue(url, search=True)
-        song = await player.play()
-        await ctx.send(f"Now Playing: **{song.name}** <a:np:834824012370149376>")
-    else:
-        song = await player.queue(url, search=True)
-        await ctx.send(f"Queued: **{song.name}** <a:np:834824012370149376>")
-
-
-@bot.command()
-async def pause(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    song = await player.pause()
-    await ctx.send(f"Paused: **{song.name}** <a:remove:834824007604895764>")
-
-
-@bot.command()
-async def resume(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    song = await player.resume()
-    await ctx.send(f"Resumed: **{song.name}** <a:loading:834824007681179698> ")
-
-
-@bot.command()
-async def loop(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    song = await player.toggle_song_loop()
-    if song.is_looping:
-        await ctx.send(f"Enabled loop for : **{song.name}** <a:loading:834824007681179698>")
-    else:
-        await ctx.send(f"Disabled loop for: **{song.name}** <a:loading:834824007681179698>")
-
-
-@bot.command()
-async def queue(ctx):
-    embedVar = discord.Embed(title="Queue <a:loading:834824007681179698>", value=None, color=0x00ff00)
-    player = music.get_player(guild_id=ctx.guild.id)
-    i = 0
-    for song in player.current_queue():
-        embedVar.add_field(name=f'Song Number: {i}', value=f'{song.name}', inline=False)
-        i += 1
-    await ctx.send(embed=embedVar)
-
-
-@bot.command()
-async def np(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    song = player.now_playing()
-    await ctx.send('Now Playing : **' + song.name + '** <a:np:834824012370149376>')
-
-
-@bot.command()
-async def skip(ctx):
-    player = music.get_player(guild_id=ctx.guild.id)
-    data = await player.skip(force=True)
-    await ctx.send(f"Skipped **{data[0].name}** <a:skip:834824011367972875>")
-
-
-@bot.command()
-async def remove(ctx, index):
-    player = music.get_player(guild_id=ctx.guild.id)
-    song = await player.remove_from_queue(int(index))
-
-    await ctx.send(f"Removed {song.name} from queue <a:remove:834824007604895764>")
 
 
 with open('testbot.txt', 'r') as f:

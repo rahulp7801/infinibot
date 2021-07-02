@@ -1,7 +1,7 @@
 import discord
 import pylast
 from discord.ext import commands
-import DiscordUtils
+import modules
 import youtube_dl
 import urllib.request
 from modules import utils
@@ -11,9 +11,9 @@ import asyncio
 import datetime
 from pymongo import MongoClient
 import lastpy
-from DiscordUtils.Music import event
+from modules.music import event
 
-music = DiscordUtils.Music()
+music = modules.music.Music()
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -46,29 +46,31 @@ class Music(commands.Cog):
                     count += 1
         if count == 0:
             return
+        print((song.name).lower().replace(')', '').replace('(', '').replace('lyrics', '').replace('official', '').replace('video', '').replace('directed by cole bennett', '').replace('music', '').strip())
         params = {
             'limit': 1,
-            'track': song.name,   # could sometimes not work :(
+            'track': (song.name).lower().replace(')', '').replace('(', '').replace('lyrics', '').replace('official', '').replace('video', '').replace('directed by cole bennett', ''),   # lol
             'api_key': '35722626b405419c84e916787e6bf949',
             'method': 'track.search',
             'format': 'json'
         }
         data = requests.get(url='https://ws.audioscrobbler.com/2.0/', params=params)
         data = data.json()
+        print(data)
         if int(data["results"]["opensearch:totalResults"]) != 0:
             embed.description = f"Scrobbling **{song.name}** for {count} user{'' if count == 1 else 's'}"
             loop.create_task(ctx.send(embed=embed))
         print("success")
 
     @staticmethod
-    @event.on("songend")
+    @event.on("songend") #event listener triggered from the module i modded
     def _scrobble_song(ctx, song):
-        assert song.duration > 30
+        assert song.duration > 30 and song.duration != '', "Song not long enough to scrobble or is a live youtube video"
         voice_client = discord.utils.get(ctx.bot.voice_clients, guild=ctx.guild)
         voice_channel = voice_client.channel
         params = {
             'limit': 1,
-            'track': song.name, # could sometimes not work :(
+            'track': (song.name).lower().replace(')', '').replace('(', '').replace('lyrics', '').replace('official', '').replace('video', '').replace('directed by cole bennett', ''),   # lol
             'api_key': '35722626b405419c84e916787e6bf949',
             'method': 'track.search',
             'format': 'json'
@@ -130,7 +132,8 @@ class Music(commands.Cog):
         try:
             await ctx.send('Searching for `{url}`...'.format(url=query.strip()))
             if ('www.' or '.be' or '.com' or 'youtu') not in query.lower():
-                html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query.strip().replace(' ', '+')}")
+                query = query.strip().replace(' ', '+').replace("'", '%27').replace('&', '%26').replace('^', '%5E').replace('%', '%25').replace(':', '%3A').replace(';', '%3B')
+                html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query}")
                 vidid = re.findall(r"watch\?v=(\S{11})", html.read().decode())
                 query = (f"https://www.youtube.com/watch?v={vidid[0]}")
             player = music.get_player(guild_id=ctx.guild.id)
@@ -145,7 +148,8 @@ class Music(commands.Cog):
                 embed.set_author(name='Added to Queue', icon_url=ctx.author.avatar_url)
             dur = song.duration
             dur = utils.stringfromtime(int(dur))
-            embed.add_field(name='Duration', value=f"{dur}")
+            print(dur)
+            embed.add_field(name='Duration', value=f"{dur if dur != '' else 'Live'}")
             embed.add_field(name='Channel', value=f"{song.channel}")
             embed.description = f"[{song.name}]({song.url})"
             embed.set_thumbnail(url=song.thumbnail)

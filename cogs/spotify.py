@@ -56,7 +56,7 @@ class Spotifys(commands.Cog, name="Music"):
         await ctx.send(embed=embed)
 
     @commands.group(invoke_without_command = True)
-    async def fm(self, ctx, member: discord.Member = None):
+    async def fm1(self, ctx, member: discord.Member = None):
         if member is None:
             member = ctx.author
 
@@ -113,7 +113,7 @@ class Spotifys(commands.Cog, name="Music"):
         await message.add_reaction("👍🏽")
         await message.add_reaction("👎🏽")
 
-    @fm.command()
+    @fm1.command()
     async def set(self, ctx, username):
         db = cluster['LASTFM']
         collection = db['usernames']
@@ -194,7 +194,7 @@ class Spotifys(commands.Cog, name="Music"):
             embed.set_footer(text="Parameters in [] are required and () are optional")
             return await ctx.send(embed=embed)
 
-    @fm.command(aliases=['remove'])
+    @fm1.command(aliases=['remove'])
     async def unset(self, ctx):
         db = cluster['LASTFM']
         collection = db['usernames']
@@ -206,7 +206,7 @@ class Spotifys(commands.Cog, name="Music"):
         embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
         await ctx.send(embed=embed)
 
-    @fm.command(aliases=['ta'])
+    @fm1.command(aliases=['ta'])
     async def topartists(self, ctx, member: discord.Member = None):
         # add a time period param
         await ctx.trigger_typing()
@@ -250,7 +250,7 @@ class Spotifys(commands.Cog, name="Music"):
         embed.set_footer(text=f"Requested by {ctx.author.name}")
         await ctx.send(embed=embed)
 
-    @fm.command(aliases=['tt'])
+    @fm1.command(aliases=['tt'])
     async def toptracks(self, ctx, member: discord.Member = None):
         # add a time period param
         await ctx.trigger_typing()
@@ -294,7 +294,7 @@ class Spotifys(commands.Cog, name="Music"):
         embed.set_footer(text=f"Requested by {ctx.author.name}")
         await ctx.send(embed=embed)
 
-    @fm.command(aliases=['talb', 'topalb'])
+    @fm1.command(aliases=['talb', 'topalb'])
     async def topalbums(self, ctx, member: discord.Member = None):
         # add a time period paramom {name} WHERE user_id = {ctx.guild.id}")
         await ctx.trigger_typing()
@@ -338,7 +338,7 @@ class Spotifys(commands.Cog, name="Music"):
         embed.set_footer(text=f"Requested by {ctx.author.name}")
         await ctx.send(embed=embed)
 
-    @fm.command(aliases=['artinfo', 'artistinfo'])
+    @fm1.command(aliases=['artinfo', 'artistinfo'])
     async def artist(self, ctx, *, name):
         with open('lfapi.txt', 'r') as f:
             key = f.read()
@@ -381,7 +381,7 @@ class Spotifys(commands.Cog, name="Music"):
             embed.set_footer(text="Parameters in [] are required and () are optional")
             return await ctx.send(embed=embed)
 
-    @fm.command(aliases=['cta'])
+    @fm1.command(aliases=['cta'])
     async def charttopartista(self, ctx):
         with open('lfapi.txt', 'r') as f:
             key = f.read()

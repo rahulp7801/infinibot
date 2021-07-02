@@ -641,5 +641,29 @@ def vcperms(channel:discord.VoiceChannel):
         return False
     return True
 
+def determine_timeframe(param):
+    if param.lower() == ('w' or 'week'):
+        param = '7day'
+        phrase = 'weekly'
+    elif param.lower() == ('m' or 'month'):
+        param = '1month'
+        phrase = 'monthly'
+    elif param.lower() == ('3m' or '3month'):
+        param = '3month'
+        phrase = '3 monthly'
+    elif param.lower() == ('h' or '6m' or 'hy'):
+        param = '6month'
+        phrase = 'half-yearly'
+    elif param.lower() == ('y' or 'year'):
+        param = '12month'
+        phrase = 'yearly'
+    elif param.lower() == ('a' or 'alltime' or 'overall'):
+        param = 'overall'
+        phrase = 'overall'
+    else:
+        param = '7day'
+        phrase = 'weekly'
+    return param, phrase
+
 
 

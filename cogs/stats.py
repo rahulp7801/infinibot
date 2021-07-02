@@ -422,7 +422,8 @@ class Stats(commands.Cog, name = "Server Statistics"):
             os.remove(filePath)
             os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
 
-    @commands.command()
+    @commands.command(aliases = ['inviteleaderboard', 'invlb'])
+    @commands.cooldown(1, 60, commands.BucketType.guild)
     async def invleaderboard(self, ctx):
         try:
             db = cluster['INVITES']

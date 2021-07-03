@@ -343,6 +343,8 @@ class MusicPlayer(object):
         return song
 
     def delete(self):
+        old = self.music.queue[self.ctx.guild.id][0]
+        old.skipped = True
         self.music.players.remove(self)
 
 

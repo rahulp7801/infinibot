@@ -53,14 +53,12 @@ async def get_video_data(url, search, bettersearch, loop):
         url = "https://www.youtube.com/watch?v=" + data["id"]
         title = data["title"]
         description = data["description"]
-        likes = data["like_count"]
-        dislikes = data["dislike_count"]
         views = data["view_count"]
         duration = data["duration"]
         thumbnail = data["thumbnail"]
         channel = data["uploader"]
         channel_url = data["uploader_url"]
-        return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False)
+        return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
     else:
         if bettersearch:
             url = await ytbettersearch(url)
@@ -69,14 +67,12 @@ async def get_video_data(url, search, bettersearch, loop):
             url = "https://www.youtube.com/watch?v=" + data["id"]
             title = data["title"]
             description = data["description"]
-            likes = data["like_count"]
-            dislikes = data["dislike_count"]
             views = data["view_count"]
             duration = data["duration"]
             thumbnail = data["thumbnail"]
             channel = data["uploader"]
             channel_url = data["uploader_url"]
-            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False)
+            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
         elif search:
             ytdl = youtube_dl.YoutubeDL(
                 {"format": "bestaudio/best", "restrictfilenames": True, "noplaylist": True, "nocheckcertificate": True,
@@ -92,17 +88,16 @@ async def get_video_data(url, search, bettersearch, loop):
             url = "https://www.youtube.com/watch?v=" + data["id"]
             title = data["title"]
             description = data["description"]
-            likes = data["like_count"]
-            dislikes = data["dislike_count"]
             views = data["view_count"]
             duration = data["duration"]
             thumbnail = data["thumbnail"]
             channel = data["uploader"]
             channel_url = data["uploader_url"]
-            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False)
+            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
 
 
 def check_queue(ctx, opts, music, after, on_play, loop): #check for song-completion and scrobble
+    print("CHECKING QUEUE")
     if not has_voice:
         raise RuntimeError("Voice FFMPEG not installed") #should never everr ever happen
     try:
@@ -110,9 +105,13 @@ def check_queue(ctx, opts, music, after, on_play, loop): #check for song-complet
     except IndexError:
         return
     if not song.is_looping:
-        try:
+        print("CHECKINGGG SKIPS?")
+        try: #skipping propagates here too, figure out a way to fix
+            print('here??')
             old = music.queue[ctx.guild.id].pop(0)
-            event.emit("songend", ctx, old) #so we can scrobble
+            if not old.skipped: #we don't want to scrobble skipped songs
+                print('here')
+                event.emit("songend", ctx, old) #so we can scrobble
         except IndexError:
             return
         if len(music.queue[ctx.guild.id]) > 0:
@@ -170,7 +169,7 @@ class MusicPlayer(object):
         if self.ctx.guild.id not in self.music.queue.keys():
             self.music.queue[self.ctx.guild.id] = []
         self.after_func = check_queue
-        self.on_play_func = self.on_queue_func = self.on_skip_func = self.on_stop_func = self.on_pause_func = self.on_resume_func = self.on_loop_toggle_func = self.on_volume_change_func = self.on_remove_from_queue_func = None
+        self.on_play_func = self.on_queue_func = self.on_stop_func = self.on_skip_func = self.on_pause_func = self.on_resume_func = self.on_loop_toggle_func = self.on_volume_change_func = self.on_remove_from_queue_func = None
         ffmpeg_error = kwargs.get("ffmpeg_error_betterfix", kwargs.get("ffmpeg_error_fix"))
         if ffmpeg_error and "ffmpeg_error_betterfix" in kwargs.keys():
             self.ffmpeg_opts = {"options": "-vn -loglevel quiet -hide_banner -nostats",
@@ -188,9 +187,11 @@ class MusicPlayer(object):
         self.on_queue_func = func
 
     def on_play(self, func):
+        print('here232123124532')
         self.on_play_func = func
 
     def on_skip(self, func):
+        print('here6969')
         self.on_skip_func = func
 
     def on_stop(self, func):
@@ -221,32 +222,43 @@ class MusicPlayer(object):
     async def play(self):
         source = discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(self.music.queue[self.ctx.guild.id][0].source, **self.ffmpeg_opts))
+        print('here12141231231245123')
         self.voice.play(source,
                         after=lambda error: self.after_func(self.ctx, self.ffmpeg_opts, self.music, self.after_func,
                                                             self.on_play_func, self.loop))
         song = self.music.queue[self.ctx.guild.id][0]
         if self.on_play_func:
+            print("affirmative")
             await self.on_play_func(self.ctx, song)
         event.emit("songstart", self.ctx, song)
         return song
 
     async def skip(self, force=False):
+        print('here')
         if len(self.music.queue[self.ctx.guild.id]) == 0:
             raise NotPlaying("Cannot loop because nothing is being played")
         elif not len(self.music.queue[self.ctx.guild.id]) > 1 and not force:
             raise EmptyQueue("Cannot skip because queue is empty")
+
         else:
+            print('here1')
             old = self.music.queue[self.ctx.guild.id][0]
             old.is_looping = False if old.is_looping else False
             self.voice.stop()
+            print('here2')
             try:
                 new = self.music.queue[self.ctx.guild.id][0]
+                print('hi')
                 if self.on_skip_func:
+                    print('here5')
                     await self.on_skip_func(self.ctx, old, new)
-                event.emit("songstart", self.ctx, new)
-                return (old, new)
+                print('here3', 'mickeckecIWD')
+                print(old.name, new.name)
+                old.skipped = True
             except IndexError:
+                print('her7')
                 if self.on_skip_func:
+                    print('here123')
                     await self.on_skip_func(self.ctx, old)
                 return old
 
@@ -316,6 +328,7 @@ class MusicPlayer(object):
         return (song, vol)
 
     async def remove_from_queue(self, index):
+        print("REMOVING FROM QUEUE")
         if index == 0:
             try:
                 song = self.music.queue[self.ctx.guild.id][0]
@@ -334,7 +347,7 @@ class MusicPlayer(object):
 
 
 class Song(object):
-    def __init__(self, source, url, title, description, views, duration, thumbnail, channel, channel_url, loop):
+    def __init__(self, source, url, title, description, views, duration, thumbnail, channel, channel_url, loop, skip):
         self.source = source
         self.url = url
         self.title = title
@@ -346,3 +359,4 @@ class Song(object):
         self.channel = channel
         self.channel_url = channel_url
         self.is_looping = loop
+        self.skipped = skip

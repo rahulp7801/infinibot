@@ -41,6 +41,7 @@ class Leveling(commands.Cog):
     async def on_message(self, message):
         if message.author.bot:
             return
+        if message.guild is None: return
         name = f"GUILD{message.guild.id}"
         db = cluster[name]
         collection = db['levels']

@@ -208,6 +208,8 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_command_completion(self, ctx):
+        if ctx.guild is None:
+            return
         db = cluster['COMMANDCOUNT']
         collection = db['commandcount']
         query = {"_id": ctx.guild.id}
@@ -237,6 +239,8 @@ class Events(commands.Cog):
         if message.author.bot:
             return
         if message.author.system:
+            return
+        if message.guild is None:
             return
         name = f"CONFIGURATION"
         db = cluster[name]
@@ -292,8 +296,6 @@ class Events(commands.Cog):
                 count += 1
             collection.update_one({'_id': message.guild.id}, {'$set': {'msgcount': str(count)}})
 
-
-
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
         name = f"GUILD{member.guild.id}"
@@ -346,10 +348,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
-        if message.author.bot:
-            return
-        if message.author.system:
-            return
+        if (message.author.bot or message.author.system or message.guild is None): return
         name = f"GUILD{message.guild.id}"
         db = cluster[name]
         collection = db['config']

@@ -72,7 +72,8 @@ class Help(commands.HelpCommand):
         ctx = self.context
         try:
             embed = discord.Embed(title = "InfiniBot Help", color = discord.Color.red())
-            embed.set_thumbnail(url=ctx.guild.icon_url)
+            if ctx.guild is not None:
+                embed.set_thumbnail(url=ctx.guild.icon_url)
             for cog, commands in sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True):
                 if cog is None or cog.qualified_name in ['Developers', 'No Category', 'Dhruv', 'GoogleC', 'EasterEggs']:
                     continue

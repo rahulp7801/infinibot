@@ -11,13 +11,13 @@ try:
     import discord
 
     has_voice = True
-except ImportError:
+except ImportError: #voice modules needed to install
     has_voice = False
 
 if has_voice:
     youtube_dl.utils.bug_reports_message = lambda: ''
     ydl = youtube_dl.YoutubeDL(
-        {"format": "bestaudio/best", "restrictfilenames": True, "noplaylist": True, "nocheckcertificate": True,
+        {"format": "bestaudio/best", "restrictfilenames": True, "noplaylist": False, "nocheckcertificate": True,
          "ignoreerrors": True, "logtostderr": False, "quiet": True, "no_warnings": True, "source_address": "0.0.0.0"})
 
 async def ytbettersearch(query):
@@ -296,7 +296,7 @@ class MusicPlayer(object):
         try:
             return self.music.queue[self.ctx.guild.id]
         except KeyError:
-            raise EmptyQueue("Queue is empty")
+            return None
 
     def now_playing(self):
         try:

@@ -92,7 +92,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or message.guild is False:
+        if message.author.bot or message.guild is None:
             return ''
         if any(x for x in cache if x["guildID"] == message.guild.id):
             for h in cache:

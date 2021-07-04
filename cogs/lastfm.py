@@ -172,6 +172,201 @@ class lastfm(commands.Cog):
         except Exception as e:
             print(e)
 
+    @commands.command()
+    async def fmtt(self, ctx, param='7day', *, member: discord.Member = None):
+        await ctx.trigger_typing()
+        param, phrase = utils.determine_timeframe(param)
+        with open('lfapi.txt', 'r') as f:
+            key = f.read()
+        if member is None:
+            member = ctx.author
+        db = cluster["LASTFM"]
+        col = db["usernames"]
+        if col.count_documents({'_id': member.id}) == 0:
+            return await ctx.send(
+                f"**{(member.name if member != ctx.author else 'You')}** {('has' if member != ctx.author else 'have')} not set {('their' if member != ctx.author else 'your')} Last FM profile with InfiniBot!")
+        res = col.find({'_id': member.id})
+        for i in res:
+            sessionkey = i["sessionkey"]
+            username = i["username"]
+        network = pylast.LastFMNetwork(
+            api_key=key,
+            api_secret='3fc2809a9fc31fed3ea94864398cdd1b',
+            session_key=sessionkey
+        )
+        try:
+            user = network.get_user(username=username)
+            ta = user.get_top_tracks(period=param, limit=10)
+            embed = discord.Embed(color=discord.Color.green())
+            embed.set_author(icon_url=member.avatar_url, name=f"Top {phrase} tracks for {member.display_name}")
+            counter = 0
+            descarr = []
+            for i in ta:
+                counter += 1
+                descarr.append(f"{counter}. **{i[0]}** ({i[1]} play{'' if i[1] == 1 else 's'})")
+            embed.description = "\n".join(descarr)
+            await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command()
+    async def fmtopalbums(self, ctx, param='7day', *, member: discord.Member = None):
+        await ctx.trigger_typing()
+        param, phrase = utils.determine_timeframe(param)
+        with open('lfapi.txt', 'r') as f:
+            key = f.read()
+        if member is None:
+            member = ctx.author
+        db = cluster["LASTFM"]
+        col = db["usernames"]
+        if col.count_documents({'_id': member.id}) == 0:
+            return await ctx.send(
+                f"**{(member.name if member != ctx.author else 'You')}** {('has' if member != ctx.author else 'have')} not set {('their' if member != ctx.author else 'your')} Last FM profile with InfiniBot!")
+        res = col.find({'_id': member.id})
+        for i in res:
+            sessionkey = i["sessionkey"]
+            username = i["username"]
+        network = pylast.LastFMNetwork(
+            api_key=key,
+            api_secret='3fc2809a9fc31fed3ea94864398cdd1b',
+            session_key=sessionkey
+        )
+        try:
+            user = network.get_user(username=username)
+            ta = user.get_top_albums(period=param, limit=10)
+            embed = discord.Embed(color=discord.Color.green())
+            embed.set_author(icon_url=member.avatar_url, name=f"Top {phrase} albums for {member.display_name}")
+            counter = 0
+            descarr = []
+            for i in ta:
+                counter += 1
+                descarr.append(f"{counter}. **{i[0]}** ({i[1]} play{'' if i[1] == 1 else 's'})")
+            embed.description = "\n".join(descarr)
+            await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command(aliases = ['fml'])
+    async def fmlove(self, ctx):
+        await ctx.trigger_typing()
+        with open('lfapi.txt', 'r') as f:
+            key = f.read()
+        db = cluster["LASTFM"]
+        col = db["usernames"]
+        if col.count_documents({'_id': ctx.author.id}) == 0:
+            return await ctx.send(
+                f"**You** have not set your Last FM profile with InfiniBot!")
+        res = col.find({'_id': ctx.author.id})
+        for i in res:
+            sessionkey = i["sessionkey"]
+            username = i["username"]
+        network = pylast.LastFMNetwork(
+            api_key=key,
+            api_secret='3fc2809a9fc31fed3ea94864398cdd1b',
+            session_key=sessionkey
+        )
+        async with aiohttp.ClientSession() as session:
+            params = {
+                'user': f'{username}',
+                'api_key': key,
+                'method': 'user.getrecenttracks',
+                'format': 'json',
+                'limit': 1
+            }
+            url = 'https://ws.audioscrobbler.com/2.0/'
+            async with session.get(url, params=params) as response:
+                data = await response.json()
+        x = (data['recenttracks']['track'])
+        if not x:
+            return await ctx.send(f"**You** have not listened to any tracks!")
+        track = x[0]['name']
+        trackurl = x[0]['url']
+        album = x[0]['album']['#text']
+        artist = x[0]['artist']['#text']
+        desc = f"{f'[{track}]({trackurl})'} \n**{artist}** | *{album}*"
+        embed = discord.Embed(color=discord.Color.gold())
+        embed.title = f"Loved track for {ctx.author.display_name}"
+        embed.description = desc
+        try:
+            track = network.get_track(title=track, artist=artist)
+            track.love()
+            return await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command(aliases = ['fmul'])
+    async def fmunlove(self, ctx):
+        await ctx.trigger_typing()
+        with open('lfapi.txt', 'r') as f:
+            key = f.read()
+        db = cluster["LASTFM"]
+        col = db["usernames"]
+        if col.count_documents({'_id': ctx.author.id}) == 0:
+            return await ctx.send(
+                f"**You** have not set your Last FM profile with InfiniBot!")
+        res = col.find({'_id': ctx.author.id})
+        for i in res:
+            sessionkey = i["sessionkey"]
+            username = i["username"]
+        network = pylast.LastFMNetwork(
+            api_key=key,
+            api_secret='3fc2809a9fc31fed3ea94864398cdd1b',
+            session_key=sessionkey
+        )
+        async with aiohttp.ClientSession() as session:
+            params = {
+                'user': f'{username}',
+                'api_key': key,
+                'method': 'user.getrecenttracks',
+                'format': 'json',
+                'limit': 1
+            }
+            url = 'https://ws.audioscrobbler.com/2.0/'
+            async with session.get(url, params=params) as response:
+                data = await response.json()
+        x = (data['recenttracks']['track'])
+        if not x:
+            return await ctx.send(f"**You** have not listened to any tracks!")
+        track = x[0]['name']
+        trackurl = x[0]['url']
+        album = x[0]['album']['#text']
+        artist = x[0]['artist']['#text']
+        desc = f"{f'[{track}]({trackurl})'} \n**{artist}** | *{album}*"
+        embed = discord.Embed(color=discord.Color.gold())
+        embed.title = f"Unloved track for {ctx.author.display_name}"
+        embed.description = desc
+        try:
+            track = network.get_track(title=track, artist=artist)
+            track.unlove()
+            return await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command(aliases = ['fmt'])
+    #still in development
+    #use PANDAS library
+    async def fmtaste(self, ctx, *, member:discord.Member):
+        await ctx.trigger_typing()
+        with open('lfapi.txt', 'r') as f:
+            key = f.read()
+        db = cluster["LASTFM"]
+        col = db["usernames"]
+        if col.count_documents({'_id': ctx.author.id}) == 0:
+            return await ctx.send(
+                f"**You** have not set your Last FM profile with InfiniBot!")
+        res = col.find({'_id': ctx.author.id})
+        for i in res:
+            sessionkey = i["sessionkey"]
+            username = i["username"]
+        network = pylast.LastFMNetwork(
+            api_key=key,
+            api_secret='3fc2809a9fc31fed3ea94864398cdd1b',
+            session_key=sessionkey
+        )
+        tar = network.get_top_artists(limit=10)
+        user = network.get_user(username=username)
+        pass
+
 def setup(client):
     client.add_cog(lastfm(client))
 

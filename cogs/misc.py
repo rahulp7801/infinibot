@@ -38,6 +38,9 @@ class Misc(commands.Cog, name="Miscellaneous"):
         self.sma = {}
         self.smc = {}
         self.smt = {}
+        self.ema = {}
+        self.emc = {}
+        self.emt = {}
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -48,6 +51,16 @@ class Misc(commands.Cog, name="Miscellaneous"):
         del self.smc[message.channel.id]
         del self.sma[message.channel.id]
         del self.smt[message.channel.id]
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before, after):
+        self.ema[before.channel.id] = before.author.id
+        self.emc[before.channel.id] = before.clean_content
+        self.emt[before.channel.id] = before.created_at
+        await asyncio.sleep(60)
+        del self.emc[before.channel.id]
+        del self.ema[before.channel.id]
+        del self.emt[before.channel.id]
 
     @commands.command()
     async def statuscol(self, ctx):
@@ -496,6 +509,19 @@ class Misc(commands.Cog, name="Miscellaneous"):
             embed.set_author(name = f"{member.name}#{member.discriminator}", icon_url = member.avatar_url)
             embed.description = self.smc[channel.id]
             embed.timestamp = self.smt[channel.id]
+            await ctx.send(embed=embed)
+        except LookupError:
+            return await ctx.send("There is nothing to snipe!")
+
+    @commands.command()
+    async def editsnipe(self, ctx):
+        channel = ctx.channel
+        try:
+            member = self.client.get_user(self.ema[channel.id])
+            embed = discord.Embed(color=discord.Color.green())
+            embed.set_author(name=f"{member.name}#{member.discriminator}", icon_url=member.avatar_url)
+            embed.description = self.emc[channel.id]
+            embed.timestamp = self.emt[channel.id]
             await ctx.send(embed=embed)
         except LookupError:
             return await ctx.send("There is nothing to snipe!")

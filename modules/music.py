@@ -3,6 +3,7 @@ import aiohttp
 import re
 from pymitter import EventEmitter
 from .exceptions import *
+import random
 
 event = EventEmitter() #our event emitter
 
@@ -271,6 +272,14 @@ class MusicPlayer(object):
             raise NotPlaying("Cannot loop because nothing is being played")
         if self.on_stop_func:
             await self.on_stop_func(self.ctx)
+
+    def shuffle(self):
+        try:
+            song = self.music.queue[self.ctx.guild.id].pop(0)
+            random.shuffle(self.music.queue[self.ctx.guild.id])
+            self.music.queue[self.ctx.guild.id].insert(0, song)
+        except:
+            raise NotPlaying("Cannot shuffle because nothing is in the queue")
 
     async def pause(self):
         try:

@@ -35,6 +35,19 @@ class Misc(commands.Cog, name="Miscellaneous"):
         self.client = client
         self.icon = '❓'
         self.description = "These commands aren't sorted right now, but include everything."
+        self.sma = {}
+        self.smc = {}
+        self.smt = {}
+
+    @commands.Cog.listener()
+    async def on_message_delete(self, message):
+        self.sma[message.channel.id] = message.author.id
+        self.smc[message.channel.id] = message.clean_content
+        self.smt[message.channel.id] = message.created_at
+        await asyncio.sleep(60)
+        del self.smc[message.channel.id]
+        del self.sma[message.channel.id]
+        del self.smt[message.channel.id]
 
     @commands.command()
     async def statuscol(self, ctx):
@@ -401,7 +414,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         await asyncio.sleep(2)
         await ctx.message.delete()
 
-    @commands.command()
+    @commands.command(aliases = ['tone', 'toxicity'])
     async def analyze(self, ctx, *, message):
         try:
             j = discovery.build(
@@ -467,6 +480,25 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except Exception as e:
             print(e)
 
+    @commands.command(aliases = ['flip'])
+    async def coinflip(self, ctx):
+        choices = [
+            'heads', 'tails'
+        ]
+        return await ctx.reply(f"{random.choice(choices)}", mention_author = False)
+
+    @commands.command()
+    async def snipe(self, ctx):
+        channel = ctx.channel
+        try:
+            member = self.client.get_user(self.sma[channel.id])
+            embed = discord.Embed(color = discord.Color.green())
+            embed.set_author(name = f"{member.name}#{member.discriminator}", icon_url = member.avatar_url)
+            embed.description = self.smc[channel.id]
+            embed.timestamp = self.smt[channel.id]
+            await ctx.send(embed=embed)
+        except LookupError:
+            return await ctx.send("There is nothing to snipe!")
 
 def setup(client):
     client.add_cog(Misc(client))

@@ -287,7 +287,8 @@ class GoogleC(commands.Cog):
             except Exception as e:
                 print(e)
 
-    @commands.command()
+    @commands.command(aliases = ['authclass'])
+    @commands.guild_only()
     async def authenticateclassroom(self, ctx):
         print('ere3')
         embed = utils.auth_classroom(ctx)
@@ -302,8 +303,8 @@ class GoogleC(commands.Cog):
             utils.save_class_creds(ctx, message.content.strip())
             print('done')
         except ClassroomError as e:
-            return await ctx.send(f"{e}")
-        await ctx.send("You have been successfully authorized to use Google Classroom with InfiniBot.")
+            return await ctx.author.send(f"{e}")
+        await ctx.author.send("You have been successfully authorized to use Google Classroom with InfiniBot.")
 
     @commands.command(aliases = ['googleclassroomlogout'])
     @commands.guild_only()

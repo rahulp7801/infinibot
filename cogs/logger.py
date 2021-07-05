@@ -14,12 +14,9 @@ class Logging(commands.Cog):
         if isinstance(error, commands.MissingPermissions): return
         if isinstance(error, commands.MaxConcurrencyReached): return
         if isinstance(error, commands.MaxConcurrency): return
-        errmsg = f"{ctx.command.name} raised {error} in {ctx.guild.name if ctx.guild is not None else 'DM'} ({ctx.guild.id if ctx.guild is not None else ctx.author.id + ' DM'}) on {datetime.datetime.now()}"
+        errmsg = f"{ctx.command.name} raised {error} in {ctx.guild.name if ctx.guild is not None else 'DM'} ({ctx.guild.id if ctx.guild is not None else str(ctx.author.id) + ' DM'}) on {datetime.datetime.now()}"
         logging.basicConfig(filename='./errors.log')
         logging.error(errmsg)
-
-
-
 
 def setup(client):
     client.add_cog(Logging(client))

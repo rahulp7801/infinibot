@@ -681,8 +681,9 @@ def auth_classroom(ctx:discord.ext.commands.Context):
             flow = InstalledAppFlow.from_client_secrets_file(
                 'credentials.json', SCOPES)
             AUTHLINK = flow.run_discord()
+            print('here bruh')
             embed = discord.Embed(color=discord.Color.green())
-            embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:')})\n\nPlease enter the code that you receive after logging in."
+            embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:', '')})\n\nPlease enter the code that you receive after logging in."
             return embed
 
 def save_class_creds(ctx:discord.ext.commands.Context, code):

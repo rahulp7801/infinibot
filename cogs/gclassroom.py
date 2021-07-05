@@ -47,26 +47,14 @@ class GoogleC(commands.Cog):
             channel = self.client.get_channel(channel)
             try:
                 classid = i["classid"]
-                if os.path.exists('token.json'):
-                    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+                if os.path.exists(f'./temp/token{channel.guild.id}.json'):
+                    creds = Credentials.from_authorized_user_file(f'./temp/token{channel.guild.id}.json', SCOPES)
                 if not creds or not creds.valid:
                     if creds and creds.expired and creds.refresh_token:
                         print('[GOOGLE CLASSROOM] Requesting Refresh of User-Authorization')
                         creds.refresh(Request())
                     else:
-                        flow = InstalledAppFlow.from_client_secrets_file(
-                            'credentials.json', SCOPES)
-                        #should not happen!
-                        print('[GOOGLE CLASSROOM] ERROR: Unauthorized User Set Up Google Classroom!')
-                        creds = flow.run_local_server(port=0, open_browser=False)
-                    # Save the credentials for the next run
-                    try:
-                        with open('token.json', 'w') as token:
-                            token.write(creds.to_json())
-                    except Exception as e:
-                        print(f'[GOOGLE CLASSROOM] Exception Raised: {e}')
-                        raise ClassroomError(e)
-
+                        continue
                 service = build('classroom', 'v1', credentials=creds)
                 results = service.courses().courseWork().list(pageSize=10, courseId=classid).execute()  # replace that ID with "classid"
                 courses = results.get('courseWork', [])
@@ -117,22 +105,15 @@ class GoogleC(commands.Cog):
             try:
                 classid = i["classid"]
                 arr.append((i['classid'], i['gid'], i['channel']))
-                if os.path.exists('token.json'):
-                    creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+                channel = i["channel"]
+                channel = self.client.get_channel(channel)
+                if os.path.exists(f'./temp/token{channel.guild.id}.json'):
+                    creds = Credentials.from_authorized_user_file(f'./temp/token{channel.guild.id}.json', SCOPES)
                 if not creds or not creds.valid:
                     if creds and creds.expired and creds.refresh_token:
                         creds.refresh(Request())
                     else:
-                        flow = InstalledAppFlow.from_client_secrets_file(
-                            'credentials.json', SCOPES)
-                        creds = flow.run_local_server(port=0, open_browser=False)
-                    # Save the credentials for the next run
-                    try:
-                        with open('token.json', 'w') as token:
-                            token.write(creds.to_json())
-                    except Exception as e:
-                        raise ClassroomError(e)
-
+                        continue
                 service = build('classroom', 'v1', credentials=creds)
                 results = service.courses().announcements().list(pageSize = 10, courseId = classid).execute() #replace that ID with "classid"
                 courses = results.get('announcements', [])
@@ -146,9 +127,9 @@ class GoogleC(commands.Cog):
                         print(x)
                         if not x:
                             break
-                        if x and k["assigneeMode"] == 'ALL_STUDENTS':
+                        else:
                             embed = discord.Embed(color = discord.Color.green())
-                            embed.description = str(k["text"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})"
+                            embed.description = str(k["text"])[0:2000] + f"\n[View Announcement]({k['alternateLink']})"
                             try:
                                 embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
                             except KeyError:
@@ -157,6 +138,7 @@ class GoogleC(commands.Cog):
                             embed.title = 'New Announcement!'
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
+                            print('her34342342e')
                             await channel.send(embed=embed)
                             continue
 
@@ -209,11 +191,18 @@ class GoogleC(commands.Cog):
             print(e)
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setclass(self, ctx):
-        res = await utils.set_classroom_class(ctx, ctx.guild)
+        res = await utils.set_classroom_class(ctx)
+        if not res[0]:
+            return await ctx.send(res[1])
+        print('here3')
         arr = []
+        res = res[1]
+        print(res, "godem")
         for i, k in enumerate(res):
+            print(i, res[i])
             arr.append(f"{i + 1}. {res[i]['name']}")
         await ctx.send('```' + '\n'.join(arr) + '\n\nRespond with the number of the class you would like to set.' + '```')
         counter = 0
@@ -297,6 +286,33 @@ class GoogleC(commands.Cog):
                 print('success')
             except Exception as e:
                 print(e)
+
+    @commands.command()
+    async def authenticateclassroom(self, ctx):
+        print('ere3')
+        embed = utils.auth_classroom(ctx)
+        print(embed.description)
+        await ctx.author.send(embed=embed)
+        try:
+            message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel), timeout = 120)
+        except asyncio.TimeoutError:
+            return await ctx.author.send("You took too long.")
+        try:
+            print(message.content.strip())
+            utils.save_class_creds(ctx, message.content.strip())
+            print('done')
+        except ClassroomError as e:
+            return await ctx.send(f"{e}")
+        await ctx.send("You have been successfully authorized to use Google Classroom with InfiniBot.")
+
+    @commands.command(aliases = ['googleclassroomlogout'])
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild = True)
+    async def gclogout(self, ctx):
+        res = utils.classroomlogout(ctx)
+        if not res[0]:
+            return await ctx.send(res[1])
+        await ctx.send("You have successfully logged out of Google Classroom for this server.")
 
 def setup(client):
     client.add_cog(GoogleC(client))

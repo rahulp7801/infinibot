@@ -14,6 +14,7 @@ from modules import utils, help
 import re
 import urllib.request
 import time
+from chatbot import Chat
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -25,6 +26,7 @@ with open('perspectiveapis.txt', 'r') as file:
     keys = tokens.split('\n')
 PERSPECTIVE_KEYS = keys
 
+chat = Chat()
 
 cluster = MongoClient(mongo_url)
 
@@ -41,6 +43,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         self.ema = {}
         self.emc = {}
         self.emt = {}
+        self.sessionids = {}
 
     @commands.Cog.listener()
     async def on_message_delete(self, message):
@@ -525,6 +528,51 @@ class Misc(commands.Cog, name="Miscellaneous"):
             await ctx.send(embed=embed)
         except LookupError:
             return await ctx.send("There is nothing to snipe!")
+
+    @commands.command(aliases = ['talk'])
+    async def chat(self, ctx):
+        try:
+            print(self.sessionids[ctx.author.id])
+            return await ctx.send("You already have another chat session in progress in another channel/server! Please end that one before starting a new one.")
+        except LookupError:
+            pass
+        try:
+            await ctx.send(
+                f'{ctx.author.mention}, before I start I\'d like to go over a few things. When you wish to end the chat session, type `bye`. \n'
+                f'I only wait for 30 seconds between messages. If you don\'t respond, I will end the session on my own.\n'
+                f'Finally, press `y` to confirm you want to talk. Anything else, and the chat session ends.')
+            message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout=30)
+            if message.content.lower().rstrip() in ('y', 'yes'):
+                await ctx.send(f"Great {ctx.author.mention}, let's get to it. What's on your mind?")
+            else: return
+            lower = string.ascii_lowercase
+            upper = string.ascii_uppercase
+            num = string.digits
+            symbols = string.punctuation
+            combined = lower + upper + num + symbols
+            temp = random.sample(combined, 10)
+            desc = f'{"".join(temp)}'
+            self.sessionids[ctx.author.id] = desc
+            message = await self.client.wait_for('message',
+                                                 check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+                                                 timeout=30)
+            chat.start_new_session(session_id=desc, topic="none")
+            response = chat.respond(message=message.clean_content, session_id=self.sessionids[ctx.author.id])
+            await ctx.send(response)
+            while True:
+                message = await self.client.wait_for('message',
+                                                     check=lambda
+                                                         m: m.author == ctx.author and m.channel == ctx.channel,
+                                                     timeout=30)
+                if message.content.lower().strip() in ('quit', 'bye'):
+                    await ctx.send("cya")
+                    del self.sessionids[ctx.author.id]
+                    break
+                response = chat.respond(message=message.clean_content, session_id=self.sessionids[ctx.author.id])
+                await message.reply(content = response, mention_author = False)
+        except asyncio.TimeoutError:
+            del self.sessionids[ctx.author.id]
+            return
 
 def setup(client):
     client.add_cog(Misc(client))

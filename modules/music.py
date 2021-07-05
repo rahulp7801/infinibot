@@ -45,7 +45,7 @@ def is_url(url):
         return False
 
 
-async def get_video_data(url, search, bettersearch, loop):
+async def get_video_data(url, search, bettersearch, loop, requester:discord.Member):
     if not has_voice:
         raise RuntimeError("INSTALL FFMPEG BRUHH")
     if not search and not bettersearch:
@@ -59,7 +59,7 @@ async def get_video_data(url, search, bettersearch, loop):
         thumbnail = data["thumbnail"]
         channel = data["uploader"]
         channel_url = data["uploader_url"]
-        return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
+        return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False, requester)
     else:
         if bettersearch:
             url = await ytbettersearch(url)
@@ -73,7 +73,7 @@ async def get_video_data(url, search, bettersearch, loop):
             thumbnail = data["thumbnail"]
             channel = data["uploader"]
             channel_url = data["uploader_url"]
-            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
+            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False, requester)
         elif search:
             ytdl = youtube_dl.YoutubeDL(
                 {"format": "bestaudio/best", "restrictfilenames": True, "noplaylist": True, "nocheckcertificate": True,
@@ -94,7 +94,7 @@ async def get_video_data(url, search, bettersearch, loop):
             thumbnail = data["thumbnail"]
             channel = data["uploader"]
             channel_url = data["uploader_url"]
-            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False)
+            return Song(source, url, title, description, views, duration, thumbnail, channel, channel_url, False, False, requester)
 
 
 def check_queue(ctx, opts, music, after, on_play, loop): #check for song-completion and scrobble
@@ -213,8 +213,8 @@ class MusicPlayer(object):
     def on_remove_from_queue(self, func):
         self.on_remove_from_queue_func = func
 
-    async def queue(self, url, search=False, bettersearch=False):
-        song = await get_video_data(url, search, bettersearch, self.loop)
+    async def queue(self, url, requester:discord.Member, search=False, bettersearch=False):
+        song = await get_video_data(url, search, bettersearch, self.loop, requester)
         self.music.queue[self.ctx.guild.id].append(song)
         if self.on_queue_func:
             await self.on_queue_func(self.ctx, song)
@@ -234,7 +234,7 @@ class MusicPlayer(object):
         event.emit("songstart", self.ctx, song)
         return song
 
-    async def skip(self, force=False):
+    async def skip(self, requester, force=False): #add toggleable vote skip, i added self.requester to force skip
         print('here')
         if len(self.music.queue[self.ctx.guild.id]) == 0:
             raise NotPlaying("Cannot loop because nothing is being played")
@@ -358,7 +358,7 @@ class MusicPlayer(object):
 
 
 class Song(object):
-    def __init__(self, source, url, title, description, views, duration, thumbnail, channel, channel_url, loop, skip):
+    def __init__(self, source, url, title, description, views, duration, thumbnail, channel, channel_url, loop, skip, requester:discord.Member):
         self.source = source
         self.url = url
         self.title = title
@@ -371,3 +371,4 @@ class Song(object):
         self.channel_url = channel_url
         self.is_looping = loop
         self.skipped = skip
+        self.requester = requester

@@ -255,7 +255,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
     @commands.group(pass_context=True, invoke_without_command=True, help="")
     async def stats(self, ctx):
         embed = discord.Embed(title="Incorrect Usage",
-            description=f'Please use one of the following subcommands:\n\n**general** *Aliases: g*\n**messages** *Aliases: m*',
+            description=f'Please use one of the following subcommands:\n\n**general** *Aliases: g*\n**messages** *Aliases: m*\n**voicechat** *Aliases: vc*',
             color=discord.Color.blurple())
         embed.set_footer(text=f"InfiniBot Help | Requested by {ctx.author.name}")
         await ctx.reply(embed=embed)
@@ -422,6 +422,113 @@ class Stats(commands.Cog, name = "Server Statistics"):
             os.remove(filePath)
             os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
 
+    @stats.command(aliases=['vc'], help="View the Leadership Boards of Messages, and a Graph showing Messages Sent Over Time")
+    async def voicechat(self, ctx, timeframe=''):
+        print('[STATS LOGGER]  Server Stats Requested')
+        async with ctx.typing():
+
+            db = cluster[f"STATS"] 
+    
+            col = db["data"] 
+            msgcol = db["guilds"]
+
+            cacheData = {
+                "subID": [],
+                "Messages": [],
+                "Time": [],
+            }
+
+            cacheActiveUsers = []
+
+            userMSGSDict = {}
+            wTimeDict = {}
+
+            msgdocs = msgcol.find_one({"_id": ctx.guild.id})
+            msgcount = msgdocs["vcsecs"]
+      
+            if timeframe == 'd' or timeframe == 'day' or timeframe == 'today':
+                for x in col.find({"guildID": ctx.guild.id}): 
+                    if (x["_id"] != ctx.guild.id):
+                        if datetime.datetime.fromtimestamp(x["timestamp"]).date() == datetime.datetime.today().date():
+                            cacheData["subID"].append(len(cacheData["subID"]))
+                            cacheData["Voice Chat Seconds"].append(x["vcsecdiff"])
+                            try:
+                                cacheData["Time"].append((time.strftime('%I %p', time.localtime(x["timestamp"]))))
+                            except Exception as e:
+                                print(e)
+                            for member in x["engagedusers"]:
+                                if member["uid"] in userMSGSDict:
+                                    userMSGSDict[member["uid"]]["msgs"] += member["vcsecs"]
+                                else:
+                                    userMSGSDict[member["uid"]] = {"msgs": member["vcsecs"], "id": member["uid"]}
+            elif timeframe == 'w' or timeframe == 'week' or timeframe == '':
+                print('Getting Stats for Week')
+                for x in col.find({"guildID": ctx.guild.id}): 
+                    if (x["_id"] != ctx.guild.id):
+                        if datetime.datetime.fromtimestamp(x["timestamp"]).isocalendar()[1] == datetime.datetime.today().isocalendar()[1]:
+                            if datetime.datetime.fromtimestamp(x["timestamp"]).date().day in wTimeDict:
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day]["Messages"] += x["vcsecdiff"]
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day]["Time"] = time.strftime('%m/%d', time.localtime(x["timestamp"]))
+                            else:
+                                wTimeDict[datetime.datetime.fromtimestamp(x["timestamp"]).date().day] = {"Messages": x["vcsecdiff"], "Time": datetime.datetime.fromtimestamp(x["timestamp"]).date().day}
+                            for member in x["engagedusers"]:
+                                if member["uid"] in userMSGSDict:
+                                    userMSGSDict[member["uid"]]["msgs"] += member["vcsecs"]
+                                else:
+                                    userMSGSDict[member["uid"]] = {"msgs": member["vcsecs"], "id": member["uid"]}
+                for d in wTimeDict:
+                    print('[STATS LOGGER] Adding Item to Cache... ')
+                    cacheData["subID"].append(len(cacheData["subID"]))
+                    cacheData["Messages"].append(wTimeDict[d]["Messages"])
+                    cacheData["Time"].append(wTimeDict[d]["Time"])
+            print('[STATS LOGGER] Done Gathering Data From Database')
+            for u in userMSGSDict:
+                cacheActiveUsers.append(userMSGSDict[u])
+
+            cacheActiveUsers.sort(key=lambda x: x["msgs"], reverse=True)
+            filePath = f'cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}-stats.json'
+            json_cache = open(filePath, 'w')
+            json_cache.write(json.dumps(cacheData))
+            json_cache.close()
+            
+            dataFile = open(filePath)
+            df = pd.read_json(dataFile)
+            df.set_index('subID', inplace=True)
+            sns.reset_defaults()
+            sns.set(
+                rc={'figure.figsize':(7,5)}, 
+            )
+            plt.style.use("dark_background")
+            sns.lineplot(data=df, x="Time", y="Messages")
+            plt.gca().axes.xaxis.grid(False)
+            plt.fill_between(df.Time.values, df.Messages.values, alpha=0.5)
+            print('[STATS LOGGER] Standby...')
+            plt.ylim(0,max(df.Messages) + 20)
+            sns.despine(fig=None, ax=None, top=True, right=True, left=True, bottom=True, offset=None, trim=False)
+            plt.xlabel(None)
+            plt.ylabel(None)
+            plt.savefig(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", transparent=True)
+            plt.close()
+            print('[STATS LOGGER]  Server Graph Saved')
+            embed=discord.Embed(url=f"http://localhost:3000/dashboard/server/{ctx.guild.id}/stats#", description=f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented. \n\nGo [here](http://infinibot.xyz/dashboard/server/{ctx.guild.id}/stats#) for further stats", color=0xff0000, timestamp=datetime.datetime.utcnow())
+            embed.add_field(name="Total Voice Chat Time", value=f"In All: `{msgcount} seconds`", inline=False)
+            embed.set_thumbnail(url=ctx.guild.icon_url)
+            embed.set_author(name=f"{ctx.guild.name}'s Message Statistics", icon_url=ctx.guild.icon_url)
+            embed.set_footer(text=f"Server ID: {ctx.guild.id}")
+            counter = 0
+            arr = []
+            for i in range((len(cacheActiveUsers)) if (len(cacheActiveUsers) <= 5) else 5):
+                arr.append(f"`{counter + 1}.` <@!" + str(cacheActiveUsers[counter]["id"]) + ">: `" + str(
+                    cacheActiveUsers[counter]["msgs"]) + " seconds`")
+                counter += 1
+            embed.add_field(name="Top 5 Users", value="\n".join(arr), inline=False)
+            file=discord.File(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png", filename=f"guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            embed.set_image(url=f"attachment://guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+            await ctx.send(embed=embed, file=file)
+            os.remove(filePath)
+            os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
+
+    
     @commands.command(aliases = ['inviteleaderboard', 'invlb'])
     @commands.cooldown(1, 60, commands.BucketType.guild)
     async def invleaderboard(self, ctx):

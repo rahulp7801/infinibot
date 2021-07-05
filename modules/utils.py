@@ -242,7 +242,7 @@ async def send_command_help(ctx):
 async def send_group_help(ctx, group):
     await ctx.bot.help_command.send_group_help(group)
 
-async def get_classes(ctx, limit :int= 10):
+def get_classes(ctx, limit :int= 10):
     '''
     :param ctx: Context of the message
     :param limit: The limit of classes we want to retrieve information from
@@ -260,12 +260,7 @@ async def get_classes(ctx, limit :int= 10):
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            embed = discord.Embed(color = discord.Color.green())
-            embed.description = f"Please sign in [here]({AUTHLINK})\n"
-            await ctx.send(embed=embed)
-            creds = flow.run_console()
+            return False, "Invalid credentials, please try logging in again."
         # Save the credentials for the next run
         try:
             with open(f'./temp/token{ctx.guild.id}.json', 'w') as token:
@@ -606,12 +601,18 @@ def fetch_starboard_message(message:discord.Message):
 
     return int(msg), int(channel)
 
-async def set_classroom_class(ctx, guild:discord.Guild):
-    res, service = await get_classes(ctx)
-    print(res, service)
-    if len(res) == 1:
-        return res[0]
-    return res
+async def set_classroom_class(ctx:discord.ext.commands.Context):
+    try:
+        print('here1')
+        res, service = get_classes(ctx)
+        print(res, service)
+        if not res:
+            return (False, service)
+        print(res, service)
+        return (True, res)
+
+    except Exception as e:
+        print(e)
 
 def vcperms(channel:discord.VoiceChannel):
     if channel.guild.me.guild_permissions.administrator:
@@ -665,5 +666,37 @@ def determine_timeframe(param):
         phrase = 'weekly'
     return param, phrase
 
+def auth_classroom(ctx:discord.ext.commands.Context):
+    creds = None
+    # The file token.json stores the user's access and refresh tokens, and is
+    # created automatically when the authorization flow completes for the first
+    # time.
+    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
+        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}.json', SCOPES)
+    # If there are no (valid) credentials available, let the user log in.
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file(
+                'credentials.json', SCOPES)
+            AUTHLINK = flow.run_discord()
+            embed = discord.Embed(color=discord.Color.green())
+            embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:')})\n\nPlease enter the code that you receive after logging in."
+            return embed
+
+def save_class_creds(ctx:discord.ext.commands.Context, code):
+    flow = InstalledAppFlow.from_client_secrets_file(
+        'credentials.json', SCOPES)
+    creds = flow.discord_auth(code)
+    with open(f'./temp/token{ctx.guild.id}.json', 'w') as token:
+        token.write(creds.to_json())
+    return
+
+def classroomlogout(ctx:discord.ext.commands.Context):
+    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
+        os.remove(f'./temp/token{ctx.guild.id}.json')
+        return (True, "nice")
+    return (False, "No classes set for this server.")
 
 

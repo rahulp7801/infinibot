@@ -13,6 +13,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import logging
 from google.oauth2.credentials import Credentials
+from discord_components import Select, SelectOption, InteractionType
 
 import aiohttp
 
@@ -203,29 +204,20 @@ class GoogleC(commands.Cog):
         print(res, "godem")
         for i, k in enumerate(res):
             print(i, res[i])
-            arr.append(f"{i + 1}. {res[i]['name']}")
-        await ctx.send('```' + '\n'.join(arr) + '\n\nRespond with the number of the class you would like to set.' + '```')
-        counter = 0
-        while True:
-            if counter > 5:
-                return await ctx.send("Due to too many invalid choices, this session has ended.")
-            try:
-                msg = await self.client.wait_for('message',
-                                                 check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 120)
-                index = int(msg.content.lower().strip())
-                classreq = res[index - 1]
-                break
-            except asyncio.TimeoutError:
-                return await ctx.send("You took too long.")
-            except KeyError:
-                await ctx.send(f"I couldn\'t find the index `{msg.content.lower()}`. Try again.")
-                counter += 1
-                continue
-            except ValueError:
-                await ctx.send("Try again, did you mention a number?")
-                counter += 1
-                continue
-        await ctx.send(f"The selected class is `{classreq['name']}`.")
+            arr.append(SelectOption(label=k['name'], value=k["id"], description=k["descriptionHeading"]))
+        await ctx.send(content = "Click on the class you would like to set.",
+                       components = [
+                           Select(placeholder="Select a class",
+                                  options=arr,
+                                  max_values=1,
+                                  min_values=1)
+                       ])
+        try:
+            interaction = await self.client.wait_for("select_option", check=lambda i: i.author == ctx.author, timeout = 120)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long.")
+        print('out')
+        await interaction.respond(content = f"The selected class is `{interaction.component[0].label}`.")
         await asyncio.sleep(1)
         await ctx.send("What channel would you like updates to be sent to? \nMention the channel below.")
         while True:
@@ -241,14 +233,14 @@ class GoogleC(commands.Cog):
                 await ctx.send("You took too long.")
                 continue
 
-        await ctx.send(f"Ok, all updates for `{classreq['name']}` will be posted to {channel.mention}!")
+        await ctx.send(f"Ok, all updates for `{interaction.component[0].label}` will be posted to {channel.mention}!")
         db = cluster[f'GUILD{ctx.guild.id}']
         collection = db['config']
-        query = {'_id':classreq['id']}
+        query = {'_id':interaction.component[0].value}
         if collection.count_documents(query) == 0:
             try:
                 ping_cm = {
-                    '_id' : classreq["id"],
+                    '_id' : interaction.component[0].value,
                     'channel':channel.id,
                     'guild': ctx.guild.id,
                     'seton': datetime.datetime.utcnow(),
@@ -260,7 +252,7 @@ class GoogleC(commands.Cog):
                 print(e)
         else:
             try:
-                collection.update_one({'_id':classreq["id"]}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow()}})
+                collection.update_one({'_id':interaction.component[0].value}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow()}})
                 print('success')
             except Exception as e:
                 print(e)
@@ -270,7 +262,7 @@ class GoogleC(commands.Cog):
         if collection.count_documents(query) == 0:
             try:
                 ping_cm = {
-                    'classid' : classreq["id"],
+                    'classid' : interaction.component[0].value,
                     'channel':channel.id,
                     'gid': ctx.guild.id,
                     'seton': datetime.datetime.utcnow(),
@@ -282,7 +274,7 @@ class GoogleC(commands.Cog):
                 print(e)
         else:
             try:
-                collection.update_one({'gid':ctx.guild.id}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow(), 'setby':ctx.author.id, "classid":classreq["id"]}})
+                collection.update_one({'gid':ctx.guild.id}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow(), 'setby':ctx.author.id, "classid":interaction.component[0].value}})
                 print('success')
             except Exception as e:
                 print(e)

@@ -298,7 +298,7 @@ class GoogleC(commands.Cog):
                 continue
             except asyncio.TimeoutError:
                 await ctx.send("You took too long.")
-                continue
+                return
 
         await ctx.send(f"Ok, all updates for `{interaction.component[0].label}` will be posted to {channel.mention}!")
         db = cluster[f'GUILD{ctx.guild.id}']

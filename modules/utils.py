@@ -690,10 +690,19 @@ def save_class_creds(ctx:discord.ext.commands.Context, code):
     return
 
 def classroomlogout(ctx:discord.ext.commands.Context):
-    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-        os.remove(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json')
-        return (True, "nice")
-    return (False, "No classes set for this user in this server.")
+    try:
+        if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+            os.remove(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json')
+            return (True, "nice")
+        if ctx.author.id == ctx.guild.owner_id:
+            for i in os.listdir('./temp'):  # checking to see who set it for the guild... unnecessary but helpful
+                if i.startswith(f'token{ctx.guild.id}'):
+                    os.remove(f"./temp/{i}")
+                    break
+            return (True, "is_owner")
+        return (False, "No classes set for this user in this server.")
+    except Exception as e:
+        print(e)
 
 def textToEmoji(s) -> str:
     '''

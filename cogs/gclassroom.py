@@ -161,6 +161,8 @@ class GoogleC(commands.Cog):
                 x , service = await utils.get_classes(ctx, limit)
             except ClassroomError as e:
                 return await ctx.send(str(e))
+            if not x:
+                return await ctx.send(f"{service}")
 
             else:
                 print('Courses:')
@@ -195,6 +197,16 @@ class GoogleC(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setclass(self, ctx):
+        if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+            for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
+                if i.startswith(f'token{ctx.guild.id}'):
+                    new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
+                    member = self.client.get_user(int(new))
+                    return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.")
+            else:
+                res = await self.authenticateclassroom(ctx)
+                if not res:
+                    return
         res = await utils.set_classroom_class(ctx)
         if not res[0]:
             return await ctx.send(res[1])
@@ -284,19 +296,21 @@ class GoogleC(commands.Cog):
     async def authenticateclassroom(self, ctx):
         print('ere3')
         embed = utils.auth_classroom(ctx)
-        print(embed.description)
         await ctx.author.send(embed=embed)
         try:
             message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel), timeout = 120)
         except asyncio.TimeoutError:
-            return await ctx.author.send("You took too long.")
+            await ctx.author.send("You took too long.")
+            return False
         try:
             print(message.content.strip())
             utils.save_class_creds(ctx, message.content.strip())
             print('done')
         except ClassroomError as e:
-            return await ctx.author.send(f"{e}")
-        await ctx.author.send("You have been successfully authorized to use Google Classroom with InfiniBot.")
+            await ctx.author.send(f"{e}")
+            return False
+        await ctx.author.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.\n\nYou may now return to {ctx.channel.mention} to choose a class.")
+        return True
 
     @commands.command(aliases = ['googleclassroomlogout'])
     @commands.guild_only()

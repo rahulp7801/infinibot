@@ -249,24 +249,19 @@ def get_classes(ctx, limit :int= 10):
     :return:
     Information of all classes returned in a list
     '''
-    creds = None
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
-        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}.json', SCOPES)
+    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
+    else:
+        return False, "Not authorized to view classes for this server."
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             return False, "Invalid credentials, please try logging in again."
-        # Save the credentials for the next run
-        try:
-            with open(f'./temp/token{ctx.guild.id}.json', 'w') as token:
-                token.write(creds.to_json())
-        except Exception as e:
-            raise ClassroomError(e)
 
     service = build('classroom', 'v1', credentials=creds)
     # Call the Classroom API
@@ -671,8 +666,8 @@ def auth_classroom(ctx:discord.ext.commands.Context):
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
-        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}.json', SCOPES)
+    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -690,14 +685,14 @@ def save_class_creds(ctx:discord.ext.commands.Context, code):
     flow = InstalledAppFlow.from_client_secrets_file(
         'credentials.json', SCOPES)
     creds = flow.discord_auth(code)
-    with open(f'./temp/token{ctx.guild.id}.json', 'w') as token:
+    with open(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', 'w') as token:
         token.write(creds.to_json())
     return
 
 def classroomlogout(ctx:discord.ext.commands.Context):
-    if os.path.exists(f'./temp/token{ctx.guild.id}.json'):
-        os.remove(f'./temp/token{ctx.guild.id}.json')
+    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+        os.remove(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json')
         return (True, "nice")
-    return (False, "No classes set for this server.")
+    return (False, "No classes set for this user in this server.")
 
 

@@ -49,7 +49,6 @@ cogs/eastereggs.py
 /cache
 /cogs/devonly.py
 /cogs/nba.py
-/cogs/googleapis.py
 /sentAssets/*
 /youtubeapi.txt
 /cogs/economy.py

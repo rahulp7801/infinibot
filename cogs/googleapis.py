@@ -252,99 +252,117 @@ class GoogleC(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setclass(self, ctx):
-        if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-            for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
-                if i.startswith(f'token{ctx.guild.id}'):
-                    new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
-                    member = self.client.get_user(int(new))
-                    return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
-            else:
-                res = await self.authenticateclassroom(ctx)
-                if not res:
-                    return
-        res = await utils.set_classroom_class(ctx)
-        if not res[0]:
-            return await ctx.send(res[1])
-        print('here3')
-        arr = []
-        res = res[1]
-        print(res, "godem")
-        for i, k in enumerate(res):
-            print(i, res[i])
-            arr.append(SelectOption(label=k['name'], value=k["id"], description=k["descriptionHeading"]))
-        await ctx.send(content = "Click on the class you would like to set.",
-                       components = [
-                           Select(placeholder="Select a class",
-                                  options=arr,
-                                  max_values=1,
-                                  min_values=1)
-                       ])
         try:
-            interaction = await self.client.wait_for("select_option", check=lambda i: i.author == ctx.author, timeout = 120)
-        except asyncio.TimeoutError:
-            return await ctx.send("You took too long.")
-        print('out')
-        await interaction.respond(content = f"The selected class is `{interaction.component[0].label}`.")
-        await asyncio.sleep(1)
-        await ctx.send("What channel would you like updates to be sent to? \nMention the channel below.")
-        while True:
-            msg = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 120)
-            try:
-                channel = msg.channel_mentions[0].id
-                channel = self.client.get_channel(channel)
-                break
-            except IndexError:
-                await ctx.send("It doesn\'t look like you mentioned a channel, try again?")
-                continue
-            except asyncio.TimeoutError:
-                await ctx.send("You took too long.")
-                return
+            if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+                for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
+                    if i.startswith(f'token{ctx.guild.id}'):
+                        new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
+                        member = self.client.get_user(int(new))
+                        return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
+                else:
+                    res = await self.authenticateclassroom(ctx)
+                    if not res:
+                        return
+            res = await utils.set_classroom_class(ctx)
+            if not res[0]:
+                return await ctx.send(res[1])
+            print('here3')
+            arr = []
+            res = res[1]
+            print(res, "godem")
+            mapping = {}
+            for i, k in enumerate(res):
+                print(i, res[i])
+                name = str(k['name'])[0:20] + '...' if len(str(k["name"])) >= 21 else f"{k['name']}"
+                mapping[name] = k["name"]
+                try:
+                    description = str(k["descriptionHeading"])[0:20] + "..." if len(str(k["descriptionHeading"])) >= 30 else f"{k['descriptionHeading']}"
+                except:
+                    description = "No description"
+                arr.append(SelectOption(label=name, value=k["id"], description=description))
 
-        await ctx.send(f"Ok, all updates for `{interaction.component[0].label}` will be posted to {channel.mention}!")
-        db = cluster[f'GUILD{ctx.guild.id}']
-        collection = db['config']
-        query = {'_id':interaction.component[0].value}
-        if collection.count_documents(query) == 0:
+            await ctx.send(content = "Click on the class you would like to set.",
+                           components = [
+                               Select(placeholder="Select a class",
+                                      options=arr,
+                                      max_values=1,
+                                      min_values=1)
+                           ])
             try:
-                ping_cm = {
-                    '_id' : interaction.component[0].value,
-                    'channel':channel.id,
-                    'guild': ctx.guild.id,
-                    'seton': datetime.datetime.utcnow(),
-                    'setby':ctx.author.id
-                }
-                collection.insert_one(ping_cm)
-                print('suces')
-            except Exception as e:
-                print(e)
-        else:
-            try:
-                collection.update_one({'_id':interaction.component[0].value}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow()}})
-                print('success')
-            except Exception as e:
-                print(e)
-        db = cluster['GOOGLECLASSROOM']
-        collection = db['guilds']
-        query = {'gid': ctx.guild.id}
-        if collection.count_documents(query) == 0:
-            try:
-                ping_cm = {
-                    'classid' : interaction.component[0].value,
-                    'channel':channel.id,
-                    'gid': ctx.guild.id,
-                    'seton': datetime.datetime.utcnow(),
-                    'setby':ctx.author.id
-                }
-                collection.insert_one(ping_cm)
-                print('suces')
-            except Exception as e:
-                print(e)
-        else:
-            try:
-                collection.update_one({'gid':ctx.guild.id}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow(), 'setby':ctx.author.id, "classid":interaction.component[0].value}})
-                print('success')
-            except Exception as e:
-                print(e)
+                interaction = await self.client.wait_for("select_option", check=lambda i: i.author == ctx.author, timeout = 120)
+            except asyncio.TimeoutError:
+                return await ctx.send("You took too long.")
+            print('out')
+            sclass = mapping[(interaction.component[0].label)]
+            await interaction.respond(content = f"The selected class is `{sclass}`.")
+            await asyncio.sleep(1)
+            await ctx.send("What channel would you like updates to be sent to? \nMention the channel below.")
+            cnt = 0
+            while True:
+                if cnt >= 5:
+                    return await ctx.send("Due to too many invalid inputs, this session has ended.")
+                msg = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel, timeout = 120)
+                try:
+                    channel = msg.channel_mentions[0].id
+                    channel = self.client.get_channel(channel)
+                    break
+                except IndexError:
+                    if msg.content.lower() in ('stop', 'quit', 'leave'):
+                        return await ctx.send("This session has ended.")
+                    await ctx.send("It doesn\'t look like you mentioned a channel, try again?")
+                    cnt += 1
+                    continue
+                except asyncio.TimeoutError:
+                    await ctx.send("You took too long.")
+                    return
+
+            await ctx.send(f"Ok, all updates for `{sclass}` will be posted to {channel.mention}!")
+            db = cluster[f'GUILD{ctx.guild.id}']
+            collection = db['config']
+            query = {'_id':interaction.component[0].value}
+            if collection.count_documents(query) == 0:
+                try:
+                    ping_cm = {
+                        '_id' : interaction.component[0].value,
+                        'channel':channel.id,
+                        'guild': ctx.guild.id,
+                        'seton': datetime.datetime.utcnow(),
+                        'setby':ctx.author.id
+                    }
+                    collection.insert_one(ping_cm)
+                    print('suces')
+                except Exception as e:
+                    print(e)
+            else:
+                try:
+                    collection.update_one({'_id':interaction.component[0].value}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow()}})
+                    print('success')
+                except Exception as e:
+                    print(e)
+            db = cluster['GOOGLECLASSROOM']
+            collection = db['guilds']
+            query = {'gid': ctx.guild.id}
+            if collection.count_documents(query) == 0:
+                try:
+                    ping_cm = {
+                        'classid' : interaction.component[0].value,
+                        'channel':channel.id,
+                        'gid': ctx.guild.id,
+                        'seton': datetime.datetime.utcnow(),
+                        'setby':ctx.author.id
+                    }
+                    collection.insert_one(ping_cm)
+                    print('suces')
+                except Exception as e:
+                    print(e)
+            else:
+                try:
+                    collection.update_one({'gid':ctx.guild.id}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow(), 'setby':ctx.author.id, "classid":interaction.component[0].value}})
+                    print('success')
+                except Exception as e:
+                    print(e)
+        except Exception as e:
+            print(e)
 
     @commands.command(aliases = ['authclass'])
     @commands.guild_only()
@@ -381,7 +399,7 @@ class GoogleC(commands.Cog):
     async def quiz(self, ctx, url = None):
         await ctx.trigger_typing()
         if url is None:
-            return await ctx.send(f"You need to specify a Google Sheets URL. Run the {ctx.prefix}template command to see how the sheets should be formatted. \n\n"
+            return await ctx.send(f"You need to specify a Google Sheets URL. Run the `{ctx.prefix}template` command to see how the sheets should be formatted. \n\n"
                                   f"Make sure that the sheet's visibility has been set to \"Anyone with the link\"!!!!")
         try:
             print(self.quizzes[f"{ctx.guild.id}{ctx.author.id}"]) #see if a quiz already exists, throws KeyError if this doesn't exist

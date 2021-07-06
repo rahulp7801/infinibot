@@ -49,9 +49,11 @@ cogs/eastereggs.py
 /cache
 /cogs/devonly.py
 /cogs/nba.py
-/cogs/gclassroom.py
+/cogs/googleapis.py
 /sentAssets/*
 /youtubeapi.txt
 /cogs/economy.py
 /infini-bot-4758bf09ee2e.json
 /config.yaml
+/config
+/client_secret_250731096823-tngst935tad97ivbtgm9r8g8gkl74acg.apps.googleusercontent.com.json

@@ -202,7 +202,7 @@ class GoogleC(commands.Cog):
                 if i.startswith(f'token{ctx.guild.id}'):
                     new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
                     member = self.client.get_user(int(new))
-                    return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.")
+                    return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
             else:
                 res = await self.authenticateclassroom(ctx)
                 if not res:
@@ -297,6 +297,7 @@ class GoogleC(commands.Cog):
         print('ere3')
         embed = utils.auth_classroom(ctx)
         await ctx.author.send(embed=embed)
+        await ctx.reply("Check your DMs!")
         try:
             message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel), timeout = 120)
         except asyncio.TimeoutError:

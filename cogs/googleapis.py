@@ -467,7 +467,7 @@ class GoogleC(commands.Cog):
                     embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
                     embed.set_footer(text='React with the 🛑 to stop the quiz.', icon_url=self.client.user.avatar_url)
                 else:
-                    correct_ind = 0
+                    correct_ind = 0 #so we don't get UnboundLocalError, just define the variable
                     embed.set_author(name=ctx.author.name, icon_url=ctx.author.avatar_url)
                     mcq = False
                     arr = [[Button(style=ButtonStyle.green, label=f'✅'), Button(style=ButtonStyle.red, label=f'🛑')]]
@@ -496,7 +496,7 @@ class GoogleC(commands.Cog):
 
         try:
             final_score = f"Final Score: {self.quizzes[f'{ctx.guild.id}{ctx.author.id}']}/{count} = {round(self.quizzes[f'{ctx.guild.id}{ctx.author.id}'] / count * 100)}%"
-        except ZeroDivisionError:
+        except ZeroDivisionError: #they didn't answer anything
             final_score = f"Final Score: 0/0 = 0%"
         end_embed = discord.Embed(title="Quiz Terminated. Enter a new link to start again!",
                                   description=("\n" + final_score) if final_score else "",

@@ -52,6 +52,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self.icon = '📈'
         self.description = 'See comprehensive server statistics for your server!'
         self._tracker = invitetrack.InviteTracker(self.client)
+        self.uptime = time.time()
 
     def cog_unload(self):
         self.update_database_stats.cancel()
@@ -235,6 +236,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             await asyncio.sleep(seconds_until(int(math.ceil(datetime.datetime.now().time().hour + 0.01 / 2.)), 0))
             self.update_database_stats.start()
         await self._tracker.cache_invites()
+        self.uptime = time.time()
 
     @commands.Cog.listener()
     async def on_invite_create(self, invite):
@@ -550,6 +552,16 @@ class Stats(commands.Cog, name = "Server Statistics"):
             embed.set_footer(text="This is only from when I joined the server.")
             embed.colour = discord.Color.green()
             await ctx.send(embed=embed)
+        except Exception as e:
+            print(e)
+
+    @commands.command()
+    async def uptime(self, ctx):
+        try:
+            uptime = (datetime.timedelta(seconds=int(round(time.time()-self.uptime)))).total_seconds()
+            print(uptime)
+            uptime = utils.stringfromtime(uptime)
+            return await ctx.send(uptime)
         except Exception as e:
             print(e)
 

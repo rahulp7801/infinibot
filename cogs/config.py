@@ -326,33 +326,6 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['bl', 'blackl'], help = 'Toggle the blacklisted word detection!')
-    @commands.has_permissions(manage_guild = True)
-    async def blacklist(self, ctx, enab: bool = False):
-        db = cluster['CONFIGURATON']
-        collection = db['guilds']
-        if str(enab).lower() not in ['true', 'false']:
-            query = {'_id': ctx.guild.id}
-            if collection.count_documents(query) == 0:
-                return await ctx.send("An error occurred, contact the developers immediately.")
-            res = collection.find(query)
-            for i in res:
-                blak = i['blacklistenab']
-            if blak == '':
-                return await ctx.send("This server has not set up a blacklist yet!")
-            collection.update_one({'_id': ctx.guild.id}, {'$set': {'blacklistenab': ''}})
-            return await ctx.send("The blacklist for this server has successfully been removed.")
-        if ctx.message.author.guild_permissions.manage_messages:
-            collection = db['config']
-            query = {'_id': ctx.guild.id}
-            if collection.count_documents(query) == 0:
-                utils.add_guild_to_db(ctx.guild)
-            collection.update_one({'_id': ctx.guild.id}, {'$set': {'blacklistenab': f"{'on' if enab else ''}"}})
-            return await ctx.send(f"Blacklist for {ctx.guild.name} has been toggled to {'on' if enab else 'off'}!")
-        else:
-            await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
-            return
-
     @setup.command(aliases=['byemsg', 'leavemessage', 'leavemsg'], help = 'Setup a leave message.')
     @commands.has_permissions(manage_guild = True)
     async def goodbyemsg(self, ctx, *, text: str = None):

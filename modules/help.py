@@ -71,15 +71,28 @@ class Help(commands.HelpCommand):
         '''
         ctx = self.context
         try:
+            print('here')
             embed = discord.Embed(title = "InfiniBot Help", color = discord.Color.red())
+            print('here3')
             if ctx.guild is not None:
+                print('here4')
                 embed.set_thumbnail(url=ctx.guild.icon_url)
+            print('here6')
             for cog, commands in sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True):
+                print('here5')
                 if cog is None or cog.qualified_name in ['Developers', 'No Category', 'Dhruv', 'GoogleC', 'EasterEggs']:
+                    print('he7e')
                     continue
                 name = f"{cog.icon if hasattr(cog, 'icon') else ''} {cog.qualified_name}"
-                filtered = await self.filter_commands(commands, sort=True)
+                print('her6e')
+                print(cog.qualified_name)
+                try:
+                    filtered = await self.filter_commands(commands, sort=True)
+                except:
+                    continue
+                print('here89')
                 if filtered:
+                    print('here23')
                     embed.add_field(name=name, value = (cog.description or'...') + f"\n`{ctx.prefix}help {cog.qualified_name}`")
                 embed.set_footer(text=f'Use {self.clean_prefix}help [category] to learn more about a category.')
             embed.add_field(name="About Us!",
@@ -87,7 +100,7 @@ class Help(commands.HelpCommand):
                             inline=False)
             await self.get_destination().send(embed=embed)
         except Exception as e:
-            print(e)
+            print(e, 'here')
 
     async def send_command_help(self, command):
         '''

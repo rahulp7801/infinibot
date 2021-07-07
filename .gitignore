@@ -56,3 +56,5 @@ cogs/eastereggs.py
 /config.yaml
 /config
 /client_secret_250731096823-tngst935tad97ivbtgm9r8g8gkl74acg.apps.googleusercontent.com.json
+/cogs/config
+/data/profanity.txt

@@ -560,7 +560,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         try:
             uptime = (datetime.timedelta(seconds=int(round(time.time()-self.uptime)))).total_seconds()
             print(uptime)
-            uptime = utils.stringfromtime(uptime)
+            uptime = utils.stringfromtime(int(uptime))
             return await ctx.send(uptime)
         except Exception as e:
             print(e)

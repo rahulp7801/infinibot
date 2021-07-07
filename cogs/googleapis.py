@@ -305,6 +305,11 @@ class GoogleC(commands.Cog):
                 try:
                     channel = msg.channel_mentions[0].id
                     channel = self.client.get_channel(channel)
+                    res = utils.channelperms(channel)
+                    if not res:
+                        await ctx.send(f"I don\'t have sufficient permissions in {channel.mention}. \nPlease give me the `View Channel`, `Send Messages`, and `Embed Links` permissions and type it again.")
+                        cnt += 1
+                        continue
                     break
                 except IndexError:
                     if msg.content.lower() in ('stop', 'quit', 'leave'):

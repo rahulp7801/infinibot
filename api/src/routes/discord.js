@@ -5,6 +5,7 @@ const { getMutualGuilds, checkUserGuildPerms, removeArrayItem } = require('../ut
 const GuildConfig = require('../database/schemas/GuildConfig')
 
 var MongoClient = require('mongodb').MongoClient;
+const Long = require('mongodb').Long;
 
 router.get('/guilds', async (req, res) => {
     const guilds = await getBotGuilds()
@@ -39,9 +40,9 @@ router.put('/guilds/:guildId/prefix', async (req, res) => {
                     res.status(500).send({ msg: "We could not connect to your Server Config, try again later. If this persists, contact us" })
                     return err
                 } else {
-                    const guildDB = guildDBO.db(`GUILD${guildId}`)
-                    const config = guildDB.collection("config")
-                    const guildConfig = await guildDB.collection("config").findOne({})
+                    const guildDB = guildDBO.db(`CONFIGURATION`)
+                    const config = guildDB.collection("guilds")
+                    const guildConfig = await guildDB.collection("guilds").findOne({_id: guildId})
                     const name = guildConfig.name
                     const update = await config.updateOne({ name: name }, { $set: { prefix: prefix } })
                     guildDBO.close()
@@ -74,11 +75,9 @@ router.get('/guilds/:guildId/config', async (req, res) => {
                     res.status(500).send({ msg: "We could not connect to your Server Config, try again later. If this persists, contact us" })
                     return err
                 } else {
-                    const guildDB = guildDBO.db(`GUILD${guildId}`)
-                    const config = guildDB.collection("config")
-                    const guildConfig = await guildDB.collection("config").findOne({})
-                    const name = guildConfig.name
-                    const data = await config.findOne({ name: name })
+                    const guildDB = guildDBO.db(`CONFIGURATION`)
+                    const guildConfig = await guildDB.collection("guilds").findOne({_id: Long.fromString(guildId)})
+                    const data = guildConfig
                     guildDBO.close()
                     console.log(data)
                     return data ? res.status(200).send(data) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })
@@ -126,8 +125,8 @@ router.get('/guilds/:guildId/modinfo', async (req, res) => {
                     res.status(500).send({ msg: "We could not connect to your Server Config, try again later. If this persists, contact us" })
                     return err
                 } else {
-                    const guildDB = guildDBO.db(`GUILD${guildId}`)
-                    const guildWarns = await guildDB.collection("warns").find().toArray()
+                    const guildDB = guildDBO.db(`WARNS`)
+                    const guildWarns = await guildDB.collection("guilds").find({_id: Long.fromString(guildId)}).toArray()
                     const bans = await getGuildBans(guildId)
                     const auditLog = await getGuildAuditLog(guildId)
                     guildWarns.splice(0, 1)
@@ -168,9 +167,8 @@ router.get('/guilds/:guildId/stats', async (req, res) => {
                     res.status(500).send({ msg: "We could not connect to your Server Config, try again later. If this persists, contact us" })
                     return err
                 } else {
-                    const guildDB = guildDBO.db(`GUILD${guildId}`)
-                    const guildStats = await guildDB.collection("serverstats").find().toArray()
-                    guildStats.splice(0, 1)
+                    const guildDB = guildDBO.db(`STATS`)
+                    const guildStats = await guildDB.collection("data").find({guildID: Long.fromString(guildId)}).toArray()
                     guildDBO.close()
                     return guildStats ? res.status(200).send(guildStats) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })
                 }

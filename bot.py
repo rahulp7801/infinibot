@@ -18,7 +18,7 @@ with open('./mongourl.txt', 'r') as file:
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 
-client = commands.AutoShardedBot(command_prefix=commands.when_mentioned_or('.'), intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
+client = commands.AutoShardedBot(command_prefix=commands.when_mentioned_or('.'), intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True, strip_after_prefix = True)
 slash = SlashCommand(client, sync_commands = True)
 
 for filename in os.listdir('./cogs'):

@@ -146,7 +146,7 @@ class Configuration(commands.Cog):
             embed.set_thumbnail(url=ctx.author.avatar_url)
             await ctx.send(content=f"Message has been set to {text}. EXAMPLE:", embed=embed)
 
-    @setup.command(aliases=['welcomenick', 'welconickname'], help = 'Setup a nickname for users to get on join!')
+    @setup.command(aliases=['welcomenick', 'welcomenickname'], help = 'Setup a nickname for users to get on join!')
     @commands.has_permissions(manage_nicknames=True)
     async def onjoinnick(self, ctx, *, nick=None):
         db = cluster['CONFIGURATON']
@@ -198,7 +198,7 @@ class Configuration(commands.Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @setup.command(aliases=['XP', 'levelups'], help = 'Enable leveling!')
+    @setup.command(aliases=['xp', 'levelups'], help = 'Enable leveling!')
     @commands.has_permissions(manage_guild = True)
     async def levels(self, ctx, enab=True):
         db = cluster['CONFIGURATON']

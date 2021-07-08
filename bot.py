@@ -35,6 +35,11 @@ t1 = threading.Thread(target=voiceChatMain)
 _command_cache = {}
 _cog_cache = {}
 
+FORBIDDEN_COGS = [
+    'Configuration',
+    'Slash'
+]
+
 @client.event
 async def on_ready():
     t1.start()
@@ -128,6 +133,8 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
         if commnd is None:
             return await ctx.send("You need to specify which command you want to disable.")
         command = client.get_command(commnd.lower())
+        if command.startswith('setup'):
+            return await ctx.send("You cannot disable any of the setup commands.")
         if command is None:
             embed = discord.Embed(color = discord.Color.red())
             embed.description = f"Sorry, it looks like the command `{commnd.strip()}` could not be found.\n\n" \
@@ -236,6 +243,8 @@ async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] =
             embed.set_footer(text=f"To disable a module in the server, type \"on\" or \"off\" right after the module name. To disable it in a channel, "
                                   f"mention the channel after the module\'s name.")
             return await ctx.send(embed=embed)
+        if cog in FORBIDDEN_COGS:
+            return await ctx.send("You are not allowed to disable this module.")
         if channel is not None:
             print('here3332')
             channel = channel

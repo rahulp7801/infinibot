@@ -126,6 +126,8 @@ async def botinv(ctx):
     await ctx.reply(embed=embed)
 
 @client.command()
+@commands.guild_only()
+@commands.has_guild_permissions(manage_guild = True)
 async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[discord.TextChannel] = None, guild:Optional[bool] = None):
     await ctx.trigger_typing()
     db = cluster['DISABLED_COMMANDS']
@@ -227,6 +229,8 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
         print(e)
 
 @client.command()
+@commands.guild_only()
+@commands.has_guild_permissions(manage_guild = True)
 async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] = None, guild:Optional[bool] = None):
     await ctx.trigger_typing()
     db = cluster['DISABLED_COMMANDS']

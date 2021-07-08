@@ -132,6 +132,8 @@ class Mod(Cog):
                 await message.channel.send("Too many spoilers.", delete_after = 20)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages = True)
     async def linktoggle(self, ctx, channel:Optional[discord.TextChannel], guild:Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -164,6 +166,8 @@ class Mod(Cog):
             self.links_allowed.remove(channel.id)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages=True)
     async def imagetoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -196,6 +200,7 @@ class Mod(Cog):
             self.images_allowed.remove(channel.id)
 
     @commands.command(aliases=['bl', 'blackl'], help='Toggle the blacklisted word detection!')
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def blacklist(self, ctx, enab: bool = False):
         db = cluster['CONFIGURATON']
@@ -227,6 +232,8 @@ class Mod(Cog):
             return
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages=True)
     async def mentiontoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -259,6 +266,8 @@ class Mod(Cog):
             self.mass_mentions.remove(channel.id)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages=True)
     async def capslock(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -291,6 +300,8 @@ class Mod(Cog):
             self.all_caps.remove(channel.id)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages=True)
     async def inviteblock(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -323,6 +334,8 @@ class Mod(Cog):
             self.invitesblock.remove(channel.id)
 
     @commands.command()
+    @commands.guild_only()
+    @commands.has_guild_permissions(manage_messages=True)
     async def spoilertoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
         if type(guild) == bool and not None:
             if guild:
@@ -355,6 +368,7 @@ class Mod(Cog):
             self.spoilers.remove(channel.id)
 
     @commands.command()
+    @commands.has_guild_permissions(manage_messages=True)
     async def statuscol(self, ctx):
         if str(ctx.author.status).strip() == 'idle':
             embed = discord.Embed(title='You are idle!', color=discord.Color.gold())

@@ -138,7 +138,7 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
         if commnd is None:
             return await ctx.send("You need to specify which command you want to disable.")
         command = client.get_command(commnd.lower())
-        if command.startswith('setup'):
+        if command.qualified_name.startswith('setup'):
             return await ctx.send("You cannot disable any of the setup commands.")
         if command is None:
             embed = discord.Embed(color = discord.Color.red())
@@ -161,6 +161,8 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
             chan = False
         else:
             return
+
+        print(guild)
 
         col = db['channels']
         if chan:
@@ -198,35 +200,56 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
                     _command_cache[command.qualified_name].pop(_command_cache[command.qualified_name].index(channel.id))
                 await ctx.send(f"The command `{command.qualified_name}` has been whitelisted in {channel.mention}!")
         else: #guild blacklist the command
-            for channel in ctx.guild.text_channels:
-                if col.count_documents({"name":command.qualified_name, "channels":channel.id}) == 0:
-                    if col.count_documents({"name": command.qualified_name}) == 0:
-                        payload = {
-                            'name':command.qualified_name,
-                            'channels':channel.id
-                        }
-                        col.insert_one(payload)
-                        try:
-                            if _command_cache[command.qualified_name].count(channel.id) > 0:
-                                pass
-                            else:
-                                _command_cache[command.qualified_name].append(channel.id)
-                        except LookupError:
-                            _command_cache[command.qualified_name] = [channel.id]
-                    else:
-                        print('here')
-                        col.update_one({"name":command.qualified_name}, {"$push":{"channels":channel.id}})
-                        try:
-                            if _command_cache[command.qualified_name].count(channel.id) > 0:
-                                pass
-                            else:
-                                _command_cache[command.qualified_name].append(channel.id)
-                        except LookupError:
-                            _command_cache[command.qualified_name] = [channel.id]
+            if not guild:
+                for channel in ctx.guild.text_channels:
+                    if col.count_documents({"name":command.qualified_name, "channels":channel.id}) == 0:
+                        if col.count_documents({"name": command.qualified_name}) == 0:
+                            payload = {
+                                'name':command.qualified_name,
+                                'channels':[channel.id]
+                            }
+                            col.insert_one(payload)
+                            try:
+                                if _command_cache[command.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _command_cache[command.qualified_name].append(channel.id)
+                            except LookupError:
+                                _command_cache[command.qualified_name] = [channel.id]
+                        else:
+                            print('here')
+                            col.update_one({"name":command.qualified_name}, {"$set":{"channels":[channel.id]}})
+                            try:
+                                if _command_cache[command.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _command_cache[command.qualified_name].append(channel.id)
+                            except LookupError:
+                                _command_cache[command.qualified_name] = [channel.id]
 
-                else:
-                    continue
-            await ctx.send(f"Command {command.qualified_name} has been blacklisted from this server.")
+                    else:
+                        continue
+                    await ctx.send(f"Command {command.qualified_name} has been blacklisted from this server.")
+            else:
+                for channel in ctx.guild.text_channels:
+                    if col.count_documents({"name": command.qualified_name, "channels": channel.id}) != 0:
+                        if col.count_documents({"name": command.qualified_name}) == 0:
+                            break
+                        else:
+                            print('here')
+                            col.update_one({"name": command.qualified_name}, {"$pull": {"channels": channel.id}})
+                            try:
+                                if _command_cache[command.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _command_cache[command.qualified_name].append(channel.id)
+                            except LookupError:
+                                _command_cache[command.qualified_name] = [channel.id]
+
+                    else:
+                        continue
+                    await ctx.send(f"Command {command.qualified_name} has been whitelisted from this server.")
+
 
     except Exception as e:
         print(e)
@@ -266,13 +289,14 @@ async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] =
         else:
             return
 
+        print(guild)
         col = db['modules']
         if chan:
             if col.count_documents({"name":cog.qualified_name, "channels":channel.id}) == 0:
                 if col.count_documents({"name": cog.qualified_name}) == 0:
                     payload = {
                         'name':cog.qualified_name,
-                        'channels':channel.id
+                        'channels':[channel.id]
                     }
                     col.insert_one(payload)
                     try:
@@ -284,7 +308,7 @@ async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] =
                         _cog_cache[cog.qualified_name] = [channel.id]
                 else:
                     print('here')
-                    col.update_one({"name":cog.qualified_name}, {"$push":{"channels":channel.id}})
+                    col.update_one({"name":cog.qualified_name}, {"$set":{"channels":[channel.id]}})
                     try:
                         if _cog_cache[cog.qualified_name].count(channel.id) > 0:
                             pass
@@ -304,36 +328,64 @@ async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] =
                 except Exception:
                     pass
                 await ctx.send(f"The module `{cog.qualified_name}` has been whitelisted in {channel.mention}!")
+            return
         else: #guild blacklist the cog
-            for channel in ctx.guild.text_channels:
-                if col.count_documents({"name":cog.qualified_name, "channels":channel.id}) == 0:
-                    if col.count_documents({"name": cog.qualified_name}) == 0:
-                        payload = {
-                            'name':cog.qualified_name,
-                            'channels':channel.id
-                        }
-                        col.insert_one(payload)
-                        try:
-                            if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+            if not guild:
+                for channel in ctx.guild.text_channels:
+                    if col.count_documents({"name":cog.qualified_name, "channels":channel.id}) == 0:
+                        if col.count_documents({"name": cog.qualified_name}) == 0:
+                            payload = {
+                                'name':cog.qualified_name,
+                                'channels':[channel.id]
+                            }
+                            col.insert_one(payload)
+                            try:
+                                if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _cog_cache[cog.qualified_name].append(channel.id)
+                            except LookupError:
+                                _cog_cache[cog.qualified_name] = [channel.id]
+                        else:
+                            print('here')
+                            try:
+                                col.update_one({"name": cog.qualified_name}, {"$push": {"channels": channel.id}})
+                            except:
                                 pass
-                            else:
-                                _cog_cache[cog.qualified_name].append(channel.id)
-                        except LookupError:
-                            _cog_cache[cog.qualified_name] = [channel.id]
-                    else:
-                        print('here')
-                        col.update_one({"name":cog.qualified_name}, {"$push":{"channels":channel.id}})
-                        try:
-                            if _cog_cache[cog.qualified_name].count(channel.id) > 0:
-                                pass
-                            else:
-                                _cog_cache[cog.qualified_name].append(channel.id)
-                        except LookupError:
-                            _cog_cache[cog.qualified_name] = [channel.id]
+                            try:
+                                if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _cog_cache[cog.qualified_name].append(channel.id)
+                            except LookupError:
+                                _cog_cache[cog.qualified_name] = [channel.id]
 
-                else:
-                    continue
-            await ctx.send(f"The module `{cog.qualified_name}` has been blacklisted from this server.")
+                    else:
+                        continue
+                await ctx.send(f"The module `{cog.qualified_name}` has been blacklisted from this server.")
+            else:
+                print('here23212321')
+                for channel in ctx.guild.text_channels:
+                    if col.count_documents({"name": cog.qualified_name, "channels": channel.id}) != 0:
+                        if col.count_documents({"name": cog.qualified_name}) == 0:
+                            print('here??')
+                            break
+                        else:
+                            print('here')
+                            col.update_one({"name":cog.qualified_name}, {"$pull":{"channels":channel.id}})
+                            print(f'pulled {channel.name} from {channel.id}')
+                            try:
+                                if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                                    pass
+                                else:
+                                    _cog_cache[cog.qualified_name].append(channel.id)
+                            except LookupError:
+                                _cog_cache[cog.qualified_name] = [channel.id]
+                    else:
+                        print('continue')
+                        continue
+
+                await ctx.send(f"The module `{cog.qualified_name}` has been whitelisted from this server.")
 
     except Exception as e:
         print(e)

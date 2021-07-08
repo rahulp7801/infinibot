@@ -104,6 +104,7 @@ async def botinv(ctx):
 
 @client.command()
 async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[discord.TextChannel] = None, guild:Optional[bool] = None):
+    await ctx.trigger_typing()
     db = cluster['DISABLED_COMMANDS']
     try:
         if commnd is None:

@@ -507,9 +507,8 @@ class Moderation(commands.Cog):
                 return await ctx.send("You can only use this moderation on a member below you.")
         if member.id == ctx.guild.owner_id:
             return await ctx.send("You cannot take any action on the server owner.")
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['warns']
+        db = cluster['WARNS']
+        collection = db['guilds']
         ping_cm = {
             "name": member.name,
             'guild': ctx.guild.id,
@@ -536,13 +535,12 @@ class Moderation(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def warns(self, ctx, member: discord.Member = None):
         await ctx.trigger_typing()
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        prefix = utils.serverprefix(ctx)
+        db = cluster['warns']
+        prefix = ctx.prefix
         if member is None:
             if ctx.author.guild_permissions.manage_roles:
                 if member is None:
-                    collection = db['warns']
+                    collection = db['guilds']
                     query = {'guild': ctx.guild.id}
                     if collection.count_documents(query) == 0:
                         return await ctx.send(f"There have been no documented warns in **{ctx.guild.name}**.")
@@ -563,7 +561,7 @@ class Moderation(commands.Cog):
                                         value=f"Responsible Moderator: **{mod.mention}**\n\nOffender: {mem.mention}\n\nTime: {i['time']} \n\n Reason:```{i['reason']}```")
                         countr += 1
                     return await ctx.send(embed=embed)
-        collection = db['warns']
+        collection = db['guilds']
         query = {'offender': member.id}
         if collection.count_documents(query) == 0:
             return await ctx.send(f"**{member.mention}** does not have any warns in **{ctx.guild.name}**")

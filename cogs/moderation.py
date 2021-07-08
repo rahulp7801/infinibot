@@ -535,7 +535,7 @@ class Moderation(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def warns(self, ctx, member: discord.Member = None):
         await ctx.trigger_typing()
-        db = cluster['warns']
+        db = cluster['WARNS']
         prefix = ctx.prefix
         if member is None:
             if ctx.author.guild_permissions.manage_roles:

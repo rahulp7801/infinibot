@@ -229,7 +229,7 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
 
                     else:
                         continue
-                    await ctx.send(f"Command {command.qualified_name} has been blacklisted from this server.")
+                await ctx.send(f"Command {command.qualified_name} has been blacklisted from this server.")
             else:
                 for channel in ctx.guild.text_channels:
                     if col.count_documents({"name": command.qualified_name, "channels": channel.id}) != 0:
@@ -248,7 +248,7 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
 
                     else:
                         continue
-                    await ctx.send(f"Command {command.qualified_name} has been whitelisted from this server.")
+                await ctx.send(f"Command {command.qualified_name} has been whitelisted from this server.")
 
 
     except Exception as e:

@@ -7,6 +7,7 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 from discord_components import DiscordComponents
 from modules import utils
+from typing import Optional
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -1801,7 +1802,6 @@ class Configuration(commands.Cog):
             embed = discord.Embed(description= desc, color = discord.Color.red())
             await message.edit(embed=embed)
             await message.clear_reactions()
-
 
 
 def setup(client):

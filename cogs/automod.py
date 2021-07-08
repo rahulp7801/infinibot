@@ -51,6 +51,7 @@ class Mod(Cog):
         self.profguilds = []
         self.invitesblock = []
         self.spoilers = []
+        self.blacklisted = []
         self.notready = True
 
     @commands.Cog.listener()
@@ -352,6 +353,25 @@ class Mod(Cog):
             col.delete_one({"id": channel.id, "type": 'spoiler'})
             await ctx.send(f"Success, removed {channel.mention} from spoiler-detection")
             self.spoilers.remove(channel.id)
+
+    @commands.command()
+    async def statuscol(self, ctx):
+        if str(ctx.author.status).strip() == 'idle':
+            embed = discord.Embed(title='You are idle!', color=discord.Color.gold())
+            await ctx.send(embed=embed)
+        elif str(ctx.author.status).strip() == 'online':
+            embed = discord.Embed(title='You are online!', color=discord.Color.green())
+            await ctx.send(embed=embed)
+        elif str(ctx.author.status).strip() == 'dnd':
+            embed = discord.Embed(title='You are on do not disturb!', color=discord.Color.red())
+            await ctx.send(embed=embed)
+        elif str(ctx.author.status).strip() == 'invisible':
+            embed = discord.Embed(title='You are on invis!', color=discord.Color.greyple())
+            await ctx.send(embed=embed)
+        elif str(ctx.author.status) == 'offline':
+            embed = discord.Embed(title='You are offline!', color=discord.Color.greyple())
+            await ctx.send(embed=embed)
+
 
 def setup(client):
     client.add_cog(Mod(client))

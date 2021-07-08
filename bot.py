@@ -9,6 +9,14 @@ from modules import help, utils
 from discord_components import DiscordComponents
 import os
 import threading
+from pymongo import MongoClient
+from typing import Optional
+
+with open('./mongourl.txt', 'r') as file:
+    url = file.read()
+
+mongo_url = url.strip()
+cluster = MongoClient(mongo_url)
 
 client = commands.AutoShardedBot(command_prefix=commands.when_mentioned_or('.'), intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True)
 slash = SlashCommand(client, sync_commands = True)
@@ -24,6 +32,7 @@ def voiceChatMain():
     os.system('cd DJFlame && node .')
 
 t1 = threading.Thread(target=voiceChatMain)
+_command_cache = {}
 
 @client.event
 async def on_ready():
@@ -38,12 +47,27 @@ async def on_ready():
             except:
                 continue
         DiscordComponents(client, change_discord_methods=True)
-        while True:
-            await asyncio.sleep(10)
-            with open('spamdetect.txt', 'r+') as f:
-                f.truncate(0)
     except Exception as e:
         print(e)
+    db = cluster['DISABLED_COMMANDS']
+    col = db['channels']
+    res = col.find()
+    resarr = []
+    for i in res:
+        resarr.append((i["name"], i["channels"]))
+    for i in resarr:
+        _command_cache[i[0]] = i[1]
+
+@client.check
+async def is_blacklisted(ctx):
+    try:
+        print("CHECKING>>>")
+        if ctx.channel.id in _command_cache[ctx.command.qualified_name]:
+            print("YA")
+            return False
+        return True
+    except LookupError:
+        return True
 
 @client.command(help='Gives the ping of the bot!', aliases = ['clientping'])
 async def botping(ctx):
@@ -77,6 +101,104 @@ async def botinv(ctx):
                           color=discord.Color.blurple())
     embed.set_footer(text=f"InfiniBot Help | Requested by {ctx.author.name}")
     await ctx.reply(embed=embed)
+
+@client.command()
+async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[discord.TextChannel] = None, guild:Optional[bool] = None):
+    db = cluster['DISABLED_COMMANDS']
+    try:
+        if commnd is None:
+            return await ctx.send("You need to specify which command you want to disable.")
+        command = client.get_command(commnd.lower())
+        if command is None:
+            embed = discord.Embed(color = discord.Color.red())
+            embed.description = f"Sorry, it looks like the command `{commnd.strip()}` could not be found.\n\n" \
+                                f"Please make sure that if you were trying to reference a nested command, such as `{ctx.prefix}setup welcometext`, you type the **ENTIRE COMMAND, WRAPPED IN QUOTES!!!**.\n\n" \
+                                f"EXAMPLE: `{ctx.prefix}togglecommand \"setup welcometext\"`."
+            embed.set_footer(text=f"To disable a command in the server, type \"on\" or \"off\" right after the command name. To disable it in a channel, "
+                                  f"mention the channel after the command name.")
+            return await ctx.send(embed=embed)
+        if channel is not None:
+            print('here3332')
+            channel = channel
+            chan = True
+        elif channel is None and guild is None:
+            channel = ctx.channel
+            chan = True
+
+        elif channel is None and guild is not None:
+            #guild toggle
+            chan = False
+        else:
+            return
+
+        col = db['channels']
+        if chan:
+            if col.count_documents({"name":command.qualified_name, "channels":channel.id}) == 0:
+                if col.count_documents({"name": command.qualified_name}) == 0:
+                    payload = {
+                        'name':command.qualified_name,
+                        'channels':channel.id
+                    }
+                    col.insert_one(payload)
+                    try:
+                        if _command_cache[command.qualified_name].count(channel.id) > 0:
+                            pass
+                        else:
+                            _command_cache[command.qualified_name].append(channel.id)
+                    except LookupError:
+                        _command_cache[command.qualified_name] = [channel.id]
+                else:
+                    print('here')
+                    col.update_one({"name":command.qualified_name}, {"$push":{"channels":channel.id}})
+                    try:
+                        if _command_cache[command.qualified_name].count(channel.id) > 0:
+                            pass
+                        else:
+                            _command_cache[command.qualified_name].append(channel.id)
+                    except LookupError:
+                        _command_cache[command.qualified_name] = [channel.id]
+                await ctx.send(f"The command `{command.qualified_name}` has been blacklisted in {channel.mention}!")
+            else:
+                print('sus')
+                col.update_one({"name":command.qualified_name}, {"$pull":{"channels":channel.id}})
+                if _command_cache[command.qualified_name].count(channel.id) < 1:
+                    pass
+                else:
+                    _command_cache[command.qualified_name].pop(_command_cache[command.qualified_name].index(channel.id))
+                await ctx.send(f"The command `{command.qualified_name}` has been whitelisted in {channel.mention}!")
+        else: #guild blacklist the command
+            for channel in ctx.guild.text_channels:
+                if col.count_documents({"name":command.qualified_name, "channels":channel.id}) == 0:
+                    if col.count_documents({"name": command.qualified_name}) == 0:
+                        payload = {
+                            'name':command.qualified_name,
+                            'channels':channel.id
+                        }
+                        col.insert_one(payload)
+                        try:
+                            if _command_cache[command.qualified_name].count(channel.id) > 0:
+                                pass
+                            else:
+                                _command_cache[command.qualified_name].append(channel.id)
+                        except LookupError:
+                            _command_cache[command.qualified_name] = [channel.id]
+                    else:
+                        print('here')
+                        col.update_one({"name":command.qualified_name}, {"$push":{"channels":channel.id}})
+                        try:
+                            if _command_cache[command.qualified_name].count(channel.id) > 0:
+                                pass
+                            else:
+                                _command_cache[command.qualified_name].append(channel.id)
+                        except LookupError:
+                            _command_cache[command.qualified_name] = [channel.id]
+
+                else:
+                    continue
+            await ctx.send(f"Command {command.qualified_name} has been blacklisted from this server.")
+
+    except Exception as e:
+        print(e)
 
 
 with open('testbot.txt', 'r') as f:

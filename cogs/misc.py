@@ -66,24 +66,6 @@ class Misc(commands.Cog, name="Miscellaneous"):
         del self.emt[before.channel.id]
 
     @commands.command()
-    async def statuscol(self, ctx):
-        if str(ctx.author.status).strip() == 'idle':
-            embed = discord.Embed(title='You are idle!', color = discord.Color.gold())
-            await ctx.send(embed=embed)
-        elif str(ctx.author.status).strip() == 'online':
-            embed = discord.Embed(title = 'You are online!', color = discord.Color.green())
-            await ctx.send(embed=embed)
-        elif str(ctx.author.status).strip() == 'dnd':
-            embed = discord.Embed(title='You are on do not disturb!', color=discord.Color.red())
-            await ctx.send(embed=embed)
-        elif str(ctx.author.status).strip() == 'invisible':
-            embed = discord.Embed(title='You are on invis!', color=discord.Color.greyple())
-            await ctx.send(embed=embed)
-        elif str(ctx.author.status) == 'offline':
-            embed = discord.Embed(title='You are offline!', color=discord.Color.greyple())
-            await ctx.send(embed=embed)
-
-    @commands.command()
     async def whois(self, ctx, member: discord.User = None):
         if member is None:
             member = ctx.author

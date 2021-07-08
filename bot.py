@@ -33,6 +33,7 @@ def voiceChatMain():
 
 t1 = threading.Thread(target=voiceChatMain)
 _command_cache = {}
+_cog_cache = {}
 
 @client.event
 async def on_ready():
@@ -57,16 +58,33 @@ async def on_ready():
         resarr.append((i["name"], i["channels"]))
     for i in resarr:
         _command_cache[i[0]] = i[1]
+    col = db['modules']
+    res = col.find()
+    resarr = []
+    for i in res:
+        resarr.append((i["name"], i["channels"]))
+    for i in resarr:
+        _cog_cache[i[0]] = i[1]
 
 @client.check
 async def is_blacklisted(ctx):
+    if ctx.command.name == 'help':
+        return True
     try:
         print("CHECKING>>>")
         if ctx.channel.id in _command_cache[ctx.command.qualified_name]:
             print("YA")
             return False
+    except LookupError:
+        pass
+    try:
+        print("COG CHECK")
+        if ctx.channel.id in _cog_cache[ctx.command.cog.qualified_name]:
+            return False
         return True
     except LookupError:
+        return True
+    except AttributeError:
         return True
 
 @client.command(help='Gives the ping of the bot!', aliases = ['clientping'])
@@ -201,6 +219,105 @@ async def togglecommand(ctx, commnd:Optional[str] = None, channel:Optional[disco
     except Exception as e:
         print(e)
 
+@client.command()
+async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] = None, guild:Optional[bool] = None):
+    await ctx.trigger_typing()
+    db = cluster['DISABLED_COMMANDS']
+    try:
+        if cogz is None:
+            return await ctx.send("You need to specify which module you want to disable.")
+        cog = client.get_cog(cogz.title())
+        if cog is None:
+            embed = discord.Embed(color = discord.Color.red())
+            embed.description = f"Sorry, it looks like the module `{cogz.strip()}` could not be found.\n\n" \
+                                f"Please make sure that if you were trying to reference a module that has two words, such as `Google Classroom`, you type the **ENTIRE MODULE NAME, WRAPPED IN QUOTES!!!**.\n\n" \
+                                f"EXAMPLE: `{ctx.prefix}togglemodule \"Google Classroom\"`.\n\n" \
+                                f"If you are sure that you are typing the correct name, run the {ctx.prefix}help command to make sure. **NOTE: CASE SENSITIVE!**"
+            embed.set_footer(text=f"To disable a module in the server, type \"on\" or \"off\" right after the module name. To disable it in a channel, "
+                                  f"mention the channel after the module\'s name.")
+            return await ctx.send(embed=embed)
+        if channel is not None:
+            print('here3332')
+            channel = channel
+            chan = True
+        elif channel is None and guild is None:
+            channel = ctx.channel
+            chan = True
+
+        elif channel is None and guild is not None:
+            #guild toggle
+            chan = False
+        else:
+            return
+
+        col = db['modules']
+        if chan:
+            if col.count_documents({"name":cog.qualified_name, "channels":channel.id}) == 0:
+                if col.count_documents({"name": cog.qualified_name}) == 0:
+                    payload = {
+                        'name':cog.qualified_name,
+                        'channels':channel.id
+                    }
+                    col.insert_one(payload)
+                    try:
+                        if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                            pass
+                        else:
+                            _cog_cache[cog.qualified_name].append(channel.id)
+                    except LookupError:
+                        _cog_cache[cog.qualified_name] = [channel.id]
+                else:
+                    print('here')
+                    col.update_one({"name":cog.qualified_name}, {"$push":{"channels":channel.id}})
+                    try:
+                        if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                            pass
+                        else:
+                            _cog_cache[cog.qualified_name].append(channel.id)
+                    except LookupError:
+                        _cog_cache[cog.qualified_name] = [channel.id]
+                await ctx.send(f"The module `{cog.qualified_name}` has been blacklisted in {channel.mention}!")
+            else:
+                print('sus')
+                col.update_one({"name":cog.qualified_name}, {"$pull":{"channels":channel.id}})
+                if _cog_cache[cog.qualified_name].count(channel.id) < 1:
+                    pass
+                else:
+                    _cog_cache[cog.qualified_name].pop(_cog_cache[cog.qualified_name].index(channel.id))
+                await ctx.send(f"The module `{cog.qualified_name}` has been whitelisted in {channel.mention}!")
+        else: #guild blacklist the cog
+            for channel in ctx.guild.text_channels:
+                if col.count_documents({"name":cog.qualified_name, "channels":channel.id}) == 0:
+                    if col.count_documents({"name": cog.qualified_name}) == 0:
+                        payload = {
+                            'name':cog.qualified_name,
+                            'channels':channel.id
+                        }
+                        col.insert_one(payload)
+                        try:
+                            if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                                pass
+                            else:
+                                _cog_cache[cog.qualified_name].append(channel.id)
+                        except LookupError:
+                            _cog_cache[cog.qualified_name] = [channel.id]
+                    else:
+                        print('here')
+                        col.update_one({"name":cog.qualified_name}, {"$push":{"channels":channel.id}})
+                        try:
+                            if _cog_cache[cog.qualified_name].count(channel.id) > 0:
+                                pass
+                            else:
+                                _cog_cache[cog.qualified_name].append(channel.id)
+                        except LookupError:
+                            _cog_cache[cog.qualified_name] = [channel.id]
+
+                else:
+                    continue
+            await ctx.send(f"The module `{cog.qualified_name}` has been blacklisted from this server.")
+
+    except Exception as e:
+        print(e)
 
 with open('testbot.txt', 'r') as f:
     token = f.read()

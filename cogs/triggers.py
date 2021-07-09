@@ -17,31 +17,37 @@ class Triggers(commands.Cog):
         self.description = 'Set message triggers!'
         self.triggers = {}
         self.notready = True
-        self.ischanging = False
-
-    '''
-    Slows the bot down a lot, will be looking for a quicker way of implementation before deployment
-    '''
+        self.ischanging = {}
 
     @commands.Cog.listener()
     async def on_ready(self):
         db = cluster['TRIGGERS']
         col = db['guilds']
         res = col.find()
+        trigarr = []
         for i in res:
-            triggers = i["trigger"]
-            response = i["response"]
-            gid = i["gid"]
-        self.triggers[gid] = []
-        for i in range(len(triggers)):
-            self.triggers[gid].append((triggers[i], response[i]))
+            print(i)
+            trigarr.append((i["trigger"], i["response"], i["gid"], i["setby"], i["seton"]))
+        self.triggers[trigarr[0][2]] = []
+        for i in range(len(trigarr[0][0])):
+            print(trigarr)
+            print(i)
+            self.triggers[trigarr[0][2]].append((trigarr[0][0][i], trigarr[0][1][i], trigarr[0][3][i], trigarr[0][4][i]))
+        print(self.triggers)
         self.notready = False
 
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or self.notready or self.ischanging:
+        if message.author.bot or self.notready:
             return
+        try:
+            print(self.ischanging)
+            if self.ischanging[message.guild.id]:
+                return
+        except LookupError:
+            pass
         for k in self.triggers[message.guild.id]:
+            print(k)
             if k[0] in message.content.lower():
                 return await message.channel.send(k[1])
 
@@ -49,7 +55,7 @@ class Triggers(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_messages = True)
     async def addtrigger(self, ctx, *, trigger):
-        self.ischanging = True
+        self.ischanging[ctx.guild.id] = True
         name = f"TRIGGERS"
         db = cluster[name]
         collection = db['guilds']
@@ -64,49 +70,60 @@ class Triggers(commands.Cog):
                 if len(msg.content.strip()) == 0:
                     self.ischanging = False
                     return await ctx.send("Somehow you managed to send an empty message, props to you!")
+                settime = datetime.datetime.utcnow()
                 if collection.count_documents({"gid":ctx.guild.id}) == 0:
+
                     ping_cm = {
                         "gid": ctx.guild.id,
                         "name": ctx.guild.name,
                         'trigger': [trigger.strip().lower()],
                         'response': [msg.content.strip()],
                         'setby':[ctx.author.id],
-                        'seton':[datetime.datetime.utcnow()]
+                        'seton':[settime]
                     }
                     collection.insert_one(ping_cm)
-                    self.triggers[ctx.guild.id] = [(trigger.strip().lower(), msg.content.strip())]
+                    self.triggers[ctx.guild.id] = [(trigger.strip().lower(), msg.content.strip(), ctx.author.id, settime)]
                 else:
                     collection.update_one({"gid":ctx.guild.id}, {"$push": {"trigger":trigger.strip().lower()}})
                     collection.update_one({"gid": ctx.guild.id}, {"$push": {"response": msg.content.strip()}})
                     collection.update_one({"gid": ctx.guild.id}, {"$push": {"setby": ctx.author.id}})
-                    collection.update_one({"gid": ctx.guild.id}, {"$push": {"seton": datetime.datetime.utcnow()}})
-                    self.triggers[ctx.guild.id].append((trigger.strip().lower(), msg.content.strip()))
-                self.ischanging = False
+                    collection.update_one({"gid": ctx.guild.id}, {"$push": {"seton": settime}})
+                    self.triggers[ctx.guild.id].append((trigger.strip().lower(), msg.content.strip(), ctx.author.id, settime))
+                self.ischanging[ctx.guild.id] = False
                 return await ctx.send(f"Success! `{msg.content.strip()}` has been saved as the response for `{trigger.strip()}`!")
             except asyncio.TimeoutError:
-                self.ischanging = False
+                self.ischanging[ctx.guild.id] = False
                 return await ctx.reply("Timed out", mention_author = False)
         elif collection.count_documents({"gid":ctx.guild.id}) >= 10:
-            self.ischanging = False
+            self.ischanging[ctx.guild.id] = False
             return await ctx.send(f"{ctx.guild.name} already has 10 triggers, remove one if you wish to create another.") #create donation thing here
         else:
-            self.ischanging = False
+            self.ischanging[ctx.guild.id] = False
             return await ctx.send(f"`{trigger.strip()}` already exists as a trigger for {ctx.guild.name}!")
 
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def removetrigger(self, ctx, *, trigger):
-        self.ischanging = True
+        self.ischanging[ctx.guild.id] = True
         name = f"TRIGGERS"
         db = cluster[name]
         collection = db['guilds']
         query = {'trigger': trigger.strip().lower(), 'gid': ctx.guild.id}
         x = collection.count_documents(query)
         if x == 0:
-            self.ischanging = False
+            self.ischanging[ctx.guild.id] = False
             return await ctx.send(f"It seems that `{trigger.strip()}` has not been saved in the database, double check that you spelled it right.")
-        collection.update_one({"gid":ctx.guild.id}, {"$pull": {"trigger":trigger.strip().lower()}})
-        res = collection.find()
+        for k in self.triggers[ctx.guild.id]:
+            if k[0] == trigger.strip().lower():
+                stuff = self.triggers[ctx.guild.id].pop(self.triggers[ctx.guild.id].index((k[0], k[1], k[2], k[3])))
+                break
+        else:
+            return await ctx.send("I could not find that trigger in my cache.")
+        collection.update_one({"gid":ctx.guild.id}, {"$pull": {"trigger":stuff[0]}})
+        collection.update_one({"gid": ctx.guild.id}, {"$pull": {"response": stuff[1]}})
+        collection.update_one({"gid": ctx.guild.id}, {"$pull": {"setby": stuff[2]}})
+        collection.update_one({"gid": ctx.guild.id}, {"$pull": {"seton": stuff[3]}})
+        res = collection.find({"gid":ctx.guild.id})
         for i in res:
             triggers = i["trigger"]
         try:
@@ -114,11 +131,7 @@ class Triggers(commands.Cog):
         except:
             x = 0
         await ctx.send(f"Success! `{trigger.strip()}` has successfully been deleted from the database. You have {10-x} triggers remaining!")
-        for k in self.triggers[ctx.guild.id]:
-            if k[0] == trigger.strip().lower():
-                self.triggers[ctx.guild.id].pop(self.triggers[ctx.guild.id].index((k[0], k[1])))
-                break
-        self.ischanging = False
+        self.ischanging[ctx.guild.id] = False
 
 
 

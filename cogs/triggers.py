@@ -3,6 +3,7 @@ import datetime
 from discord.ext import commands
 from pymongo import MongoClient
 import asyncio
+import random
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -75,6 +76,7 @@ class Triggers(commands.Cog):
                     self.ischanging = False
                     return await ctx.send("Somehow you managed to send an empty message, props to you!")
                 settime = datetime.datetime.utcnow()
+                setby = ctx.author.id + random.randint(12, 523412312312312312)
                 if collection.count_documents({"gid":ctx.guild.id}) == 0:
 
                     ping_cm = {
@@ -82,7 +84,7 @@ class Triggers(commands.Cog):
                         "name": ctx.guild.name,
                         'trigger': [trigger.strip().lower()],
                         'response': [msg.content.strip()],
-                        'setby':[ctx.author.id],
+                        'setby':[setby],
                         'seton':[settime]
                     }
                     collection.insert_one(ping_cm)
@@ -90,9 +92,9 @@ class Triggers(commands.Cog):
                 else:
                     collection.update_one({"gid":ctx.guild.id}, {"$push": {"trigger":trigger.strip().lower()}})
                     collection.update_one({"gid": ctx.guild.id}, {"$push": {"response": msg.content.strip()}})
-                    collection.update_one({"gid": ctx.guild.id}, {"$push": {"setby": ctx.author.id}})
+                    collection.update_one({"gid": ctx.guild.id}, {"$push": {"setby": setby}})
                     collection.update_one({"gid": ctx.guild.id}, {"$push": {"seton": settime}})
-                    self.triggers[ctx.guild.id].append((trigger.strip().lower(), msg.content.strip(), ctx.author.id, settime))
+                    self.triggers[ctx.guild.id].append((trigger.strip().lower(), msg.content.strip(), setby, settime))
                 self.ischanging[ctx.guild.id] = False
                 return await ctx.send(f"Success! `{msg.content.strip()}` has been saved as the response for `{trigger.strip()}`!")
             except asyncio.TimeoutError:

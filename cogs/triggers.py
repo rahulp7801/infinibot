@@ -1,3 +1,5 @@
+import datetime
+
 from discord.ext import commands
 from pymongo import MongoClient
 import asyncio
@@ -39,12 +41,13 @@ class Triggers(commands.Cog):
     #             continue
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_messages = True)
     async def addtrigger(self, ctx, *, trigger):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"TRIGGERS"
         db = cluster[name]
-        collection = db['commands']
-        query = {'trigger': trigger.strip().lower(), 'id':ctx.guild.id}
+        collection = db['guilds']
+        query = {'trigger': trigger.strip().lower(), 'gid':ctx.guild.id, 'setby':ctx.author.id, 'seton':datetime.datetime.utcnow()}
         if collection.count_documents(query) == 0:
             await ctx.send(f"Success! `{trigger.strip()}` has been added as a trigger for {ctx.guild.name}!\n\n"
                            f"What would you like the bot to respond with? **Must be content!**")
@@ -64,7 +67,7 @@ class Triggers(commands.Cog):
                 return await ctx.send(f"Success! `{msg.content.strip()}` has been saved as the response for `{trigger.strip()}`!")
             except asyncio.TimeoutError:
                 return await ctx.reply("Timed out", mention_author = False)
-        elif collection.count_documents(query) > 10:
+        elif collection.count_documents({"gid":ctx.guild.id}) > 10:
             return await ctx.send(f"{ctx.guild.name} already has 10 triggers, remove one if you wish to create another.") #create donation thing here
         else:
             return await ctx.send(f"`{trigger.strip()}` already exists as a trigger for {ctx.guild.name}!")
@@ -72,14 +75,14 @@ class Triggers(commands.Cog):
     @commands.command()
     @commands.has_permissions(manage_messages=True)
     async def removetrigger(self, ctx, *, trigger):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"TRIGGERS"
         db = cluster[name]
-        collection = db['commands']
-        query = {'trigger': trigger.strip().lower(), 'id': ctx.guild.id}
+        collection = db['guilds']
+        query = {'trigger': trigger.strip().lower(), 'gid': ctx.guild.id}
         x = collection.count_documents(query)
         if x == 0:
             return await ctx.send(f"It seems that `{trigger.strip()}` has not been saved in the database, double check that you spelled it right.")
-        collection.delete_one({'trigger': trigger.strip().lower(), 'id': ctx.guild.id})
+        collection.delete_one({'trigger': trigger.strip().lower(), 'gid': ctx.guild.id})
         await ctx.send(f"Success! `{trigger.strip()}` has successfully been deleted from the database. You have {x - 1} triggers remaining!")
 
 

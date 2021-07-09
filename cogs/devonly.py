@@ -167,6 +167,10 @@ class Developers(commands.Cog):
         except Exception as e:
             print(e)
 
+    @commands.command()
+    @commands.check(is_dev)
+    async def guildmembers(self, ctx, guild:discord.Guild):
+        return await ctx.send(f"{guild.member_count}")
 
 def setup(client):
     client.add_cog(Developers(client))

@@ -159,23 +159,23 @@ class Slash(commands.Cog):
 
     @cog_ext.cog_slash(name='afk', description='Sets an AFK status for you ')
     async def _afk(self, ctx:SlashContext, *, message = "Away"):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"AFK"
         db = cluster[name]
-        collection = db['afk']
+        collection = db['users']
         cnick = ctx.author.display_name
         member = ctx.author
         ping_cm = {
-            "_id": ctx.author.id,
+            "id": ctx.author.id,
+            'gid':ctx.guild.id,
             "name": ctx.author.name,
             "display_name": cnick,
             "member": ctx.author.name,
             'start': time.time(),
             'status': message.strip()
         }
-        try:
-            x = collection.insert_one(ping_cm)
-        except Exception:
+        if collection.count_documents({"id":ctx.author.id, "gid":ctx.guild.id}) != 0:
             return await ctx.send("You are already afk!")
+        collection.insert_one(ping_cm)
         desc = f"Your afk status has been successfully updated to: ```{message}```"
         embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
         embed.set_author(name=f"{ctx.author.name} is now afk", icon_url=ctx.author.avatar_url)
@@ -427,57 +427,57 @@ class Slash(commands.Cog):
         await message.add_reaction("👍🏽")
         await message.add_reaction("👎🏽")
 
-    @cog_ext.cog_slash(name='serverstats', description='Get some basic server statistics!')
-    async def _serverstats(self, ctx: SlashContext):
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['messages']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            msgcount = i['count']
-        if msgcount == '':
-            msgcount = 0
-        collection = db['serverstats']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            vcsecs = i['vcsecs']
-        if vcsecs == '':
-            vcsecs = 0
-
-        collection = db['config']
-        results = collection.find({'_id': ctx.guild.id})
-        for i in results:
-            ghostcount = i['ghostcount']
-        if ghostcount == '':
-            ghostcount = 0
-        x = ctx.guild.created_at
-        y = x.strftime("%b %d %Y %H:%S")
-        print(y)
-        z = datetime.datetime.utcnow() - x
-        lm = str(abs(z))
-        print(lm)
-        q = lm.split(", ")
-        a = q[0]
-        desc = f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented."
-        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-        embed.add_field(name="Channels:", value=f"```{str(len(ctx.guild.channels))}```", inline=True)
-        embed.add_field(name="Users:", value=f"```{ctx.guild.member_count}```", inline=True)
-        embed.add_field(name="Messages Sent:", value=f"```{msgcount}```", inline=True)
-        # embed.add_field(name=f"In #{ctx.channel.name}:", value = f"```{smsgcfount}```", inline = True)
-        # embed.add_field(name=f"By {ctx.author.name}:", value = f"```{smsgcount}```", inline = True)
-        # embed.add_field(name=f"In #{ctx.channel.name} by {ctx.author.name}:", value=f"```{result3[0]}```", inline = False)
-        embed.add_field(name="Seconds in Voice Channels", value=f"```{vcsecs}```", inline=True)
-        embed.add_field(name=f"Server Creation Date:",
-                        value=f"```{f'{y} ({a} ago)' if lm[0:6] != '1 day,' else 'Today'}```", inline=True)
-        # embed.add_field(name=f"Most active text channel in **{ctx.guild.name}**: ", value = f"```#{topchannel.name} with {smsgcffount} messages.```", inline = False)
-        # figure out most active VC
-        ownerser = self.client.get_user(ctx.guild.owner_id)
-        embed.add_field(name=f"Number of Ghost Pings", value=f"```{ghostcount}```", inline=False)
-        embed.add_field(name="Server Owner:", value=ownerser.mention, inline=False)
-        embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.set_author(name=f"{ctx.guild.name}'s Statistics", icon_url=ctx.guild.icon_url)
-        embed.set_footer(text=f"Server ID: {ctx.guild.id}")
-        await ctx.send(embed=embed, hidden=True)
+    # @cog_ext.cog_slash(name='serverstats', description='Get some basic server statistics!')
+    # async def _serverstats(self, ctx: SlashContext):
+    #     name = f"GUILD{ctx.guild.id}"
+    #     db = cluster[name]
+    #     collection = db['messages']
+    #     results = collection.find({'_id': ctx.guild.id})
+    #     for i in results:
+    #         msgcount = i['count']
+    #     if msgcount == '':
+    #         msgcount = 0
+    #     collection = db['serverstats']
+    #     results = collection.find({'_id': ctx.guild.id})
+    #     for i in results:
+    #         vcsecs = i['vcsecs']
+    #     if vcsecs == '':
+    #         vcsecs = 0
+    #
+    #     collection = db['config']
+    #     results = collection.find({'_id': ctx.guild.id})
+    #     for i in results:
+    #         ghostcount = i['ghostcount']
+    #     if ghostcount == '':
+    #         ghostcount = 0
+    #     x = ctx.guild.created_at
+    #     y = x.strftime("%b %d %Y %H:%S")
+    #     print(y)
+    #     z = datetime.datetime.utcnow() - x
+    #     lm = str(abs(z))
+    #     print(lm)
+    #     q = lm.split(", ")
+    #     a = q[0]
+    #     desc = f"This is only from when I joined **{ctx.guild.name}**. Anything before that has not been documented."
+    #     embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+    #     embed.add_field(name="Channels:", value=f"```{str(len(ctx.guild.channels))}```", inline=True)
+    #     embed.add_field(name="Users:", value=f"```{ctx.guild.member_count}```", inline=True)
+    #     embed.add_field(name="Messages Sent:", value=f"```{msgcount}```", inline=True)
+    #     # embed.add_field(name=f"In #{ctx.channel.name}:", value = f"```{smsgcfount}```", inline = True)
+    #     # embed.add_field(name=f"By {ctx.author.name}:", value = f"```{smsgcount}```", inline = True)
+    #     # embed.add_field(name=f"In #{ctx.channel.name} by {ctx.author.name}:", value=f"```{result3[0]}```", inline = False)
+    #     embed.add_field(name="Seconds in Voice Channels", value=f"```{vcsecs}```", inline=True)
+    #     embed.add_field(name=f"Server Creation Date:",
+    #                     value=f"```{f'{y} ({a} ago)' if lm[0:6] != '1 day,' else 'Today'}```", inline=True)
+    #     # embed.add_field(name=f"Most active text channel in **{ctx.guild.name}**: ", value = f"```#{topchannel.name} with {smsgcffount} messages.```", inline = False)
+    #     # figure out most active VC
+    #     ownerser = self.client.get_user(ctx.guild.owner_id)
+    #     embed.add_field(name=f"Number of Ghost Pings", value=f"```{ghostcount}```", inline=False)
+    #     embed.add_field(name="Server Owner:", value=ownerser.mention, inline=False)
+    #     embed.set_thumbnail(url=ctx.guild.icon_url)
+    #     embed.set_author(name=f"{ctx.guild.name}'s Statistics", icon_url=ctx.guild.icon_url)
+    #     embed.set_footer(text=f"Server ID: {ctx.guild.id}")
+    #     await ctx.send(embed=embed, hidden=True)
 
     @cog_ext.cog_slash(name='prefix', description='Returns the prefix for your server!')
     async def _prefix(self, ctx: SlashContext):

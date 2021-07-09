@@ -22,9 +22,9 @@ class rr(commands.Cog, name = "Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
-        name = f"GUILD{payload.guild_id}"
+        name = f"RR"
         db = cluster[name]
-        collection = db['reactionroles']
+        collection = db['guilds']
         query = {'_id': payload.message_id, 'type':'reaction'}
         if collection.count_documents(query) == 0:
             return
@@ -32,6 +32,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
         guild1 = payload.guild_id
         guild = self.client.get_guild(guild1)
         member = guild.get_member(int(payload.user_id))
+        if member.bot:
+            return
         for i in user:
             roles = i['roles']
         for i in roles:
@@ -44,10 +46,12 @@ class rr(commands.Cog, name = "Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_button_click(self, button):
+        if button.author.bot:
+            return
         try:
-            name = f"GUILD{button.message.guild.id}"
+            name = f"RR"
             db = cluster[name]
-            collection = db['reactionroles']
+            collection = db['guilds']
             query = {'_id': button.message.id, 'type': 'button'}
             if collection.count_documents(query) == 0:
                 return
@@ -125,9 +129,9 @@ class rr(commands.Cog, name = "Reaction Roles"):
             while True:
                 message = await self.client.wait_for('message', check=lambda m: (m.author == ctx.author and m.channel == ctx.channel), timeout = 300)
                 takecare = True
-                name = f"GUILD{ctx.guild.id}"
+                name = f"RR"
                 db = cluster[name]
-                collection = db['reactionroles']
+                collection = db['guilds']
                 if message.content.lower().strip() == 'continue':
                     await ctx.send("Excellent, I will take care of that myself!")
                     title = "Reaction Role Menu"
@@ -215,7 +219,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     await ctx.send("Unfortunately, we cannot take custom emojis at the moment.")
                 finally:
                     print(mongodict)
-                    x = collection.insert_one({'_id': message.id, 'roles': mongodict, 'type': settingup})
+                    x = collection.insert_one({'_id': message.id, 'roles': mongodict, 'type': settingup, 'gid':ctx.guild.id})
                     collection.delete_one({'id': ctx.message.id})
             else:
                 await ctx.send(f"Great. Now it is time to assign roles. All you need to do is mention the roles, one by one after you see that I added a "
@@ -266,7 +270,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     embed = discord.Embed(title=f"Button Role Menu", description=f"{description.strip()}",
                                           color=discord.Color.green())
                     message = await channel.send(embed=embed, components = arr)
-                    x = collection.insert_one({'_id': message.id, 'roles': mongodict, 'type': settingup})
+                    x = collection.insert_one({'_id': message.id, 'roles': mongodict, 'type': settingup, 'gid':ctx.guild.id})
                     collection.delete_one({'id': ctx.message.id})
                 except Exception as e:
                     print(e)

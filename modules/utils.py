@@ -444,16 +444,6 @@ def add_guild_to_db(guild:discord.Guild):
                 'enablestats': True
             }
             col.insert_one(payload)
-        db = cluster['LEVELING']
-        col = db['guilds']
-        if col.count_documents({'_id':guild.id}) != 0:
-            pass
-        else:
-            payload = {
-                "_id": guild.id,
-                "name": guild.name
-            }
-            col.insert_one(payload)
         db = cluster['CUSTOMCMND']
         col = db['guilds']
         if col.count_documents({'_id':guild.id}) != 0:
@@ -529,23 +519,21 @@ def clean_string(string):
     return string
 
 def force_reset_guild_db(guild):
-    name = f"GUILD{guild.id}"
-    cluster.drop_database(name)
+    remove_from_db(guild)
     add_guild_to_db(guild)
-    print(f"Success, force resetted {guild.name} ({guild.id})'s information")
 
 def check_if_starboard_message_exists(message:discord.Message):
-    db = cluster[f"GUILD{message.guild.id}"]
-    collection = db['starboard']
+    db = cluster["STARBOARD"]
+    collection = db['guilds']
     query = {'ogmsg': message.id}
     if collection.count_documents(query) == 0:
         return False
     return True
 
 async def clear_guild_starboard_messages(guild:discord.Guild):
-    name = f"GUILD{guild.id}"
+    name = f"CONFIGURATION"
     db = cluster[name]
-    collection = db['config']
+    collection = db['guilds']
     query = {"_id": guild.id}
     if collection.count_documents(query) == 0:
         return False, "This guild has not been indexed, contact the developers immediately."
@@ -563,18 +551,15 @@ async def clear_guild_starboard_messages(guild:discord.Guild):
             await chan.purge(limit = 10000)
         except:
             pass
-    collection = db['starboard']
-    db.drop_collection(collection)
-    ping_cm = {
-        "_id": guild.id
-    }
-    x = collection.insert_one(ping_cm)
+    db = cluster['STARBOARD']
+    collection = db['guilds']
+    collection.delete_many({"gid":guild.id})
     return True
 
 def add_message_to_starboard(message:discord.Message, ogmsg:discord.Message, channel:discord.TextChannel):
-    name = f"GUILD{message.guild.id}"
+    name = f"STARBOARD"
     db = cluster[name]
-    collection = db['starboard']
+    collection = db['guilds']
     ping_cm = {
         "_id": message.id,
         'gid' : message.guild.id,
@@ -585,9 +570,9 @@ def add_message_to_starboard(message:discord.Message, ogmsg:discord.Message, cha
     collection.insert_one(ping_cm)
 
 def fetch_starboard_message(message:discord.Message):
-    name = f"GUILD{message.guild.id}"
+    name = f"STARBOARD"
     db = cluster[name]
-    collection = db['starboard']
+    collection = db['guilds']
     query = {'ogmsg':message.id, 'gid':message.guild.id}
     result = collection.find(query)
     for i in result:
@@ -793,6 +778,53 @@ def emojiToText(s) -> str:
             newS += s[i]
         i += 1
     return newS
+
+def remove_from_db(guild:discord.Guild):
+    db = cluster['AFK']
+    col = db['users']
+    col.delete_many({"gid": guild.id})
+    db = cluster['CONFIGURATION']
+    col = db['guilds']
+    col.delete_one({"_id":guild.id})
+    db = cluster['CUSTOMCMND']
+    col = db['guilds']
+    col.delete_one({"_id":guild.id})
+    db = cluster['DONOTTRACK']
+    col = db['guilds']
+    col.delete_one({"_id":guild.id})
+    db = cluster['GIVEAWAYS']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    db = cluster['INVITES']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    db = cluster['LEVELLING']
+    col = db['guilds']
+    col.delete_one({"_id":guild.id})
+    db = cluster['MESSAGES']
+    col = db['guilds']
+    col.delete_one({"_id": guild.id})
+    db = cluster['RR']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    db = cluster['TEMP']
+    col = db['bans']
+    col.delete_many({"gid": guild.id})
+    col = db['muted']
+    col.delete_one({"gid": guild.id})
+    db = cluster['WARNS']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    db = cluster['YOUTUBE']
+    col = db['guilds']
+    col.delete_one({"gid": guild.id})
+    db = cluster['STARBOARD']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    db = cluster['TYPING']
+    col = db['guilds']
+    col.delete_many({"gid": guild.id})
+    col.delete_one({"_id":guild.id})
 
 
 

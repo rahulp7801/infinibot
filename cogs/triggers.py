@@ -28,11 +28,15 @@ class Triggers(commands.Cog):
         for i in res:
             print(i)
             trigarr.append((i["trigger"], i["response"], i["gid"], i["setby"], i["seton"]))
-        self.triggers[trigarr[0][2]] = []
-        for i in range(len(trigarr[0][0])):
+        print(trigarr)
+
+        for i in range(len(trigarr)):
             print(trigarr)
             print(i)
-            self.triggers[trigarr[0][2]].append((trigarr[0][0][i], trigarr[0][1][i], trigarr[0][3][i], trigarr[0][4][i]))
+            print(trigarr[i])
+            self.triggers[trigarr[i][2]] = []
+            for k in range(len(trigarr[i][0])):
+                self.triggers[trigarr[i][2]].append((trigarr[i][0][k], trigarr[i][1][k], trigarr[i][3][k], trigarr[i][4][k]))
         print(self.triggers)
         self.notready = False
 

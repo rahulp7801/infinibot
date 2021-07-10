@@ -1803,6 +1803,104 @@ class Configuration(commands.Cog):
             await message.edit(embed=embed)
             await message.clear_reactions()
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_guild = True)
+    async def levelrewards(self, ctx):
+        await ctx.send("Specify, one by one, the level and the specific role mention. Follow this format...\n\n"
+                       "40 | @cool kid")
+        rolearr = [] #add a limit (for now none cuz test)
+        mentionarr = []
+        mongodict = {}
+        while True:
+            message = await self.client.wait_for('message',
+                                                 check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+                                                 timeout=180)
+            if message.content.lower().strip() == 'done':
+                break
+            args = message.content.split('|')
+            try:
+                level = int(args[0])
+            except ValueError:
+                await message.reply(content = "Are you sure you followed the format and the first number is a number? Try again...", delete_after = 10, mention_author = False)
+                continue
+            xz = discord.utils.get(ctx.guild.roles, id=int(f"{args[1].strip().replace('<@&', '').replace('>', '')}"))
+            if xz is None:
+                await message.reply(
+                    content="Are you sure you followed the format and the first number is a number? Try again...",
+                    delete_after=10, mention_author=False)
+                continue
+            res = utils.rolecheck(xz, ctx)
+            if not res:
+                await ctx.send(res[1])
+                continue
+            rolearr.append((f"{level}", xz.id, xz.mention))
+            mentionarr.append(f"<@&{xz.id}>")
+            try:
+                print(mongodict[f"{level}"])
+                mongodict[f"{level}"].append(xz.id)
+            except KeyError:
+                mongodict[f"{level}"] = [xz.id]
+            await message.add_reaction("👍🏽")
+        await ctx.send("I have saved your rewards, I will be sending a confirmation message in a sec...")
+        lvlarr = []
+        for i in rolearr:
+            lvlarr.append(f"{i[0]} -> {i[2]}")
+        embed = discord.Embed(color = discord.Color.green())
+        embed.description = "\n".join(lvlarr)
+        embed.set_footer(text="If any of these are incorrect, type YES and rerun the command.")
+        await ctx.send(embed=embed)
+        try:
+            message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel,
+                                                 timeout=180)
+            if message.content.lower() == 'yes':
+                return
+        except asyncio.TimeoutError:
+            return
+        db = cluster['LEVELLING']
+        col = db['guildconf']
+        print(rolearr, "\n", mongodict)
+        if col.count_documents({"_id":ctx.guild.id}) == 0:
+            payload = {
+                "_id":ctx.guild.id,
+                "rewards": mongodict
+            }
+            col.insert_one(payload)
+        else:
+            arr = []
+            for i in rolearr:
+                print(str(i[0]))
+                res = (col.find({"_id": ctx.guild.id, f"rewards.{i[0]}":{"$exists": True}}))
+                print('hi')
+                print(res)
+                if res is not None:
+                    print('here')
+                    for j in res:
+                        arr.append(j)
+                    print('here2312')
+                    print(arr, "resultarr")
+                    if len(arr) == 0:
+                        print("Q#@@FW")
+                        col.update_one({"_id": ctx.guild.id}, {"$set": {f'rewards.{str(i[0])}': [i[1]]}})
+                    else:
+                        res1 = (arr[0]["rewards"])
+                        print(res1)
+                        print(i[0])
+                        if str(i[0]) in res1.keys():
+                            print('this')
+                            col.update_one({"_id": ctx.guild.id}, {"$push": {f'rewards.{str((i[0]))}': i[1]}})
+                        else:
+                            print("QWDQWDAEF")
+                            col.update_one({"_id": ctx.guild.id}, {"$set": {f'rewards.{str(i[0])}': [i[1]]}})
+
+                else:
+                    print("!@#!@#")
+                    col.update_one({"_id": ctx.guild.id}, {"$set": {f'rewards.{str(i[0])}': [i[1]]}})
+        res = col.find({"_id":ctx.guild.id})
+        for i in res:
+            res = (i["rewards"])
+        print(res["20"])
+
 
 def setup(client):
     client.add_cog(Configuration(client))

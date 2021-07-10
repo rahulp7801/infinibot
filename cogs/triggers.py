@@ -51,10 +51,13 @@ class Triggers(commands.Cog):
                 return
         except LookupError:
             pass
-        for k in self.triggers[message.guild.id]:
-            print(k)
-            if k[0] in message.content.lower():
-                return await message.channel.send(k[1])
+        try:
+            for k in self.triggers[message.guild.id]:
+                print(k)
+                if k[0] in message.content.lower():
+                    return await message.channel.send(k[1])
+        except KeyError:
+            return
 
     @commands.command()
     @commands.guild_only()

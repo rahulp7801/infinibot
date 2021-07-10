@@ -141,7 +141,7 @@ class Events(commands.Cog):
                     await channel.send(
                         f'**Thanks for adding InfiniBot to {guild.name}!**\n'
                         f'I\'m InfiniBot and I hope our relationship can be infinite! To set me up please use `%setup` (limited to admins)\n'
-                        f'By using InfiniBot in {guild.name} you agree to the [terms of service](https://docs.google.com/document/d/1XHOKPspuyqUIS9a0d0BMcO5oKXT5Xe5KdN_olG9sGFc/edit?usp=sharing). Use `%tos` to find it again.\n\n'
+                        f'By using InfiniBot in {guild.name} you agree to the terms of service https://docs.google.com/document/d/1XHOKPspuyqUIS9a0d0BMcO5oKXT5Xe5KdN_olG9sGFc/edit?usp=sharing. Use `%tos` to find it again.\n\n'
                         f'**---------------------**\n\n'
                         f'`-` Use `%changeprefix <prefix>` to change the prefix.\n'
                         f'`-` Use `%help` to see all commands.\n'
@@ -298,9 +298,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member: discord.Member, before: discord.VoiceState, after: discord.VoiceState):
-        name = f"GUILD{member.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         res = collection.find({'_id': member.guild.id})
         for i in res:
             logenab = i['logging']
@@ -349,9 +349,9 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_message_delete(self, message):
         if (message.author.bot or message.author.system or message.guild is None): return
-        name = f"GUILD{message.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         res = collection.find({'_id': message.guild.id})
         for i in res:
             ghostcount = i['ghostcount']
@@ -421,9 +421,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
-        name = f"GUILD{member.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': member.guild.id})
         for i in results:
             welcomechannel = i['welcomechannel']
@@ -499,9 +499,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_remove(self, member):
-        name = f"GUILD{member.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': member.guild.id})
         for i in results:
             welcomechannel = i['welcomechannel']
@@ -529,6 +529,8 @@ class Events(commands.Cog):
             except discord.Forbidden:
                 pass
             try:
+                if str(logchannel) == '' or str(logging) == '':
+                    return
                 channel1 = self.client.get_channel(id=int(logchannel))
                 embed1 = discord.Embed(title=f"{member} has left the server", color=discord.Color.greyple(),
                                        timestamp=datetime.datetime.utcnow())
@@ -537,7 +539,7 @@ class Events(commands.Cog):
                 embed1.set_footer(text=f"User ID: {member.id}")
                 await channel1.send(embed=embed1)
                 return
-            except discord.Forbidden:
+            except:
                 return
 
     @commands.Cog.listener()
@@ -549,9 +551,9 @@ class Events(commands.Cog):
             return
         if before.clean_content == after.clean_content:
             return
-        name = f"GUILD{before.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': before.guild.id})
         for i in results:
             ghostpingon = i['ghostpingon']
@@ -617,9 +619,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_update(self, before, after):
-        name = f"GUILD{before.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': before.guild.id})
         for i in results:
             logging = i['logging']
@@ -653,15 +655,14 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_remove(self, guild):
-        name = f"GUILD{guild.id}"
-        cluster.drop_database(name)
+        utils.remove_from_db(guild)
 
 
     @commands.Cog.listener()
     async def on_guild_role_create(self, role):
-        name = f"GUILD{role.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': role.guild.id})
         for i in results:
             logging = i['logging']
@@ -677,9 +678,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_role_delete(self, role):
-        name = f"GUILD{role.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': role.guild.id})
         for i in results:
             logging = i['logging']
@@ -696,9 +697,9 @@ class Events(commands.Cog):
     @commands.Cog.listener()
     async def on_guild_role_update(self, before, after):
         # check the documentation for specifics
-        name = f"GUILD{before.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': before.guild.id})
         for i in results:
             logging = i['logging']
@@ -714,9 +715,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_ban(self, guild, member):
-        name = f"GUILD{guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': guild.id})
         for i in results:
             logging = i['logging']
@@ -732,9 +733,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_unban(self, guild, member):
-        name = f"GUILD{guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': guild.id})
         for i in results:
             logging = i['logging']
@@ -750,9 +751,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_channel_update(self, before, after):
-        name = f"GUILD{before.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': before.guild.id})
         for i in results:
             logging = i['logging']
@@ -772,9 +773,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_channel_create(self, channel):
-        name = f"GUILD{channel.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': channel.guild.id})
         for i in results:
             logging = i['logging']
@@ -791,9 +792,9 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_channel_delete(self, channel):
-        name = f"GUILD{channel.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': channel.guild.id})
         for i in results:
             logging = i['logging']
@@ -821,11 +822,11 @@ class Events(commands.Cog):
         error = getattr(error, 'original', error)
         if isinstance(error, commands.BotMissingPermissions):
             regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
-            regperm = regperm.replace('_', '')
+            regperm = regperm.replace('_', '').title()
             await ctx.send(f"I am missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
         if isinstance(error, commands.MissingPermissions):
             regperm = ", ".join(f"**{k}**" for k in error.missing_perms)
-            regperm = regperm.replace('_', '')
+            regperm = regperm.replace('_', '').title()
             await ctx.send(
                 f"You are missing the {regperm} permission{'' if len(regperm) == 1 else 's'} to run this command!")
         if isinstance(error, commands.CommandOnCooldown):
@@ -854,10 +855,10 @@ class Events(commands.Cog):
         if member.bot:
             return
         reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
-        if (reaction and reaction.count > 5 and payload.emoji.name == "⭐"):
-            name = f"GUILD{guild.id}"
+        if (reaction and reaction.count >= 5 and payload.emoji.name == "⭐"):
+            name = f"CONFIGURATION"
             db = cluster[name]
-            collection = db['config']
+            collection = db['guilds']
             query = {"_id": guild.id}
             if collection.count_documents(query) == 0:
                 return
@@ -907,9 +908,9 @@ class Events(commands.Cog):
             return
         reaction = discord.utils.get(message.reactions, emoji=payload.emoji.name)
         if (reaction and reaction.count > -1 and payload.emoji.name == "⭐"):
-            name = f"GUILD{guild.id}"
+            name = f"CONFIGURATION"
             db = cluster[name]
-            collection = db['config']
+            collection = db['guilds']
             query = {"_id": guild.id}
             if collection.count_documents(query) == 0:
                 return

@@ -74,7 +74,6 @@ class Legal(commands.Cog):
     @commands.cooldown(1, 900, commands.BucketType.guild)
     async def clearserverdata(self, ctx):
         await ctx.message.delete()
-        name = f"GUILD{ctx.guild.id}"
         desc = f"Here at {self.client.user.name}, we take your privacy seriously. By clearing this data you acknowledge that ALL information pertaining to {ctx.guild.name}, such as message counts and server configuration settings, WILL BE LOST. THIS IS AN IRREVERSIBLE ACTION! \n\nTo confirm clearing **{ctx.guild.name}'s** information, react with the ✅. \n\nIf you would like to cancel, react with ⛔."
         embed = discord.Embed(description=desc, color=discord.Color.red())
 
@@ -87,8 +86,7 @@ class Legal(commands.Cog):
         try:
             reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=120)
             if reaction.emoji == '✅':
-                cluster.drop_database(name)
-                utils.add_guild_to_db(ctx.guild)
+                utils.force_reset_guild_db(ctx.guild)
                 await message.clear_reactions()
                 desc = f"All server data for {ctx.guild.name} has successfully been cleared from the database."
                 embed = discord.Embed(description=desc, color=discord.Color.green())

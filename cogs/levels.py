@@ -42,16 +42,16 @@ class Leveling(commands.Cog):
         if message.author.bot:
             return
         if message.guild is None: return
-        name = f"GUILD{message.guild.id}"
+        name = f"LEVELLING"
         db = cluster[name]
-        collection = db['levels']
-        stats = collection.find_one({'id':message.author.id})
+        collection = db['guilds']
+        stats = collection.find_one({'id':message.author.id, 'gid':message.guild.id})
         if stats is None:
-            newuser = {"id": message.author.id, "xp":100}
+            newuser = {"id": message.author.id, "xp":100, "gid":message.guild.id}
             collection.insert_one(newuser)
         else:
             xp = int(stats['xp']) + 5
-            collection.update_one({'id':message.author.id}, {'$set':{'xp':xp}})
+            collection.update_one({'id':message.author.id, 'gid':message.guild.id}, {'$set':{'xp':xp}})
             lvl = 0
             while True:
                 if xp < ((50*(lvl**2)) + (50*lvl)):
@@ -65,10 +65,10 @@ class Leveling(commands.Cog):
     async def oldrank(self, ctx, member:discord.Member = None):
         if member is None:
             member = ctx.author
-        name = f"GUILD{ctx.guild.id}"
+        name = f"LEVELLING"
         db = cluster[name]
-        collection = db['levels']
-        stats = collection.find_one({'id': member.id})
+        collection = db['guilds']
+        stats = collection.find_one({'id': member.id, 'gid':ctx.guild.id})
         if stats is None:
             return await ctx.send(f"{member.mention} hasn't sent any messages that the bot can see in {ctx.guild.name}!")
         xp = stats['xp']
@@ -98,10 +98,10 @@ class Leveling(commands.Cog):
 
     @commands.command(aliases = ['lb', 'levels'])
     async def leaderboard(self, ctx):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"LEVELLING"
         db = cluster[name]
-        collection = db['levels']
-        rankings = collection.find().sort("xp", -1)
+        collection = db['guilds']
+        rankings = collection.find({"gid":ctx.guild.id}).sort("xp", -1)
         c = 1
         embed = discord.Embed(title = "Ranks", color = discord.Color.green())
         for i in rankings:
@@ -125,10 +125,10 @@ class Leveling(commands.Cog):
     async def rank(self, ctx, member:discord.Member = None):
         if member is None:
             member = ctx.author
-        name = f"GUILD{ctx.guild.id}"
+        name = f"LEVELLING"
         db = cluster[name]
-        collection = db['levels']
-        stats = collection.find_one({'id': member.id})
+        collection = db['guilds']
+        stats = collection.find_one({'id': member.id, 'gid':ctx.guild.id})
         if stats is None:
             return await ctx.send(f"{member.mention} hasn't sent any messages that the bot can see in {ctx.guild.name}!")
         xp = stats['xp']

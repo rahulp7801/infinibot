@@ -28,16 +28,7 @@ class Spotifys(commands.Cog, name="Music"):
     @commands.command()
     async def artistsearch(self, ctx, *, query:str = None):
         if query is None:
-            name = f"GUILD{ctx.guild.id}"
-            db = cluster[name]
-            collection = db['config']
-            user = collection.find({'_id': ctx.guild.id})
-            for i in user:
-                prefix = i['prefix']
-            desc = f"```{prefix}artistsearch [artist]```"
-            embed = discord.Embed(title="Incorrect Usage!", description=desc, color=discord.Color.red())
-            embed.set_footer(text="Parameters in [] are required and () are optional")
-            return await ctx.send(embed=embed)
+            raise commands.MissingRequiredArgument
         results = sp.search(q=query.strip(), limit=10)
         print(results)
         arr = []

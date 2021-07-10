@@ -28,9 +28,9 @@ class Moderation(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         try:
-            name = f"GUILD{payload.guild_id}"
+            name = f"CONFIGURATION"
             db = cluster[name]
-            collection = db['config']
+            collection = db['guilds']
             query = {'id': payload.guild_id}
             if collection.count_documents(query) == 0:
                 return
@@ -80,9 +80,9 @@ class Moderation(commands.Cog):
                 if pd.to_datetime(k[2]) < datetime.datetime.utcnow():
                     guild = self.client.get_guild(int(k[1]))
                     user = guild.get_member(int(k[0]))
-                    name = f"GUILD{guild.id}"
+                    name = f"CONFIGURATION"
                     db = cluster[name]
-                    collection = db['config']
+                    collection = db['guilds']
                     results = collection.find({'_id': guild.id})
                     for i in results:
                         muterole = i['muterole']
@@ -150,11 +150,7 @@ class Moderation(commands.Cog):
             await ctx.send(f"Cleared {amount + 1} messages!", delete_after = 5)
         except discord.errors.HTTPException:
             await ctx.send("I cannot delete messages past two weeks old!", delete_after = 5)
-
-    @clear.error
-    async def clear_err(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send("You can't use that!")
+            return
 
     @commands.command()
     @commands.guild_only()
@@ -334,9 +330,9 @@ class Moderation(commands.Cog):
     async def mute(self, ctx, member:discord.Member, *, dur = None):
         if member == self.client.user:
             return await ctx.send("I can't mute myself.")
-        name = f"GUILD{ctx.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             muterole = i['muterole']
@@ -404,9 +400,9 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def unmute(self, ctx, member: discord.Member):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             muterole = i['muterole']
@@ -430,8 +426,6 @@ class Moderation(commands.Cog):
 
     @lockdown.error
     async def lockdown_err(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            return await ctx.send(f"{ctx.author.mention}, you do not have the `Manage Channels` permission.")
         if isinstance(error, commands.CommandInvokeError):
             return await ctx.send("I don't have the Manage Channel permission for that channel.")
 
@@ -507,9 +501,8 @@ class Moderation(commands.Cog):
                 return await ctx.send("You can only use this moderation on a member below you.")
         if member.id == ctx.guild.owner_id:
             return await ctx.send("You cannot take any action on the server owner.")
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        collection = db['warns']
+        db = cluster['WARNS']
+        collection = db['guilds']
         ping_cm = {
             "name": member.name,
             'guild': ctx.guild.id,
@@ -536,13 +529,12 @@ class Moderation(commands.Cog):
     @commands.has_permissions(manage_guild=True)
     async def warns(self, ctx, member: discord.Member = None):
         await ctx.trigger_typing()
-        name = f"GUILD{ctx.guild.id}"
-        db = cluster[name]
-        prefix = utils.serverprefix(ctx)
+        db = cluster['WARNS']
+        prefix = ctx.prefix
         if member is None:
             if ctx.author.guild_permissions.manage_roles:
                 if member is None:
-                    collection = db['warns']
+                    collection = db['guilds']
                     query = {'guild': ctx.guild.id}
                     if collection.count_documents(query) == 0:
                         return await ctx.send(f"There have been no documented warns in **{ctx.guild.name}**.")
@@ -563,7 +555,7 @@ class Moderation(commands.Cog):
                                         value=f"Responsible Moderator: **{mod.mention}**\n\nOffender: {mem.mention}\n\nTime: {i['time']} \n\n Reason:```{i['reason']}```")
                         countr += 1
                     return await ctx.send(embed=embed)
-        collection = db['warns']
+        collection = db['guilds']
         query = {'offender': member.id}
         if collection.count_documents(query) == 0:
             return await ctx.send(f"**{member.mention}** does not have any warns in **{ctx.guild.name}**")
@@ -582,66 +574,66 @@ class Moderation(commands.Cog):
             countr += 1
         await ctx.send(embed=embed)
 
-    @commands.command(aliases=['ot'])
-    @commands.guild_only()
-    async def openticket(self, ctx):
-        await ctx.message.delete()
-        overwrites = {
-            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-            ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
-            ctx.message.author: discord.PermissionOverwrite(read_messages=True, send_messages=True)
-        }
-        num = random.randint(0000, 1002222384031)
-        name = f"open-ticket-{num}"
-        channel = await ctx.message.guild.create_text_channel(name, overwrites=overwrites)
-        await channel.send(f"{ctx.author.mention}, you have opened a support ticket.")
-        desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem."
-        embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
-        embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {ctx.author.name}")
-        await channel.send(embed=embed)
-        try:
-            while True:
-                message = await self.client.wait_for('message')
-                if message.content.lower() == 'ct' or message.content.lower() == 'closeticket':
-                    await ctx.trigger_typing()
-                    msg = await message.reply(
-                        f"{message.author.mention}, if you would like to save this channel, react with the ✅, otherwise react with the :no_entry: emoji to delete this channel.",
-                        mention_author=False)
-                    await msg.add_reaction("✅")
-                    await msg.add_reaction('⛔')
-
-                    def check(reaction, user):
-                        return user == message.author and str(reaction.emoji) in ["✅", '⛔']
-
-                    reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=30)
-                    print('yes')
-                    if reaction.emoji == '⛔':
-                        print('hi')
-                        await ctx.trigger_typing()
-                        await message.channel.send('This channel will be deleted shortly...')
-                        await asyncio.sleep(3)
-                        await channel.delete()
-                        return
-                    if reaction.emoji == ("✅"):
-                        print("yes")
-                        await ctx.trigger_typing()
-                        overwrites = {
-                            ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
-                            ctx.guild.me: discord.PermissionOverwrite(read_messages=False),
-                            # ctx.message.author: discord.PermissionOverwrite(send_messages=True)
-                            ctx.message.author: discord.PermissionOverwrite(read_messages=True, send_messages=False)
-                        }
-                        await message.channel.send('Great, this channel will be saved. Updating overwrites now...')
-                        await asyncio.sleep(3)
-                        newname = f"closed-ticket-{num}"
-                        await channel.edit(overwrites=overwrites, name=newname)
-                        return
-                else:
-                    continue
-        except asyncio.TimeoutError:
-            await channel.send(f"Since no one responded, I am going to delete the channel automatically in 5 seconds.")
-            await asyncio.sleep(5)
-            await channel.delete(name)
+    # @commands.command(aliases=['ot'])
+    # @commands.guild_only()
+    # async def openticket(self, ctx):
+    #     await ctx.message.delete()
+    #     overwrites = {
+    #         ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+    #         ctx.guild.me: discord.PermissionOverwrite(read_messages=True),
+    #         ctx.message.author: discord.PermissionOverwrite(read_messages=True, send_messages=True)
+    #     }
+    #     num = random.randint(0000, 1002222384031)
+    #     name = f"open-ticket-{num}"
+    #     channel = await ctx.message.guild.create_text_channel(name, overwrites=overwrites)
+    #     await channel.send(f"{ctx.author.mention}, you have opened a support ticket.")
+    #     desc = f"Someone will be here to assist you shortly.\nWhile you are here, please state your issue/problem."
+    #     embed = discord.Embed(description=desc, color=discord.Color.green(), timestamp=datetime.datetime.utcnow())
+    #     embed.set_footer(text=f"InfiniBot Ticketing Tool | Ticket Created by {ctx.author.name}")
+    #     await channel.send(embed=embed)
+    #     try:
+    #         while True:
+    #             message = await self.client.wait_for('message')
+    #             if message.content.lower() == 'ct' or message.content.lower() == 'closeticket':
+    #                 await ctx.trigger_typing()
+    #                 msg = await message.reply(
+    #                     f"{message.author.mention}, if you would like to save this channel, react with the ✅, otherwise react with the :no_entry: emoji to delete this channel.",
+    #                     mention_author=False)
+    #                 await msg.add_reaction("✅")
+    #                 await msg.add_reaction('⛔')
+    #
+    #                 def check(reaction, user):
+    #                     return user == message.author and str(reaction.emoji) in ["✅", '⛔']
+    #
+    #                 reaction, user = await self.client.wait_for('reaction_add', check=check, timeout=30)
+    #                 print('yes')
+    #                 if reaction.emoji == '⛔':
+    #                     print('hi')
+    #                     await ctx.trigger_typing()
+    #                     await message.channel.send('This channel will be deleted shortly...')
+    #                     await asyncio.sleep(3)
+    #                     await channel.delete()
+    #                     return
+    #                 if reaction.emoji == ("✅"):
+    #                     print("yes")
+    #                     await ctx.trigger_typing()
+    #                     overwrites = {
+    #                         ctx.guild.default_role: discord.PermissionOverwrite(read_messages=False),
+    #                         ctx.guild.me: discord.PermissionOverwrite(read_messages=False),
+    #                         # ctx.message.author: discord.PermissionOverwrite(send_messages=True)
+    #                         ctx.message.author: discord.PermissionOverwrite(read_messages=True, send_messages=False)
+    #                     }
+    #                     await message.channel.send('Great, this channel will be saved. Updating overwrites now...')
+    #                     await asyncio.sleep(3)
+    #                     newname = f"closed-ticket-{num}"
+    #                     await channel.edit(overwrites=overwrites, name=newname)
+    #                     return
+    #             else:
+    #                 continue
+    #     except asyncio.TimeoutError:
+    #         await channel.send(f"Since no one responded, I am going to delete the channel automatically in 5 seconds.")
+    #         await asyncio.sleep(5)
+    #         await channel.delete(name)
 
     @commands.command(aliases=['deleterole'])
     @commands.guild_only()
@@ -667,7 +659,7 @@ class Moderation(commands.Cog):
     async def hackban(self, ctx, user: discord.User, reason="No reason given"):
         ban = discord.Embed(description=f"Reason: ```{reason}```\nBy: {ctx.author.mention}",
                             color=discord.Color.dark_red())
-        ban.set_author(name=f"{user.name} has been banned.", icon_url=user.avatar_url)
+        ban.set_author(name=f"{user.name} has been hack-banned.", icon_url=user.avatar_url)
         try:
             await ctx.guild.ban(user, reason=reason)
             await ctx.channel.send(embed=ban)
@@ -710,12 +702,8 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setupticketing(self, ctx, title = None):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
-        query = {'id': ctx.guild.id}
-        if collection.count_documents(query) != 0:
-            return await ctx.send("You already set up a ticketing message.")
         embed = discord.Embed(color = discord.Color.blue())
         if title is None:
             title = f"{ctx.guild.name} Ticketing"
@@ -746,9 +734,7 @@ class Moderation(commands.Cog):
                     except IndexError:
                         await ctx.send("I didn\'t catch a role in that message. Try again?")
                         continue
-                name = f"GUILD{ctx.guild.id}"
-                db = cluster[name]
-                collection = db['config']
+                collection = db['guilds']
                 try:
                     message = await channel.send(embed=embed)
                     await message.add_reaction('🎟️')
@@ -770,9 +756,9 @@ class Moderation(commands.Cog):
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def closeticket(self, ctx):
-        name = f"GUILD{ctx.guild.id}"
+        name = f"CONFIGURATION"
         db = cluster[name]
-        collection = db['config']
+        collection = db['guilds']
         query = {'id': ctx.guild.id}
         if collection.count_documents(query) == 0:
             return
@@ -781,6 +767,7 @@ class Moderation(commands.Cog):
             role = i['supportrole']
             break
         if ctx.channel.name.startswith('open-ticket-'):
+            newname = ctx.channel.name.removeprefix('open-ticket-')
             await ctx.trigger_typing()
             msg = await ctx.reply(
                 f"{ctx.author.mention}, if you would like to save this channel, react with the ✅, otherwise react with the :no_entry: emoji to delete this channel.",
@@ -808,11 +795,12 @@ class Moderation(commands.Cog):
                 }
                 await ctx.channel.send('Great, this channel will be saved. Updating overwrites now...')
                 await asyncio.sleep(3)
-                newname = f"closed-ticket"
+                newname = f"closed-ticket-{newname}"
                 await ctx.channel.edit(overwrites=overwrites, name=newname)
                 return
 
     @commands.command(name = 'clearstarboard')
+    @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def clear_starboard(self, ctx):
         res = await utils.clear_guild_starboard_messages(ctx.guild)
@@ -821,11 +809,18 @@ class Moderation(commands.Cog):
         await ctx.message.add_reaction('✅')
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def closealltickets(self, ctx):
-        pass
+        for channel in ctx.guild.text_channels:
+            if channel.name.startswith('open-ticket-'):
+                try:
+                    await channel.delete()
+                except:
+                    pass
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_channels = True)
     async def nuke(self, ctx, channel:discord.TextChannel = None):
         if channel is None:
@@ -853,12 +848,14 @@ class Moderation(commands.Cog):
             return await ctx.reply("Timed out", mention_author = False)
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def vckick(self, ctx, member: discord.Member):
         await member.edit(voice_channel=None)
         await ctx.send(f"**{member.name}** has been successfully kicked from VC!")
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def move(self, ctx, member:discord.Member, channel:discord.VoiceChannel):
         try:
@@ -895,8 +892,10 @@ class Moderation(commands.Cog):
             await ctx.send(f"`{limit}` messages deleted for `{user.name}#{user.discriminator}` in {ctx.channel.mention}.", delete_after = 5)
         except discord.HTTPException:
             await ctx.send("I cannot delete messages older than 2 weeks!", delete_after = 5)
+            return
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def voicemute(self, ctx, member: discord.Member, on):
         if on.lower() not in ['true', 'false']:
@@ -910,6 +909,7 @@ class Moderation(commands.Cog):
                 f"I don\'t have permission to {'mute' if mute else 'unmute'} `{member.name}#{member.discriminator}`!")
 
     @commands.command()
+    @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def voicedeafen(self, ctx, member: discord.Member, on):
         if on.lower() not in ['true', 'false']:

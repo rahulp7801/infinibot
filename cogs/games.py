@@ -123,7 +123,7 @@ class Games(commands.Cog):
                 return await ctx.reply("Game over due to inactivity.", mention_author = False)
 
 
-    @commands.command(name="Unscramble the word as quickly as possible!")
+    @commands.command(help="Unscramble the word as quickly as possible!")
     async def jumble(self, ctx):
         wordlist = [
             'insane',
@@ -360,18 +360,19 @@ class Games(commands.Cog):
                         return
                     await message.reply("Wow, you got it exactly right!", mention_author=False)
                     await asyncio.sleep(1)
-                    name = f"GUILD{ctx.guild.id}"
+                    name = f"TYPING"
                     db = cluster[name]
-                    collection = db['typing']
+                    collection = db['guilds']
                     ping_cm = {
                         "name": ctx.guild.name,
+                        "gid":ctx.guild.id,
                         "date": datetime.datetime.utcnow(),
                         'uid': ctx.author.id,
                         'accuracy': 100,
                         'wpm': wpm
                     }
                     collection.insert_one(ping_cm)
-                    collection = db['typing']
+                    collection = db['guilds']
                     results = collection.find({'_id': ctx.guild.id})
                     for i in results:
                         topscore = i['wpm']
@@ -389,7 +390,7 @@ class Games(commands.Cog):
                         await ctx.send(f"🎉 With {wpm} WPM, you are now first place on the server WPM leaderboard! 🎉 ")
                     elif topscore == '':
                         collection.update_one({"_id": ctx.guild.id}, {
-                            "$set": {'wpm': wpm, 'accuracy': 100, 'uid': ctx.guild.id,
+                            "$set": {'wpm': wpm, 'accuracy': 100, 'uid': ctx.author.id,
                                      'date': datetime.datetime.utcnow(), 'name': ctx.guild.name}})
                         await ctx.send(f"🎉 With {wpm} WPM, you are now first place on the server WPM leaderboard! 🎉")
                     else:
@@ -421,15 +422,15 @@ class Games(commands.Cog):
                 elif message.content != x:
                     if (end - start) <= 10:
                         await message.reply(
-                            f"{ctx.author.mention}, lmao you copy pasted but still couldn\'t get it right.",
+                            f"{ctx.author.mention}, when u rage quit smh.",
                             mention_author=False)
                         return
                     await message.reply("Unfortunately this wasn\'t 100% accurate.", mention_author=False)
                     perccorr = round((acc / len(d2)) * 100)
                     pfp = ctx.author.avatar_url
-                    name = f"GUILD{ctx.guild.id}"
+                    name = f"TYPING"
                     db = cluster[name]
-                    collection = db['typing']
+                    collection = db['guilds']
                     query = {'_id': ctx.guild.id}
                     if collection.count_documents(query) == 0:
                         ping_cm = {
@@ -444,6 +445,7 @@ class Games(commands.Cog):
                     else:
                         ping_cm = {
                             "name": ctx.guild.name,
+                            "gid":ctx.guild.id,
                             "wpm": wpm,
                             'date': datetime.datetime.utcnow(),
                             'uid': ctx.author.id,

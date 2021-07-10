@@ -121,17 +121,17 @@ class YouTube(commands.Cog):
                     'setby':ctx.author.id
                 }
                 col.insert_one(ping_cm)
-                db = cluster[f'GUILD{ctx.guild.id}']
-                col = db['config']
-                ping_cm = {
-                    "_id": chanarr[0][0],
-                    'channel': channel.id,
-                    'gid': ctx.guild.id,
-                    'sendmsg':sendmsg,
-                    'seton': datetime.datetime.utcnow(),
-                    'setby': ctx.author.id
-                }
-                col.insert_one(ping_cm)
+                # db = cluster[f'GUILD{ctx.guild.id}']
+                # col = db['config']
+                # ping_cm = {
+                #     "_id": chanarr[0][0],
+                #     'channel': channel.id,
+                #     'gid': ctx.guild.id,
+                #     'sendmsg':sendmsg,
+                #     'seton': datetime.datetime.utcnow(),
+                #     'setby': ctx.author.id
+                # }
+                # col.insert_one(ping_cm)
             except Exception as e:
                 print(e)
             return

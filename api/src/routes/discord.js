@@ -126,7 +126,7 @@ router.get('/guilds/:guildId/modinfo', async (req, res) => {
                     return err
                 } else {
                     const guildDB = guildDBO.db(`WARNS`)
-                    const guildWarns = await guildDB.collection("guilds").find({_id: Long.fromString(guildId)}).toArray()
+                    const guildWarns = await guildDB.collection("guilds").find({guild: Long.fromString(guildId)}).toArray()
                     const bans = await getGuildBans(guildId)
                     const auditLog = await getGuildAuditLog(guildId)
                     guildWarns.splice(0, 1)
@@ -153,7 +153,8 @@ router.get('/guilds/:guildId/modinfo', async (req, res) => {
 router.get('/guilds/:guildId/stats', async (req, res) => {
     const { guildId } = req.params;
 
-    if (!req.user || !checkUserGuildPerms(req.user.guilds, guildId)) return res.status(401).send({ "msg": "User Does not have Sufficent Permissions" })
+    console.log(req.user)
+    if (!req.user || !checkUserGuildPerms(req.user.guilds, guildId)) return res.status(401).send({ "msg": "User Does not have Sufficent Permissions", "user": req.user })
 
     const guilds = await getBotGuilds()
     var done = false

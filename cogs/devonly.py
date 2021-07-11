@@ -4,6 +4,13 @@ import datetime
 import os
 from modules import utils
 import asyncio
+from pymongo import MongoClient
+
+with open('./mongourl.txt', 'r') as file:
+    url = file.read()
+
+mongo_url = url.strip()
+cluster = MongoClient(mongo_url)
 
 
 async def is_dev(ctx):
@@ -171,6 +178,15 @@ class Developers(commands.Cog):
     @commands.check(is_dev)
     async def guildmembers(self, ctx, guild:discord.Guild):
         return await ctx.send(f"{guild.member_count}")
+
+    @commands.command()
+    @commands.check(is_dev)
+    async def clear_command_count(self, ctx):
+        cluster.drop_database('COMMANDCOUNT')
+        db = cluster['COMMANDCOUNT']
+        col = db['commandcount']
+        col.insert_one({"_id":ctx.guild.id, "message":f"Cleared command data last on {datetime.datetime.utcnow()}"})
+        await ctx.send("Done, command count cleared.")
 
 def setup(client):
     client.add_cog(Developers(client))

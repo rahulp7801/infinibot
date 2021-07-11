@@ -212,16 +212,16 @@ class Events(commands.Cog):
             return
         db = cluster['COMMANDCOUNT']
         collection = db['commandcount']
-        query = {"_id": ctx.guild.id}
+        query = {"_id": ctx.command.name}
         if collection.count_documents(query) == 0:
-            ping_cm = {"_id": ctx.guild.id, "count": 1}
+            ping_cm = {"_id": ctx.command.name, "count": 1}
             collection.insert_one(ping_cm)
         else:
             user = collection.find(query)
             for result in user:
                 count = result['count']
             count += 1
-            collection.update_one({"_id": ctx.guild.id}, {"$set": {'count': count}})
+            collection.update_one({"_id": ctx.command.name}, {"$set": {'count': count}})
         query = {"_id": self.client.user.id}
         if collection.count_documents(query) == 0:
             ping_cm = {"_id": self.client.user.id, "count": 1}

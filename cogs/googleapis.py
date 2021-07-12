@@ -92,7 +92,6 @@ class GoogleC(commands.Cog):
     @tasks.loop(minutes = 5)
     async def check_for_assignments(self):
         print("[GOOGLE CLASSROOM] Assignment Check Loop Started...")
-
         past = datetime.datetime.utcnow().timestamp()
         db = cluster['GOOGLECLASSROOM']
         collection = db['guilds']
@@ -138,6 +137,55 @@ class GoogleC(commands.Cog):
                             embed.title = str(k["title"])[0:2000]
                             embed.timestamp = pd.to_datetime(k["creationTime"])
                             await channel.send(embed=embed)
+                            continue
+            except Exception as e:
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ASSIGNMENTS] While scraping through assignments, exception {e} was raised."
+                logging.error(errmsg)
+        collection = db['dms']
+        creds = None
+        res = collection.find()
+        print("[GOOGLE CLASSROOM] CHECKING DMS")
+        for i in res:
+            try:
+                classid = i["classid"]
+                user = i['setby']
+                user = self.client.get_user(user)
+                if os.path.exists(f'./temp/token-dm-{user.id}.json'):
+                    creds = Credentials.from_authorized_user_file(f'./temp/token-dm-{user.id}.json', SCOPES)
+                if not creds or not creds.valid:
+                    if creds and creds.expired and creds.refresh_token:
+                        print('[GOOGLE CLASSROOM] Requesting Refresh of User-Authorization')
+                        creds.refresh(Request())
+                    else:
+                        continue #maybe send a message to the server owner saying that google classroom creds have expired... would become repetitive tho hmm
+                service = build('classroom', 'v1', credentials=creds)
+                results = service.courses().courseWork().list(pageSize=10, courseId=classid).execute()  # replace that ID with "classid"
+                courses = results.get('courseWork', [])
+                if not courses:
+                    print(f'[GOOGLE CLASSROOM] No Courses Found For {user.name} [DM], Breaking...')
+                    continue
+                for k in courses:
+                    print(k)
+                    if k["state"] == 'PUBLISHED':
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25600)
+                        print(x)
+                        if not x:
+                            break #because the API returns it ordered most recent, no need to waste time checking older ones.
+                        if x and k["assigneeMode"] == 'ALL_STUDENTS':
+                            print("[GOOGLE CLASSROOM] New Assignments Found, updating...")
+                            embed = discord.Embed(color=discord.Color.green())
+                            try:
+                                embed.description = str(k["description"])[0:2000] + f"\n[View Assignment]({k['alternateLink']})" + f"\n\nDue {k['dueDate']['year']}-{k['dueDate']['month']}-{k['dueDate']['day']}"
+                            except KeyError:
+                                embed.description = "No description for this assignment."
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
+                            embed.title = str(k["title"])[0:2000]
+                            embed.timestamp = pd.to_datetime(k["creationTime"])
+                            await user.send(embed=embed)
                             continue
             except Exception as e:
                 logging.basicConfig(filename='./errors.log')
@@ -202,6 +250,54 @@ class GoogleC(commands.Cog):
                 logging.basicConfig(filename='./errors.log')
                 errmsg = f"[GOOGLE CLASSROOM] [ANNOUNCEMENTS] While scraping through announcements, exception {e} was raised."
                 logging.error(errmsg)
+        collection = db['guilds']
+        arr = []
+        creds = None
+        res = collection.find()
+        for i in res:
+            try:
+                classid = i["classid"]
+                arr.append((i['classid'], i['setby']))
+                user = i['setby']
+                user = self.client.get_user(user)
+                if os.path.exists(f'./temp/token-dm-{user.id}.json'):
+                    creds = Credentials.from_authorized_user_file(f'./temp/token-dm-{user.id}.json', SCOPES)
+                if not creds or not creds.valid:
+                    if creds and creds.expired and creds.refresh_token:
+                        creds.refresh(Request())
+                    else:
+                        continue
+                service = build('classroom', 'v1', credentials=creds)
+                results = service.courses().announcements().list(pageSize=10,
+                                                                 courseId=classid).execute()  # replace that ID with "classid"
+                courses = results.get('announcements', [])
+                if not courses:
+                    print('this')
+                    continue
+                for k in courses:
+                    print(k)
+                    if k["state"] == 'PUBLISHED':
+                        x = (abs((pd.to_datetime(k["creationTime"]).timestamp()) - past) <= 25600)
+                        print(x)
+                        if not x:
+                            break
+                        else:
+                            embed = discord.Embed(color=discord.Color.green())
+                            embed.description = str(k["text"])[0:2000] + f"\n[View Announcement]({k['alternateLink']})"
+                            try:
+                                embed.description += f'\n\n{len(k["materials"])} attachment{"" if len(k["materials"]) == 1 else "s"}'
+                            except KeyError:
+                                pass
+                            embed.timestamp = pd.to_datetime(k["creationTime"])
+                            embed.title = 'New Announcement!'
+                            print('her34342342e')
+                            await user.send(embed=embed)
+                            continue
+
+            except Exception as e:
+                logging.basicConfig(filename='./errors.log')
+                errmsg = f"[GOOGLE CLASSROOM] [ANNOUNCEMENTS] While scraping through announcements, exception {e} was raised."
+                logging.error(errmsg)
 
     @check_for_announcements.before_loop
     async def before_check_announcements(self):
@@ -249,55 +345,82 @@ class GoogleC(commands.Cog):
             print(e)
 
     @commands.command()
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild = True)
     async def setclass(self, ctx):
+        if ctx.guild is None:
+            if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
+                return await ctx.send(f"You have already authenticated yourself in this DM.") #maybe premium can offer 10 classes?
+            else:
+                res = await self.authenticateclassroom(ctx)
+                if not res:
+                    return
+        elif ctx.guild and not ctx.author.guild_permissions.manage_guild:
+            return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
+        else:
+            try:
+                if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+                    for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
+                        if i.startswith(f'token{ctx.guild.id}'):
+                            new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
+                            member = self.client.get_user(int(new))
+                            return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
+                    else:
+                        res1 = await self.authenticateclassroom(ctx)
+                        if not res1:
+                            return
+            except Exception as e:
+                print(e)
+        res = await utils.set_classroom_class(ctx)
+        if not res[0]:
+            return await ctx.send(res[1])
         try:
-            if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-                for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
-                    if i.startswith(f'token{ctx.guild.id}'):
-                        new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
-                        member = self.client.get_user(int(new))
-                        return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
-                else:
-                    res = await self.authenticateclassroom(ctx)
-                    if not res:
-                        return
-            res = await utils.set_classroom_class(ctx)
-            if not res[0]:
-                return await ctx.send(res[1])
             print('here3')
             arr = []
+            print(res)
             res = res[1]
             print(res, "godem")
             mapping = {}
-            if res is None:
+        except Exception as e:
+            print(e)
+            return
+        if res is None:
+            if ctx.guild:
                 await ctx.author.send("Looks like you have no classes that I can see. :(")
-                return
-            for i, k in enumerate(res):
-                print(i, res[i])
-                name = str(k['name'])[0:20] + '...' if len(str(k["name"])) >= 21 else f"{k['name']}"
-                mapping[name] = k["name"]
-                try:
-                    description = str(k["descriptionHeading"])[0:20] + "..." if len(str(k["descriptionHeading"])) >= 30 else f"{k['descriptionHeading']}"
-                except:
-                    description = "No description"
-                arr.append(SelectOption(label=name, value=k["id"], description=description))
-
-            await ctx.send(content = "Click on the class you would like to set.",
+            else:
+                await ctx.send("Looks like you have no classes that I can see. :(")
+            return
+        for i, k in enumerate(res):
+            print(i, res[i])
+            name = str(k['name'])[0:20] + '...' if len(str(k["name"])) >= 21 else f"{k['name']}"
+            mapping[name] = k["name"]
+            try:
+                description = str(k["descriptionHeading"])[0:20] + "..." if len(str(k["descriptionHeading"])) >= 30 else f"{k['descriptionHeading']}"
+            except:
+                description = "No description"
+            arr.append(SelectOption(label=name, value=k["id"], description=description))
+        if ctx.guild:
+            await ctx.author.send(content = "Click on the class you would like to set.",
                            components = [
                                Select(placeholder="Select a class",
                                       options=arr,
                                       max_values=1,
                                       min_values=1)
                            ])
-            try:
-                interaction = await self.client.wait_for("select_option", check=lambda i: i.author == ctx.author, timeout = 120)
-            except asyncio.TimeoutError:
-                return await ctx.send("You took too long.")
-            print('out')
-            sclass = mapping[(interaction.component[0].label)]
-            await interaction.respond(content = f"The selected class is `{sclass}`.")
+        else:
+            await ctx.send(content="Click on the class you would like to set.",
+                                  components=[
+                                      Select(placeholder="Select a class",
+                                             options=arr,
+                                             max_values=1,
+                                             min_values=1)
+                                  ])
+        try:
+            interaction = await self.client.wait_for("select_option", check=lambda i: i.author == ctx.author and isinstance(i.channel, discord.DMChannel), timeout = 120)
+        except asyncio.TimeoutError:
+            return await ctx.send("You took too long.")
+        print('out')
+        sclass = mapping[(interaction.component[0].label)]
+        if ctx.guild:
+            await interaction.respond(content = f"The selected class is `{sclass}`. You may now return back to {ctx.channel.mention} to complete setup.")
             await asyncio.sleep(1)
             await ctx.send("What channel would you like updates to be sent to? \nMention the channel below.")
             cnt = 0
@@ -325,39 +448,17 @@ class GoogleC(commands.Cog):
                     return
 
             await ctx.send(f"Ok, all updates for `{sclass}` will be posted to {channel.mention}!")
-            db = cluster[f'GUILD{ctx.guild.id}']
-            collection = db['config']
-            query = {'_id':interaction.component[0].value}
-            if collection.count_documents(query) == 0:
-                try:
-                    ping_cm = {
-                        '_id' : interaction.component[0].value,
-                        'channel':channel.id,
-                        'guild': ctx.guild.id,
-                        'seton': datetime.datetime.utcnow(),
-                        'setby':ctx.author.id
-                    }
-                    collection.insert_one(ping_cm)
-                    print('suces')
-                except Exception as e:
-                    print(e)
-            else:
-                try:
-                    collection.update_one({'_id':interaction.component[0].value}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow()}})
-                    print('success')
-                except Exception as e:
-                    print(e)
             db = cluster['GOOGLECLASSROOM']
             collection = db['guilds']
             query = {'gid': ctx.guild.id}
             if collection.count_documents(query) == 0:
                 try:
                     ping_cm = {
-                        'classid' : interaction.component[0].value,
-                        'channel':channel.id,
+                        'classid': interaction.component[0].value,
+                        'channel': channel.id,
                         'gid': ctx.guild.id,
                         'seton': datetime.datetime.utcnow(),
-                        'setby':ctx.author.id
+                        'setby': ctx.author.id
                     }
                     collection.insert_one(ping_cm)
                     print('suces')
@@ -365,20 +466,39 @@ class GoogleC(commands.Cog):
                     print(e)
             else:
                 try:
-                    collection.update_one({'gid':ctx.guild.id}, {"$set":{'channel':channel.id, 'seton':datetime.datetime.utcnow(), 'setby':ctx.author.id, "classid":interaction.component[0].value}})
+                    collection.update_one({'gid': ctx.guild.id}, {
+                        "$set": {'channel': channel.id, 'seton': datetime.datetime.utcnow(), 'setby': ctx.author.id,
+                                 "classid": interaction.component[0].value}})
                     print('success')
                 except Exception as e:
                     print(e)
-        except Exception as e:
-            print(e)
+        else:
+            await interaction.respond(content=f"Great, all updates for {sclass} will be posted in this DM!")
+            db = cluster['GOOGLECLASSROOM']
+            collection = db['dms']
+            query = {'setby': ctx.author.id}
+            if collection.count_documents(query) == 0: #to add more classes options
+                try:
+                    ping_cm = {
+                        'classid': interaction.component[0].value,
+                        'seton': datetime.datetime.utcnow(),
+                        'setby': ctx.author.id
+                    }
+                    collection.insert_one(ping_cm)
+                    print('suces')
+                except Exception as e:
+                    print(e)
+            else:
+                return
 
     @commands.command(aliases = ['authclass'])
-    @commands.guild_only()
     async def authenticateclassroom(self, ctx):
-        print('ere3')
+        if ctx.guild and not ctx.author.guild_permissions.manage_guild:
+            return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
         embed = utils.auth_classroom(ctx)
         await ctx.author.send(embed=embed)
-        await ctx.reply("Check your DMs!")
+        if ctx.guild is not None:
+            await ctx.reply("Check your DMs!")
         try:
             message = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and isinstance(m.channel, discord.DMChannel), timeout = 120)
         except asyncio.TimeoutError:
@@ -389,19 +509,28 @@ class GoogleC(commands.Cog):
             utils.save_class_creds(ctx, message.content.strip())
             print('done')
         except ClassroomError as e:
-            await ctx.author.send(f"{e}")
-            return False
-        await ctx.author.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.\n\nYou may now return to {ctx.channel.mention} to choose a class.")
+            if ctx.guild:
+                await ctx.author.send(f"{e}")
+            else:
+                await ctx.send(f"{e}")
+            return False, ""
+        if ctx.guild:
+            await ctx.author.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.\n\nYou may now return to {ctx.channel.mention} to choose a class.")
+        else:
+            await ctx.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.")
         return True
 
     @commands.command(aliases = ['googleclassroomlogout'])
-    @commands.guild_only()
-    @commands.has_permissions(manage_guild = True)
     async def gclogout(self, ctx):
+        if ctx.guild and not ctx.author.guild_permissions.manage_guild:
+            return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
         res = utils.classroomlogout(ctx)
         if not res[0]:
             return await ctx.send(res[1])
-        await ctx.send("You have successfully logged out of Google Classroom for this server.")
+        if ctx.guild:
+            await ctx.send("You have successfully logged out of Google Classroom for this server.")
+        else:
+            await ctx.send("You have successfully logged out in this DM")
 
     @commands.command()
     async def quiz(self, ctx, url = None):

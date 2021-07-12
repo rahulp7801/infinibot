@@ -252,10 +252,16 @@ def get_classes(ctx, limit :int= 10):
     # The file token.json stores the user's access and refresh tokens, and is
     # created automatically when the authorization flow completes for the first
     # time.
-    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
+    if ctx.guild is None:
+        if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
+            creds = Credentials.from_authorized_user_file(f'./temp/token-dm-{ctx.author.id}.json', SCOPES)
+        else:
+            return False, "Not authorized to view classes for this private message."
     else:
-        return False, "Not authorized to view classes for this server."
+        if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+            creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
+        else:
+            return False, "Not authorized to view classes for this server."
     # If there are no (valid) credentials available, let the user log in.
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
@@ -648,33 +654,58 @@ def determine_timeframe(param):
 
 def auth_classroom(ctx:discord.ext.commands.Context):
     creds = None
-    # The file token.json stores the user's access and refresh tokens, and is
-    # created automatically when the authorization flow completes for the first
-    # time.
-    if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-        creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
-    # If there are no (valid) credentials available, let the user log in.
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(
-                'credentials.json', SCOPES)
-            AUTHLINK = flow.run_discord()
-            print('here bruh')
-            embed = discord.Embed(color=discord.Color.green())
-            embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:', '')})\n\nPlease enter the code that you receive after logging in."
-            return embed
+    if ctx.guild is None:
+        if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
+            creds = Credentials.from_authorized_user_file(f'./temp/token-dm-{ctx.author.id}.json', SCOPES)
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                AUTHLINK = flow.run_discord()
+                print('here bruh')
+                embed = discord.Embed(color=discord.Color.green())
+                embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:', '')})\n\nPlease enter the code that you receive after logging in."
+                return embed
+    else:
+
+        # The file token.json stores the user's access and refresh tokens, and is
+        # created automatically when the authorization flow completes for the first
+        # time.
+        if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
+            creds = Credentials.from_authorized_user_file(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', SCOPES)
+        # If there are no (valid) credentials available, let the user log in.
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', SCOPES)
+                AUTHLINK = flow.run_discord()
+                print('here bruh')
+                embed = discord.Embed(color=discord.Color.green())
+                embed.description = f"Please sign in [here]({AUTHLINK.replace('Please visit this URL to authorize this application:', '')})\n\nPlease enter the code that you receive after logging in."
+                return embed
 
 def save_class_creds(ctx:discord.ext.commands.Context, code):
     flow = InstalledAppFlow.from_client_secrets_file(
         'credentials.json', SCOPES)
     creds = flow.discord_auth(code)
+    if ctx.guild is None:
+        with open(f'./temp/token-dm-{ctx.author.id}.json', 'w') as token:
+            token.write(creds.to_json())
+        return
     with open(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json', 'w') as token:
         token.write(creds.to_json())
     return
 
 def classroomlogout(ctx:discord.ext.commands.Context):
+    if ctx.guild is None:
+        if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
+            os.remove(f'./temp/token-dm-{ctx.author.id}.json')
+            return (True, "nice")
+        return (False, "No classes set for this user in this Direct Message.")
     try:
         if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
             os.remove(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json')

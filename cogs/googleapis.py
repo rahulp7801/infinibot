@@ -271,6 +271,9 @@ class GoogleC(commands.Cog):
             res = res[1]
             print(res, "godem")
             mapping = {}
+            if res is None:
+                await ctx.author.send("Looks like you have no classes that I can see. :(")
+                return
             for i, k in enumerate(res):
                 print(i, res[i])
                 name = str(k['name'])[0:20] + '...' if len(str(k["name"])) >= 21 else f"{k['name']}"

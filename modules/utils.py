@@ -720,6 +720,15 @@ def classroomlogout(ctx:discord.ext.commands.Context):
     except Exception as e:
         print(e)
 
+def clean_classroom(ctx):
+    db = cluster['GOOGLECLASSROOM']
+    if ctx.guild:
+        col = db['guilds']
+        col.delete_many({"gid":ctx.guild.id, 'setby':ctx.author.id})
+    else:
+        col = db['dms']
+        col.delete_many({"setby":ctx.author.id})
+
 def textToEmoji(s) -> str:
     '''
     Converts text to equivalent emoji

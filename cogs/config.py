@@ -7,7 +7,9 @@ from PIL import Image, ImageDraw, ImageFont
 import random
 from discord_components import DiscordComponents
 from modules import utils
+from bot import prefgetter
 from typing import Optional
+
 
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
@@ -571,6 +573,8 @@ class Configuration(commands.Cog):
             file = discord.File("./profile.png", filename='image.png')
             embed.set_image(url='attachment://image.png')
             await ctx.send(file=file, embed=embed)
+            prefgetter.update(ctx.guild, prefix)
+            print(prefgetter.prefix(ctx.guild))
         except Exception as e:
             print(e)
 
@@ -1586,6 +1590,7 @@ class Configuration(commands.Cog):
                         collection.update_one({"_id": ctx.guild.id}, {"$set": {'prefix': str(pref)}})
                         desc = f"Prefix for **{ctx.guild.name}** has been updated to `{pref}`. \n\nNext segment in 5 seconds..."
                         embed = discord.Embed(description=desc, color=discord.Color.green())
+                        prefgetter.update(ctx.guild, prefix)
                         await message.edit(embed=embed)
                         await message.clear_reactions()
                         await asyncio.sleep(5)

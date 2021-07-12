@@ -198,7 +198,7 @@ class GoogleC(commands.Cog):
 
     @tasks.loop(minutes = 5)
     async def check_for_announcements(self):
-        print("Checking for announcements...")
+        print("[GOOGLE CLASSROOM] Announcement Checking In Progress.. {GUILDS}")
         past = datetime.datetime.utcnow().timestamp()
         db = cluster['GOOGLECLASSROOM']
         collection = db['guilds']
@@ -222,7 +222,7 @@ class GoogleC(commands.Cog):
                 results = service.courses().announcements().list(pageSize = 10, courseId = classid).execute() #replace that ID with "classid"
                 courses = results.get('announcements', [])
                 if not courses:
-                    print('this')
+                    print('[GOOGLE CLASSROOM] NO COURSES FOUND FOR GUILD')
                     continue
                 for k in courses:
                     print(k)
@@ -242,7 +242,6 @@ class GoogleC(commands.Cog):
                             embed.title = 'New Announcement!'
                             channel = i["channel"]
                             channel = self.client.get_channel(channel)
-                            print('her34342342e')
                             await channel.send(embed=embed)
                             continue
 
@@ -253,6 +252,7 @@ class GoogleC(commands.Cog):
         collection = db['guilds']
         arr = []
         creds = None
+        print("[GOOGLE CLASSROOM] CHECKING DM CONFS")
         res = collection.find()
         for i in res:
             try:
@@ -348,25 +348,24 @@ class GoogleC(commands.Cog):
     async def setclass(self, ctx):
         if ctx.guild is None:
             if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
-                return await ctx.send(f"You have already authenticated yourself in this DM.") #maybe premium can offer 10 classes?
+                pass
             else:
                 res = await self.authenticateclassroom(ctx)
                 if not res:
-                    return
+                    return await ctx.send(res[1])
         elif ctx.guild and not ctx.author.guild_permissions.manage_guild:
             return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
         else:
             try:
                 if not os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}.json'):
-                    for i in os.listdir('./temp'): #checking to see who set it for the guild... unnecessary but helpful
-                        if i.startswith(f'token{ctx.guild.id}'):
-                            new = i.removeprefix(f'token{ctx.guild.id}-').removesuffix('.json')
-                            member = self.client.get_user(int(new))
-                            return await ctx.send(f"`{member.name}#{member.discriminator}` has already authenticated themselves for this server.") #maybe premium can offer 10 classes?
-                    else:
-                        res1 = await self.authenticateclassroom(ctx)
-                        if not res1:
-                            return
+                    db = cluster['GOOGLECLASSROOM']
+                    col = db['guilds']
+                    if col.count_documents({"gid":ctx.guild.id}) >= 10:
+                        return await ctx.send("Looks like this server has reached the maximum amount of classes offered!")
+                else:
+                    res1 = await self.authenticateclassroom(ctx)
+                    if not res1:
+                        return
             except Exception as e:
                 print(e)
         res = await utils.set_classroom_class(ctx)
@@ -450,8 +449,7 @@ class GoogleC(commands.Cog):
             await ctx.send(f"Ok, all updates for `{sclass}` will be posted to {channel.mention}!")
             db = cluster['GOOGLECLASSROOM']
             collection = db['guilds']
-            query = {'gid': ctx.guild.id}
-            if collection.count_documents(query) == 0:
+            if collection.count_documents({"gid":ctx.guild.id, "classid":interaction.component[0].value}) == 0:
                 try:
                     ping_cm = {
                         'classid': interaction.component[0].value,
@@ -465,36 +463,41 @@ class GoogleC(commands.Cog):
                 except Exception as e:
                     print(e)
             else:
-                try:
-                    collection.update_one({'gid': ctx.guild.id}, {
-                        "$set": {'channel': channel.id, 'seton': datetime.datetime.utcnow(), 'setby': ctx.author.id,
-                                 "classid": interaction.component[0].value}})
-                    print('success')
-                except Exception as e:
-                    print(e)
+                collection.update_one({"gid":ctx.guild.id, 'classid':interaction.component[0].value}, {"$set": {"channel":channel.id}})
         else:
-            await interaction.respond(content=f"Great, all updates for {sclass} will be posted in this DM!")
+
             db = cluster['GOOGLECLASSROOM']
             collection = db['dms']
-            query = {'setby': ctx.author.id}
-            if collection.count_documents(query) == 0: #to add more classes options
-                try:
-                    ping_cm = {
-                        'classid': interaction.component[0].value,
-                        'seton': datetime.datetime.utcnow(),
-                        'setby': ctx.author.id
-                    }
-                    collection.insert_one(ping_cm)
-                    print('suces')
-                except Exception as e:
-                    print(e)
+            if collection.count_documents({"setby":ctx.author.id}) >= 5:
+                return await ctx.send("You have reached the limit for classrooms in DMs!")
             else:
-                return
+                await interaction.respond(content=f"Great, all updates for {sclass} will be posted in this DM!")
+                query = {'setby': ctx.author.id, 'classid': interaction.component[0].value}
+                if collection.count_documents(query) == 0:
+                    try:
+                        ping_cm = {
+                            'classid': interaction.component[0].value,
+                            'seton': datetime.datetime.utcnow(),
+                            'setby': ctx.author.id
+                        }
+                        collection.insert_one(ping_cm)
+                        print('suces')
+                    except Exception as e:
+                        print(e)
 
     @commands.command(aliases = ['authclass'])
     async def authenticateclassroom(self, ctx):
         if ctx.guild and not ctx.author.guild_permissions.manage_guild:
             return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
+        if ctx.guild:
+            if os.path.exists(f'./temp/token{ctx.guild.id}-{ctx.author.id}'):
+                await ctx.send("You have already authenticated yourself for this server. Would you like to change your account? Respond with `y` or `n`.")
+                try:
+                    msg = await self.client.wait_for('message', check=lambda m: m.author == ctx.author and m.channel == ctx.channel and m.content.lower() in ('y', 'n'), timeout=120)
+                    if msg.content.lower() == 'n':
+                        return False, "Cancelled."
+                except asyncio.TimeoutError:
+                    return False, "You took too long."
         embed = utils.auth_classroom(ctx)
         await ctx.author.send(embed=embed)
         if ctx.guild is not None:
@@ -515,9 +518,9 @@ class GoogleC(commands.Cog):
                 await ctx.send(f"{e}")
             return False, ""
         if ctx.guild:
-            await ctx.author.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.\n\nYou may now return to {ctx.channel.mention} to choose a class.")
+            await ctx.author.send(f"You have been successfully authorized to use Google Classroom with InfiniBot **in this server**.\n\nYou may now return to {ctx.channel.mention} to choose a class.")
         else:
-            await ctx.send(f"You have been successfully authorized to use Google Classroom with InfiniBot.")
+            await ctx.send(f"You have been successfully authorized to use Google Classroom with InfiniBot **in this dm**.")
         return True
 
     @commands.command(aliases = ['googleclassroomlogout'])
@@ -527,10 +530,11 @@ class GoogleC(commands.Cog):
         res = utils.classroomlogout(ctx)
         if not res[0]:
             return await ctx.send(res[1])
+        utils.clean_classroom(ctx)
         if ctx.guild:
-            await ctx.send("You have successfully logged out of Google Classroom for this server.")
+            await ctx.send("You have successfully logged out of Google Classroom for this server and all updates for your classes have been cancelled.")
         else:
-            await ctx.send("You have successfully logged out in this DM")
+            await ctx.send("You have successfully logged out in this DM. All further updates from your classes will not show up.")
 
     @commands.command()
     async def quiz(self, ctx, url = None):

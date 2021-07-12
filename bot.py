@@ -15,10 +15,32 @@ from typing import Optional
 with open('./mongourl.txt', 'r') as file:
     url = file.read()
 
+
+
+class Prefix:
+    def __init__(self):
+        self._prefix_cache = {}
+    def __str__(self):
+        return self._prefix_cache
+    def update(self, guild:discord.Guild, prefix):
+        self._prefix_cache[guild.id] = prefix
+    def prefix(self, guild):
+        return self._prefix_cache[guild.id]
+
+prefgetter = Prefix()
+
+def get_prefix(client, msg):
+    if msg.guild:
+        prefix = prefgetter.prefix(msg.guild)
+        print(prefix, msg.guild.name)
+        return commands.when_mentioned_or(prefix)(client, msg)
+    else:
+        return commands.when_mentioned_or('.')(client, msg)
+
+
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
-
-client = commands.AutoShardedBot(command_prefix=commands.when_mentioned_or('.'), intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True, strip_after_prefix = True)
+client = commands.AutoShardedBot(command_prefix=get_prefix, intents = discord.Intents().all(), allowed_mentions=discord.AllowedMentions.none(), case_insenstive = True, strip_after_prefix = True)
 slash = SlashCommand(client, sync_commands = True)
 
 for filename in os.listdir('./cogs'):
@@ -42,10 +64,20 @@ FORBIDDEN_COGS = [
 
 @client.event
 async def on_ready():
+    print('heretoo')
+    db = cluster['CONFIGURATION']
+    col = db['guilds']
+    for guild in client.guilds:
+        if col.count_documents({"_id":guild.id}) == 0:
+            pass
+        else:
+            res = col.find({"_id":guild.id})
+            for i in res:
+                prefix = i['prefix']
+            prefgetter.update(guild, prefix)
     t1.start()
     print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
     await client.change_presence(activity=discord.Game(name=f'Watching {len(client.guilds)} servers'))
-
     try:
         for guild in client.guilds:
             try:
@@ -55,6 +87,7 @@ async def on_ready():
         DiscordComponents(client, change_discord_methods=True)
     except Exception as e:
         print(e)
+
     db = cluster['DISABLED_COMMANDS']
     col = db['channels']
     res = col.find()

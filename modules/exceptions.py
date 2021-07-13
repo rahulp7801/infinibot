@@ -36,5 +36,7 @@ class FunctionIsInescapable(GuildExceptions):
 
     ...
 
+class EconomyMemberNotFound(Exception):
+    pass
 
 #all custom errors will be defined here

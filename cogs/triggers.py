@@ -59,7 +59,7 @@ class Triggers(commands.Cog):
         except KeyError:
             return
 
-    @commands.command()
+    @commands.command(help='Adds a trigger for the bot to listen to.')
     @commands.guild_only()
     @commands.has_permissions(manage_messages = True)
     async def addtrigger(self, ctx, *, trigger):
@@ -110,7 +110,7 @@ class Triggers(commands.Cog):
             self.ischanging[ctx.guild.id] = False
             return await ctx.send(f"`{trigger.strip()}` already exists as a trigger for {ctx.guild.name}!")
 
-    @commands.command()
+    @commands.command(help='Removes a trigger for the bot to respond to.')
     @commands.has_permissions(manage_messages=True)
     async def removetrigger(self, ctx, *, trigger):
         self.ischanging[ctx.guild.id] = True

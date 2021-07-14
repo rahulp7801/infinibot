@@ -137,7 +137,7 @@ class Moderation(commands.Cog):
     async def on_ready(self):
         DiscordComponents(self.client, change_discord_methods=True)
 
-    @commands.command()
+    @commands.command(help='Clears the chat')
     @commands.has_permissions(manage_messages = True)
     async def clear(self, ctx, amount:int, user:discord.User = None):
         try:
@@ -152,7 +152,7 @@ class Moderation(commands.Cog):
             await ctx.send("I cannot delete messages past two weeks old!", delete_after = 5)
             return
 
-    @commands.command()
+    @commands.command(help='Bans a member')
     @commands.guild_only()
     @commands.has_permissions(ban_members = True)
     async def ban(self, ctx, member:discord.Member, *, reason = "No reason given"):
@@ -198,7 +198,7 @@ class Moderation(commands.Cog):
                 "I do not have the `Ban Members` permission. You can fix that by going into Server Settings and giving my role that permission.")
 
 
-    @commands.command()
+    @commands.command(help='Temporarily bans a member, specify a duration.')
     @commands.guild_only()
     @commands.has_permissions(ban_members = True)
     async def tempban(self, ctx, member:discord.Member, *, duration):
@@ -258,7 +258,7 @@ class Moderation(commands.Cog):
         if isinstance(error, commands.MemberNotFound):
             return await ctx.reply("Please mention someone to ban.")
 
-    @commands.command()
+    @commands.command(help='Kicks a member from your server.')
     @commands.guild_only()
     @commands.has_permissions(kick_members = True)
     async def kick(self, ctx, member:discord.Member, *, reason = "No reason given"):
@@ -303,7 +303,7 @@ class Moderation(commands.Cog):
             await ctx.send("I do not have the `Kick Members` permission.")
 
 
-    @commands.command()
+    @commands.command(help='Unbans a member from your server!')
     @commands.guild_only()
     @commands.has_permissions(ban_members = True)
     async def unban(self, ctx, user:discord.User):
@@ -324,7 +324,7 @@ class Moderation(commands.Cog):
             nban = discord.Embed(color=discord.Color.red())
             nban.set_author(name=f"User is not banned or doesn\'t exist!")
             await ctx.send(embed=nban)
-    @commands.command()
+    @commands.command(help='Mutes a member. If you haven\'t specified a muterole, this will not work.')
     @commands.guild_only()
     @commands.has_permissions(manage_roles = True)
     async def mute(self, ctx, member:discord.Member, *, dur = None):
@@ -336,6 +336,8 @@ class Moderation(commands.Cog):
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             muterole = i['muterole']
+        if muterole is None or muterole == '':
+            return await ctx.send(f"You haven't specified a muterole for me yet! Run `{ctx.prefix}setup muterole`!")
         prefix = ctx.prefix
         role = discord.utils.get(ctx.guild.roles, id=int(muterole))
         if role in member.roles:
@@ -396,7 +398,7 @@ class Moderation(commands.Cog):
         if isinstance(error, commands.MemberNotFound):
             return await ctx.reply(error, mention_author=False)
 
-    @commands.command()
+    @commands.command(help='Unmutes a user in your server.')
     @commands.guild_only()
     @commands.has_permissions(manage_roles=True)
     async def unmute(self, ctx, member: discord.Member):
@@ -406,6 +408,8 @@ class Moderation(commands.Cog):
         results = collection.find({'_id': ctx.guild.id})
         for i in results:
             muterole = i['muterole']
+        if muterole is None or muterole == '':
+            return await ctx.send(f"You haven't specified a muterole for me yet! Run `{ctx.prefix}setup muterole`!")
         pfp = member.avatar_url
         author = member
         role = discord.utils.find(lambda r: r.id == int(muterole), ctx.message.guild.roles)
@@ -414,7 +418,7 @@ class Moderation(commands.Cog):
         embed.set_author(name=str(author) + " has been unmuted.", icon_url=pfp)
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(help='Removes Send message permissions for @everyone')
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def lockdown(self, ctx):
@@ -429,7 +433,7 @@ class Moderation(commands.Cog):
         if isinstance(error, commands.CommandInvokeError):
             return await ctx.send("I don't have the Manage Channel permission for that channel.")
 
-    @commands.command()
+    @commands.command(help='Gives back Send Message permissions to @everyone')
     @commands.guild_only()
     @commands.has_permissions(manage_channels=True)
     async def unlock(self, ctx):
@@ -448,7 +452,7 @@ class Moderation(commands.Cog):
         if isinstance(error, ValueError):
             return await ctx.send(f"I don't have the `Manage Channel` permission for {ctx.channel.mention}.")
 
-    @commands.command(aliases = ['rename', 'nickname'])
+    @commands.command(aliases = ['rename', 'nickname'], help='Nick a member')
     @commands.guild_only()
     @commands.has_permissions(manage_nicknames = True)
     async def nick(self, ctx, member:discord.Member, *, nick):
@@ -467,7 +471,7 @@ class Moderation(commands.Cog):
             return await ctx.send("I am missing the `Manage Nicknames` permission.")
 
 
-    @commands.command()
+    @commands.command(help='Bans and immediately unbans a user to delete messages.')
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     async def softban(self, ctx, member: discord.Member = None, *, reason="To delete messages"):
@@ -488,7 +492,7 @@ class Moderation(commands.Cog):
                 await ctx.send(f'I don\'t have the required permissions to softban **{member.name}**')
                 return
 
-    @commands.command()
+    @commands.command(help='Warns a user')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def warn(self, ctx, member: discord.Member, *, reason="No reason given."):
@@ -524,7 +528,7 @@ class Moderation(commands.Cog):
         await ctx.send(embed=embed)
         await member.send(embed=uembed)
 
-    @commands.command()
+    @commands.command(help='Get a list of warns')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def warns(self, ctx, member: discord.Member = None):
@@ -635,7 +639,7 @@ class Moderation(commands.Cog):
     #         await asyncio.sleep(5)
     #         await channel.delete(name)
 
-    @commands.command(aliases=['deleterole'])
+    @commands.command(aliases=['deleterole'], help='Deletes a role')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def delrole(self, ctx, role: discord.Role = None):
@@ -653,7 +657,7 @@ class Moderation(commands.Cog):
                 return
         await ctx.reply(f"{ctx.author.mention}, you can't use that.")
 
-    @commands.command()
+    @commands.command(help='"Hackbans" a person (Ban before join)')
     @commands.guild_only()
     @commands.has_permissions(ban_members=True)
     async def hackban(self, ctx, user: discord.User, reason="No reason given"):
@@ -666,7 +670,7 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             return await ctx.send("I do not have proper permissions to ban this person!")
 
-    @commands.command()
+    @commands.command(help='Pins a message. Reference the message or pins the invocation message.')
     @commands.has_permissions(manage_messages = True)
     async def pin(self, ctx, message:discord.Message = None):
         if message is None:
@@ -682,7 +686,7 @@ class Moderation(commands.Cog):
             return await ctx.send("I don't have permission to pin this message.")
         await ctx.message.add_reaction('👍🏽')
 
-    @commands.command()
+    @commands.command(help='Unpins a message.')
     @commands.has_permissions(manage_messages=True)
     async def unpin(self, ctx, message: discord.Message = None):
         if message is None:
@@ -698,7 +702,7 @@ class Moderation(commands.Cog):
             return await ctx.send("I don't have permission to unpin this message.")
         await ctx.message.add_reaction('👍🏽')
 
-    @commands.command()
+    @commands.command(help='Sets up a ticketing system!')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def setupticketing(self, ctx, title = None):
@@ -752,7 +756,7 @@ class Moderation(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.send("You took too long.")
 
-    @commands.command(aliases = ['ct'])
+    @commands.command(aliases = ['ct'], help='Closes an open ticket')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def closeticket(self, ctx):
@@ -799,7 +803,7 @@ class Moderation(commands.Cog):
                 await ctx.channel.edit(overwrites=overwrites, name=newname)
                 return
 
-    @commands.command(name = 'clearstarboard')
+    @commands.command(name = 'clearstarboard', help='Clears all starboard messages')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def clear_starboard(self, ctx):
@@ -808,7 +812,7 @@ class Moderation(commands.Cog):
             return await ctx.send(str(res[1]))
         await ctx.message.add_reaction('✅')
 
-    @commands.command()
+    @commands.command(help='Deletes all open tickets.')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def closealltickets(self, ctx):
@@ -819,7 +823,7 @@ class Moderation(commands.Cog):
                 except:
                     pass
 
-    @commands.command()
+    @commands.command(help='Nukes a channel, creates a new one with same permissions.')
     @commands.guild_only()
     @commands.has_permissions(manage_channels = True)
     async def nuke(self, ctx, channel:discord.TextChannel = None):
@@ -847,14 +851,14 @@ class Moderation(commands.Cog):
         except asyncio.TimeoutError:
             return await ctx.reply("Timed out", mention_author = False)
 
-    @commands.command()
+    @commands.command(help='Kick a member from a voice channel.')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def vckick(self, ctx, member: discord.Member):
         await member.edit(voice_channel=None)
         await ctx.send(f"**{member.name}** has been successfully kicked from VC!")
 
-    @commands.command()
+    @commands.command(help = 'Moves a member to a voice channel.')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def move(self, ctx, member:discord.Member, channel:discord.VoiceChannel):
@@ -864,7 +868,7 @@ class Moderation(commands.Cog):
         except discord.Forbidden:
             return await ctx.send(f"I don\'t have permission to move `{member.name}#{member.discriminator}` to {channel.mention}!")
 
-    @commands.command(aliases = ['permissions'])
+    @commands.command(aliases = ['permissions'], help='Get a list of your allowed and denied permissions.')
     @commands.guild_only()
     async def perms(self, ctx, member:discord.Member = None):
         if member is None:
@@ -881,7 +885,7 @@ class Moderation(commands.Cog):
         embed.add_field(name='Denied', value='\n'.join(den))
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(help='Clear only your messages.')
     @commands.bot_has_permissions(manage_messages = True)
     async def clearmine(self, ctx, limit:int = 50):
         user = ctx.author
@@ -894,7 +898,7 @@ class Moderation(commands.Cog):
             await ctx.send("I cannot delete messages older than 2 weeks!", delete_after = 5)
             return
 
-    @commands.command()
+    @commands.command(help='Mutes someone in voice chat.')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def voicemute(self, ctx, member: discord.Member, on):
@@ -908,7 +912,7 @@ class Moderation(commands.Cog):
             return await ctx.send(
                 f"I don\'t have permission to {'mute' if mute else 'unmute'} `{member.name}#{member.discriminator}`!")
 
-    @commands.command()
+    @commands.command(help='Deafen someone in voice chat.')
     @commands.guild_only()
     @commands.has_permissions(manage_guild=True)
     async def voicedeafen(self, ctx, member: discord.Member, on):

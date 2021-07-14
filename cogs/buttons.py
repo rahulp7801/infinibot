@@ -276,25 +276,6 @@ class Buttons(commands.Cog):
             except KeyError:
                 pass
 
-    @commands.command()
-    async def menutest(self, ctx):
-        await ctx.send(
-
-            "Hello, World!",
-
-            components=[
-
-                Select(placeholder="select something!",
-                       options=[SelectOption(label="a", value="A"), SelectOption(label="b", value="B")])
-
-            ]
-
-        )
-
-        interaction = await self.client.wait_for("select_option")
-
-        await interaction.respond(content=f"{interaction.component[0].label} selected!")
-
 
 def setup(client):
     client.add_cog(Buttons(client))

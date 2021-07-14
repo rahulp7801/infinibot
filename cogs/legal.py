@@ -16,7 +16,7 @@ class Legal(commands.Cog):
         self.icon = '🏛️'
         self.description = 'Boring stuff'
 
-    @commands.command()
+    @commands.command(help='Request a DNT (Do Not Track)')
     @commands.cooldown(1, 90000, commands.BucketType.user)
     async def dntu(self, ctx):
         desc = f"{ctx.author.mention}, by requesting not to track your data, you understand that you will not be allowed to run commands with {self.client.user.name} from this point on. " \
@@ -51,7 +51,7 @@ class Legal(commands.Cog):
             await message.edit(embed=embed)
             return await message.clear_reactions()
 
-    @commands.command()
+    @commands.command(help='Request a DNT for your entire server.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_guild=True)
     async def dntg(self, ctx):
@@ -68,7 +68,7 @@ class Legal(commands.Cog):
         #     print(name)
         await ctx.send("Success!")
 
-    @commands.command(aliases=['clear_server_data', 'clearguilddata', 'clear_guild_data'])
+    @commands.command(aliases=['clear_server_data', 'clearguilddata', 'clear_guild_data'], help='Removes all data from your server, basically reset the bot.')
     @commands.has_permissions(manage_guild=True)
     @commands.guild_only()
     @commands.cooldown(1, 900, commands.BucketType.guild)
@@ -108,7 +108,7 @@ class Legal(commands.Cog):
             return await ctx.send(f"Data for **{ctx.guild.name}** has recently been cleared. Please try again later.")
 
     #privacy command
-    @commands.command()
+    @commands.command(help='Simplified Privacy Policy')
     async def privacy(self, ctx):
         desc = f"{self.client.user.name}'s Privacy Policy\n" \
                f"\n**What data we collect**\n" \

@@ -134,6 +134,19 @@ class EconomyPowerUp(Economy):
             power=power
         )
 
+        self.sellprice = int(price * 0.75)
+
+class EconomyTool(Economy):
+    #Add custom functions for each type of Economy Shop Item
+    def __init__(self, name, price, description, icon, power):
+        super().__init__(
+            name=name,
+            price=price,
+            description=description,
+            icon=icon,
+            power=power
+        )
+
 class Watch(EconomyCollectible, object):
     '''
     Add custom functions to each shop item here, this is just a collectible
@@ -148,4 +161,19 @@ class Watch(EconomyCollectible, object):
         )
         self.file = file
 
+class Laptop(EconomyTool, object):
+    '''
+    Add custom functions to each shop item here, this is just a collectible
+    '''
+    def __init__(self):
+        file = discord.File(f"modules/economy/assets/watch.png", filename='watch.png')
+        super().__init__(
+            price=1000,
+            description="Use the laptop to browse Reddit! Gain coins each day by using the `browsereddit` command!",
+            name='Laptop',
+            icon='attachment://watch.png'
+        )
+        self.file = file
 
+    def browsereddit(self):
+        pass

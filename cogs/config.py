@@ -1808,7 +1808,7 @@ class Configuration(commands.Cog):
             await message.edit(embed=embed)
             await message.clear_reactions()
 
-    @commands.command()
+    @commands.command(help='Setup Level Rewards for your server!')
     @commands.guild_only()
     @commands.has_permissions(manage_guild = True)
     async def levelrewards(self, ctx):

@@ -22,8 +22,6 @@ import datetime
 import math
 from modules import invitetrack
 
-
-
 with open('mongourl.txt', 'r') as file:
     url = file.read()
 
@@ -254,7 +252,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
     async def on_guild_remove(self, guild):
         await self._tracker.remove_guild_cache(guild)
     
-    @commands.group(pass_context=True, invoke_without_command=True, help="")
+    @commands.group(pass_context=True, invoke_without_command=True, help="Use one of the subcommands!")
     async def stats(self, ctx):
         embed = discord.Embed(title="Incorrect Usage",
             description=f'Please use one of the following subcommands:\n\n**general** *Aliases: g*\n**messages** *Aliases: m*\n**voicechat** *Aliases: vc*',
@@ -531,7 +529,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
             os.remove(f"cache/guild{ctx.guild.id}-{datetime.datetime.now().date()}.png")
 
     
-    @commands.command(aliases = ['inviteleaderboard', 'invlb'])
+    @commands.command(aliases = ['inviteleaderboard', 'invlb'], help='See who your most active inviters are!')
     @commands.cooldown(1, 60, commands.BucketType.guild)
     async def invleaderboard(self, ctx):
         try:
@@ -555,7 +553,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         except Exception as e:
             print(e)
 
-    @commands.command()
+    @commands.command(help='Get the bot\'s uptime.')
     async def uptime(self, ctx):
         try:
             uptime = (datetime.timedelta(seconds=int(round(time.time()-self.uptime)))).total_seconds()

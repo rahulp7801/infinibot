@@ -42,6 +42,8 @@ class BannedUser(Converter):
 class Mod(Cog):
     def __init__(self, client):
         self.client = client
+        self.description = "Automoderator!"
+        self.icon = '🚘'
         self.url_regex = r"(?i)\b((?:https?://|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'\".,<>?«»“”‘’]))"
         self.links_allowed = []
         self.images_allowed = []
@@ -131,7 +133,7 @@ class Mod(Cog):
             if message.content.count('||') >= 6 and message.channel.id in self.spoilers:
                 await message.channel.send("Too many spoilers.", delete_after = 20)
 
-    @commands.command()
+    @commands.command(help='Toggle whether links are allowed in your server.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages = True)
     async def linktoggle(self, ctx, channel:Optional[discord.TextChannel], guild:Optional[bool]):
@@ -165,7 +167,7 @@ class Mod(Cog):
             await ctx.send(f"Success, removed {channel.mention} from Link-detection")
             self.links_allowed.remove(channel.id)
 
-    @commands.command()
+    @commands.command(help='Toggle whether images/attachments are allowed.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def imagetoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
@@ -231,7 +233,7 @@ class Mod(Cog):
             await ctx.reply(f'**{ctx.author.name}**, you don\'t have permission.', mention_author=False)
             return
 
-    @commands.command()
+    @commands.command(help='Toggle whether mass-mentions are allowed.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def mentiontoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
@@ -265,7 +267,7 @@ class Mod(Cog):
             await ctx.send(f"Success, removed {channel.mention} from mass-mention blacklist.")
             self.mass_mentions.remove(channel.id)
 
-    @commands.command()
+    @commands.command(help='Toggle ALL-CAPS detection')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def capslock(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
@@ -299,7 +301,7 @@ class Mod(Cog):
             await ctx.send(f"Success, removed {channel.mention} from all-caps detection")
             self.all_caps.remove(channel.id)
 
-    @commands.command()
+    @commands.command(help='Block invites in your channel/server')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def inviteblock(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
@@ -333,7 +335,7 @@ class Mod(Cog):
             await ctx.send(f"Success, removed {channel.mention} from invite detection")
             self.invitesblock.remove(channel.id)
 
-    @commands.command()
+    @commands.command(help='Toggle excessive spoiler detection.')
     @commands.guild_only()
     @commands.has_guild_permissions(manage_messages=True)
     async def spoilertoggle(self, ctx, channel: Optional[discord.TextChannel], guild: Optional[bool]):
@@ -367,7 +369,7 @@ class Mod(Cog):
             await ctx.send(f"Success, removed {channel.mention} from spoiler-detection")
             self.spoilers.remove(channel.id)
 
-    @commands.command()
+    @commands.command(name='donttestthisitsnotimportant', help='Please don\'t test it, it\'s not important.')
     @commands.has_guild_permissions(manage_messages=True)
     async def statuscol(self, ctx):
         if str(ctx.author.status).strip() == 'idle':

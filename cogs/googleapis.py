@@ -37,7 +37,7 @@ class GoogleC(commands.Cog):
     def __init__(self, client):
         self.client = client
         self.icon = '🏫'
-        self.description = 'Integration with Google Classroom!'
+        self.description = 'Integration with Google Services!'
         self.check_for_announcements.start()
         self.check_for_assignments.start()
         self.quizzes = {}
@@ -303,7 +303,7 @@ class GoogleC(commands.Cog):
     async def before_check_announcements(self):
         await self.client.wait_until_ready()
 
-    @commands.command()
+    @commands.command(name='Shows all of your classes.')
     #add an all param that does not filter out archived classes
     async def classes(self, ctx, limit:int = 10):
         await ctx.trigger_typing() #this takes super long for some reason
@@ -344,7 +344,7 @@ class GoogleC(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.command()
+    @commands.command(help='Set a class for notifications!')
     async def setclass(self, ctx):
         if ctx.guild is None:
             if os.path.exists(f'./temp/token-dm-{ctx.author.id}.json'):
@@ -485,7 +485,7 @@ class GoogleC(commands.Cog):
                     except Exception as e:
                         print(e)
 
-    @commands.command(aliases = ['authclass'])
+    @commands.command(aliases = ['authclass'], help='Authenticate yourself for InfiniBot.')
     async def authenticateclassroom(self, ctx):
         if ctx.guild and not ctx.author.guild_permissions.manage_guild:
             return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
@@ -523,7 +523,7 @@ class GoogleC(commands.Cog):
             await ctx.send(f"You have been successfully authorized to use Google Classroom with InfiniBot **in this dm**.")
         return True
 
-    @commands.command(aliases = ['googleclassroomlogout'])
+    @commands.command(aliases = ['googleclassroomlogout'], help='Logout of Google Classroom for a DM/Server.')
     async def gclogout(self, ctx):
         if ctx.guild and not ctx.author.guild_permissions.manage_guild:
             return await ctx.send("You are missing the **Manage Guild** permissions to run this command!")
@@ -536,7 +536,7 @@ class GoogleC(commands.Cog):
         else:
             await ctx.send("You have successfully logged out in this DM. All further updates from your classes will not show up.")
 
-    @commands.command()
+    @commands.command(help='Start a Discord Quiz!')
     async def quiz(self, ctx, url = None):
         await ctx.trigger_typing()
         if url is None:
@@ -647,7 +647,7 @@ class GoogleC(commands.Cog):
         del self.quizzes[f"{ctx.guild.id}{ctx.author.id}"]
         return
 
-    @commands.command()
+    @commands.command(help='Template needed for the quiz.')
     async def template(self, ctx):
         async with ctx.typing():
             return await ctx.send(f"Make a copy of this template. Make sure you set visibility to *Anyone with the link!*\n\n"

@@ -24,7 +24,7 @@ class Games(commands.Cog):
         self.icon = '🎮'
         self.description = f'Play games with InfiniBot!'
 
-    @commands.command(name="Play an akinator game!")
+    @commands.command(help="Play an akinator game!")
     async def akinator(self, ctx, childmode:str = None):
         if childmode is None:
             childmode = True
@@ -170,10 +170,12 @@ class Games(commands.Cog):
 
     @commands.group(aliases = ['cardsagainsthumanity'])
     async def cah(self, ctx):
+        return
         await ctx.send_help(ctx)
 
     @cah.command()
     async def start(self, ctx):
+        return
         await ctx.send(f'{ctx.author.mention}, by playing this game you acknowledge that **there may be NSFW content** (no images). Do you wish to proceed? Respond with `y` or `n`.')
         def check(m):
             return m.author == ctx.author and m.channel == ctx.channel
@@ -294,7 +296,7 @@ class Games(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.group(invoke_without_command=True)
+    @commands.command(help='Typing tests!')
     async def typing(self, ctx):
         await ctx.send(
             f"{ctx.author.mention}, we are going to be testing your typing speed! Press `y` to confirm. Anything else, and we will end the session.")

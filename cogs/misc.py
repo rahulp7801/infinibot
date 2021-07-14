@@ -65,7 +65,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         del self.ema[before.channel.id]
         del self.emt[before.channel.id]
 
-    @commands.command()
+    @commands.command(help='Get a user from their USER ID')
     async def whois(self, ctx, member: discord.User = None):
         if member is None:
             member = ctx.author
@@ -92,11 +92,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
     #     embed.set_thumbnail(url=self.client.user.avatar_url)
     #     await ctx.author.send(embed=embed)
 
-    @commands.command()
-    async def givecookie(self, ctx):
-        await ctx.send(f"Fine, I will give you {random.randint(0, 10)} cookies.")
-
-    @commands.command()
+    @commands.command(help='Get news articles pertaining to your query!')
     async def news(self, ctx, *, query = "Elon Musk"):
         if query == 'Elon Musk':
             await ctx.send("You can specify a query next time!")
@@ -140,7 +136,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
                                       f"If this keeps happening, contact the developers.")
 
 
-    @commands.command()
+    @commands.command(help='Get weather near a place!')
     async def weather(self, ctx, *, place = 'New York'):
         url = "https://community-open-weather-map.p.rapidapi.com/find"
 
@@ -191,7 +187,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         embed.add_field(name='Weather', value=desc, inline = False)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases = ['wiki'])
+    @commands.command(aliases = ['wiki'], help='Scrape Wikipedia for a search query!')
     async def wikipedia(self, ctx, *, q = "Elon Musk"):
         while True:
             try:
@@ -243,7 +239,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
                 except asyncio.TimeoutError:
                     return await ctx.reply("Timed out", mention_author = False)
 
-    @commands.command(aliases = ['tr'])
+    @commands.command(aliases = ['tr'], help='Translate a phrase')
     async def translate(self, ctx, language = 'en', *, text = "Como estas?"):
         try:
             newphrase = translator.translate(text.strip(), dest=language.strip().lower())
@@ -251,7 +247,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except ValueError:
             await ctx.reply(f"You didn\'t mention the language you would like to translate to, or it was an invalid language!\n", mention_author = False)
 
-    @commands.command()
+    @commands.command(help='Define a term from the Dictionary API!')
     async def define(self, ctx, *, term = "hello"):
         async with aiohttp.ClientSession() as session:
             url = f'https://api.dictionaryapi.dev/api/v2/entries/en_US/{term.strip()}'
@@ -279,7 +275,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
             except KeyError:
                 return await ctx.send(f"It looks like the term `{term.strip()}` could not be found.")
 
-    @commands.command()
+    @commands.command(help='Get Information about an Invite')
     async def inviteinfo(self, ctx, invite: discord.Invite):
         try:
             embed = discord.Embed(color=discord.Color.green())
@@ -293,7 +289,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
             if str(e).strip() == 'Invite is invalid or expired.':
                 return await ctx.reply(e, mention_author=False)
 
-    @commands.command(aliases=['passwordgen', 'passgen', 'passwordgenerate'])
+    @commands.command(aliases=['passwordgen', 'passgen', 'passwordgenerate'], help='Generates a random password')
     # add to help menu
     @commands.cooldown(2, 15, commands.BucketType.user)
     async def passwordgenerator(self, ctx, lent=10):
@@ -314,15 +310,15 @@ class Misc(commands.Cog, name="Miscellaneous"):
         embed.set_footer(text="InfiniBot Password Generator")
         await ctx.author.send(embed=embed)
 
-    @commands.command()
+    @commands.command(help='Convert your text to ASCII ART!')
     async def asciitext(self, ctx, *, text="Next time put text you want converted lol"):
-        if len(text) > 2000:
+        if len(text) > 500:
             await ctx.send("Your message was too long!")
             return
         result = pyfiglet.figlet_format(f"{text}")
         await ctx.send(f"```{result}```")
 
-    @commands.command()
+    @commands.command(help='Get the Icon of the server.')
     # helpmenu addition !!!
     async def servericon(self, ctx):
         embed = discord.Embed(color=discord.Color.green())
@@ -331,7 +327,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         embed.set_footer(text=f"{ctx.name} Server Icon | Requested by {ctx.author.name}")
         await ctx.send(embed=embed)
 
-    @commands.command()
+    @commands.command(help='Emojify Text')
     async def emojify(self, ctx, *, text):
         if len(text) > 2000:
             await ctx.send("Keep your message under 2000 characters.")
@@ -353,7 +349,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
             await ctx.send("Something went wrong, next time make sure to use only letters.")
 
 
-    @commands.command(aliases = ['msg2embed', 'm2e'])
+    @commands.command(aliases = ['msg2embed', 'm2e'], help='Make a message an embed by simply referencing it!')
     async def msgtoembed(self, ctx, message:discord.Message=None):
         if ctx.message.reference:
             message = await ctx.fetch_message(ctx.message.reference.message_id)
@@ -390,18 +386,18 @@ class Misc(commands.Cog, name="Miscellaneous"):
     #     except asyncio.TimeoutError:
     #         await ctx.reply("Your chat session has timed out. Use the command again to chat.")
     #         return
+    #
+    # @commands.command()
+    # async def activities(self, ctx, member:discord.Member):
+    #     pass
 
-    @commands.command()
-    async def activities(self, ctx, member:discord.Member):
-        pass
-
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, help='Search YouTube for a video.')
     async def youtube(self, ctx, *, query):
         html = urllib.request.urlopen(f"https://www.youtube.com/results?search_query={query}")
         vidid = re.findall(r"watch\?v=(\S{11})", html.read().decode())
         await ctx.send(f"https://www.youtube.com/watch?v={vidid[0]}")
 
-    @commands.command()
+    @commands.command(help='Echo a message as InfiniBot!')
     async def echo(self, ctx, chanel: discord.TextChannel, *, message="Echo"):
         channel = chanel.id
         schannel = self.client.get_channel(channel)
@@ -412,7 +408,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         await asyncio.sleep(2)
         await ctx.message.delete()
 
-    @commands.command(aliases = ['tone', 'toxicity'])
+    @commands.command(aliases = ['tone', 'toxicity'], help='Use Google\'s Perspective API to analyze your message.')
     async def analyze(self, ctx, *, message):
         try:
             j = discovery.build(
@@ -453,14 +449,14 @@ class Misc(commands.Cog, name="Miscellaneous"):
         await ctx.reply(f"Pong! 🏓 `{ping}ms`", mention_author=False)
         return
 
-    @commands.command(aliases = ['discriminator'])
+    @commands.command(aliases = ['discriminator'], help='See other people with a discriminator!')
     async def discrim(self, ctx, discrim = None):
         try:
             if discrim is None:
                 discrim = (ctx.author.discriminator)
             if len(discrim) != 4:
                 return await ctx.send("That\'s not a valid disciminator!")
-            if not discrim.isdigit() :
+            if not discrim.isdigit():
                 return await ctx.send("That is not a number!!!")
             users = self.client.get_all_members()
             members = list(set(list(filter(lambda m: str(m.discriminator) == str(discrim), users))))
@@ -478,14 +474,14 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except Exception as e:
             print(e)
 
-    @commands.command(aliases = ['flip'])
+    @commands.command(aliases = ['flip'], help='Flip a coin')
     async def coinflip(self, ctx):
         choices = [
             'heads', 'tails'
         ]
         return await ctx.reply(f"{random.choice(choices)}", mention_author = False)
 
-    @commands.command()
+    @commands.command(help='Snipe a deleted message within a minute!')
     async def snipe(self, ctx):
         channel = ctx.channel
         try:
@@ -498,7 +494,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except LookupError:
             return await ctx.send("There is nothing to snipe!")
 
-    @commands.command()
+    @commands.command(help='Snipe the most recent edited message within a minute!')
     async def editsnipe(self, ctx):
         channel = ctx.channel
         try:
@@ -511,7 +507,7 @@ class Misc(commands.Cog, name="Miscellaneous"):
         except LookupError:
             return await ctx.send("There is nothing to snipe!")
 
-    @commands.command(aliases = ['talk'])
+    @commands.command(aliases = ['talk'], help='Talk to me using AI!')
     async def chat(self, ctx):
         try:
             print(self.sessionids[ctx.author.id])

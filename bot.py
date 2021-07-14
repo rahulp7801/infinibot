@@ -76,7 +76,7 @@ async def on_ready():
                 prefix = i['prefix']
             prefgetter.update(guild, prefix)
     t1.start()
-    print(f"{client.user.name} is ready, logged on at {datetime.datetime.utcnow()}.")
+    print(f"{client.user.name} is ready, logged on awwwwwwwwwwwwwwwwdddddddddddsat {datetime.datetime.utcnow()}.")
     await client.change_presence(activity=discord.Game(name=f'Watching {len(client.guilds)} servers'))
     try:
         for guild in client.guilds:
@@ -423,7 +423,7 @@ async def togglemodule(ctx, cogz = None, channel:Optional[discord.TextChannel] =
     except Exception as e:
         print(e)
 
-with open('testbot.txt', 'r') as f:
+with open('token.txt', 'r') as f:
     token = f.read()
 
 client.run(token)

@@ -61,7 +61,7 @@ class Leveling(commands.Cog):
             if xp == 0:
                 await message.channel.send(f"GG on leveling up! You have achieved level {lvl}!")
 
-    @commands.command(aliases = ['olrank'])
+    @commands.command(aliases = ['olrank'], help='Old Rank, still in development')
     async def oldrank(self, ctx, member:discord.Member = None):
         if member is None:
             member = ctx.author
@@ -96,7 +96,7 @@ class Leveling(commands.Cog):
         #add role rewards
         await ctx.send(embed=embed)
 
-    @commands.command(aliases = ['lb', 'levels'])
+    @commands.command(aliases = ['lb', 'levels'], help="Get a leaderboard of users in your server!")
     async def leaderboard(self, ctx):
         name = f"LEVELLING"
         db = cluster[name]
@@ -121,7 +121,7 @@ class Leveling(commands.Cog):
         embed.set_thumbnail(url = ctx.guild.icon_url)
         await ctx.send(embed=embed)
 
-    @commands.command(aliases = ['position'])
+    @commands.command(aliases = ['position'], help="Rank command, image generation, still in development")
     async def rank(self, ctx, member:discord.Member = None):
         if member is None:
             member = ctx.author

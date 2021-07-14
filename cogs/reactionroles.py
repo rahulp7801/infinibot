@@ -75,11 +75,11 @@ class rr(commands.Cog, name = "Reaction Roles"):
         except discord.NotFound:
             return
 
-    @commands.group(invoke_without_command = True)
+    @commands.group(invoke_without_command = True, help='Set up reaction roles! Use one of the subcommands.')
     async def rr(self, ctx):
         pass
 
-    @rr.command()
+    @rr.command(help='Creates reaction/button roles.')
     async def create(self, ctx):
         await ctx.trigger_typing()
         try:

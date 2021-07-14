@@ -80,7 +80,7 @@ class Help(commands.HelpCommand):
             print('here6')
             for cog, commands in sorted(mapping.items(), key=lambda x: len(x[1]), reverse=True):
                 print('here5')
-                if cog is None or cog.qualified_name in ['Developers', 'No Category', 'Dhruv', 'GoogleC', 'EasterEggs']:
+                if cog is None or cog.qualified_name in ['Developers', 'No Category', 'Dhruv', 'EasterEggs', 'NBA', 'Economy', 'Spotify', 'Spotifys', 'YouTube']:
                     print('he7e')
                     continue
                 name = f"{cog.icon if hasattr(cog, 'icon') else ''} {cog.qualified_name}"

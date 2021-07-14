@@ -21,8 +21,11 @@ cluster = MongoClient(mongo_url)
 class lastfm(commands.Cog):
     def __init__(self, client):
         self.client = client
+        self.icon = '🎼'
+        self.description = 'Integration with Last.fm'
 
-    @commands.command()
+
+    @commands.command(help='Set your Last FM for InfiniBot!')
     async def fmset(self, ctx):
         url = 'https://ws.audioscrobbler.com/2.0/'
         apisig = md5(
@@ -79,7 +82,7 @@ class lastfm(commands.Cog):
                                 "Do feel free to join our support server for extra help if the problem persists."
         await message.edit(embed=embed)
 
-    @commands.command()
+    @commands.command(help='Get your currently playing track from Last.fm!')
     async def fm(self, ctx, *, member:discord.Member=None):
         if member is None:
             member = ctx.author
@@ -134,7 +137,7 @@ class lastfm(commands.Cog):
             await message.add_reaction("👍🏽")
             await message.add_reaction("👎🏽")
 
-    @commands.command()
+    @commands.command(help='Get your top artists over a time period!')
     async def fmta(self, ctx, param = '7day', *, member:discord.Member = None):
         await ctx.trigger_typing()
         param, phrase = utils.determine_timeframe(param)
@@ -172,7 +175,7 @@ class lastfm(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.command()
+    @commands.command(help='Get your top tracks over a time period!')
     async def fmtt(self, ctx, param='7day', *, member: discord.Member = None):
         await ctx.trigger_typing()
         param, phrase = utils.determine_timeframe(param)
@@ -209,7 +212,7 @@ class lastfm(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.command()
+    @commands.command(help='Get your top albums over a time period!')
     async def fmtopalbums(self, ctx, param='7day', *, member: discord.Member = None):
         await ctx.trigger_typing()
         param, phrase = utils.determine_timeframe(param)
@@ -246,7 +249,7 @@ class lastfm(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.command(aliases = ['fml'])
+    @commands.command(aliases = ['fml'], help='Love a track on Last.fm')
     async def fmlove(self, ctx):
         await ctx.trigger_typing()
         with open('lfapi.txt', 'r') as f:
@@ -294,7 +297,7 @@ class lastfm(commands.Cog):
         except Exception as e:
             print(e)
 
-    @commands.command(aliases = ['fmul'])
+    @commands.command(aliases = ['fmul'], help='Unlove a track on Last.fm')
     async def fmunlove(self, ctx):
         await ctx.trigger_typing()
         with open('lfapi.txt', 'r') as f:
@@ -346,6 +349,7 @@ class lastfm(commands.Cog):
     #still in development
     #use PANDAS library
     async def fmtaste(self, ctx, *, member:discord.Member):
+        return
         await ctx.trigger_typing()
         with open('lfapi.txt', 'r') as f:
             key = f.read()

@@ -89,14 +89,15 @@ class EconomyUser:
     def get_bank_wallet(self):
         return self.wallet, self.bank
 
-class EconomyShopItem:
-    def __init__(self, price, name, description, icon):
+class Economy:
+    def __init__(self, price, name, description, icon, power = None):
         self.price = price
         self.description = description
-        self.name =name
+        self.name = name
         self.icon = icon
+        self.power = power
 
-    def about(self):
+    def help(self):
         embed = discord.Embed(color = discord.Color.red())
         embed.description = self.description
         embed.set_thumbnail(url=self.icon)
@@ -104,7 +105,39 @@ class EconomyShopItem:
         embed.title = self.name
         return embed
 
-class Watch(EconomyShopItem):
+    def about(self): #an alias for help
+        embed = discord.Embed(color=discord.Color.red())
+        embed.description = self.description
+        embed.set_thumbnail(url=self.icon)
+        embed.description += f"\n\n{self.price} coins"
+        embed.title = self.name
+        return embed
+
+class EconomyCollectible(Economy):
+    #Add custom Economy Collectible functions
+    def __init__(self, name, price, description, icon):
+        super().__init__(
+            name=name,
+            price=price,
+            description=description,
+            icon=icon
+        )
+
+class EconomyPowerUp(Economy):
+    #Add custom functions for each type of Economy Shop Item
+    def __init__(self, name, price, description, icon, power):
+        super().__init__(
+            name=name,
+            price=price,
+            description=description,
+            icon=icon,
+            power=power
+        )
+
+class Watch(EconomyCollectible, object):
+    '''
+    Add custom functions to each shop item here, this is just a collectible
+    '''
     def __init__(self):
         file = discord.File(f"modules/economy/assets/watch.png", filename='watch.png')
         super().__init__(
@@ -114,4 +147,5 @@ class Watch(EconomyShopItem):
             icon='attachment://watch.png'
         )
         self.file = file
+
 

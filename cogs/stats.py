@@ -1,26 +1,21 @@
 import discord
 import asyncio
 from discord.ext import commands, tasks
-from matplotlib import use
 from pymongo import MongoClient
-import time
 from modules import utils
-import os
 import os.path
 from os import path
 import os
+import re
 import json
 import time
-import datetime
-import plotly
 import pandas as pd
-import numpy as np
 import seaborn as sns
-import plotly.express as px
 import matplotlib.pyplot as plt
 import datetime
 import math
 from modules import invitetrack
+from better_profanity import profanity
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -30,6 +25,7 @@ async def is_dev(ctx):
 
 mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
+profanity.load_censor_words()
 
 def seconds_until(hours, minutes):
     given_time = datetime.time(hours, minutes)
@@ -44,13 +40,15 @@ def round_up_to_even(f):
 
 class Stats(commands.Cog, name = "Server Statistics"):
 
-    def __init__(self, client, cache):
+    def __init__(self, client, cache, words):
         self.client = client
         self.cache = cache
+        self.words = words
         self.icon = '📈'
         self.description = 'See comprehensive server statistics for your server!'
         self._tracker = invitetrack.InviteTracker(self.client)
         self.uptime = time.time()
+        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in']
 
     def cog_unload(self):
         self.update_database_stats.cancel()
@@ -64,8 +62,31 @@ class Stats(commands.Cog, name = "Server Statistics"):
 
         return (future_exec - now).total_seconds()
 
-            
-    @tasks.loop(hours=2)
+    def filterwords(self, word):
+        if len(word) <= 2:  # Too short
+            return False
+        elif len(word) > 15:  # Too long
+            return False
+        elif re.search('\d', word):  # Word's can't contain numbers
+            return False
+        elif re.search('[ -\/:-@\[-\`{-~]', word):  # No special characters allowed.
+            return False
+        elif re.search('[^\x00-\x7F]+', word):  # No unicode
+            return False
+        elif profanity.contains_profanity(word): #no bad words, toggleable?
+            return False
+        elif word in self._forbidden_words: #common words
+            return False
+        else:
+            return True
+
+    @staticmethod
+    async def load_word_cache():
+        async with open('data/words.json') as f:
+            data = json.load(f)
+        return data
+
+    @tasks.loop(minutes=30)
     async def update_database_stats(self):
         print(f'Uploading Stats to Database: LOG TIME: {datetime.datetime.utcnow()}')
         for g in cache:
@@ -84,11 +105,38 @@ class Stats(commands.Cog, name = "Server Statistics"):
         cacheF.write('{"guilds": []}')
         cacheF.close()
         self.cache = {"guilds": []}
+        print('done cache')
+        for guild in word_cache:
+            print('here checking guilds')
+            try:
+                print(guild)
+                name = "WORDSTATS"
+                db = cluster[name]
+                col = db['guilds']
+                for word in word_cache[guild]['words']:
+                    if col.count_documents({"gid": guild, "word":word}) == 0:
+                        payload = {
+                            'gid': guild,
+                            'word': word,
+                            'count': 1
+                        }
+                        col.insert_one(payload)
+                        continue
+                    if col.count_documents({"gid":guild, "word":word}) != 0:
+                        col.update_one({"gid":guild, 'word':word}, {"$inc":{'count':word_cache[guild]['words'][word]}})
+            except Exception as e:
+                print(e, "EXCEPTION BRUH")
+        cacheF = open("data/words.json", "w")
+        cacheF.write('{"guilds": {}}')
+        cacheF.close()
+        word_cache.clear()
+        self.words = {"guilds": {}}
     
     @update_database_stats.before_loop
     async def beforedbupate(self):
         await self.client.wait_until_ready()
 
+    #TODO (Developer), make the DO NOT TRACK GUILD THING PROPAGATE HERE, IF THE GUILD IS IN IT THEN DONT TRACK
     @commands.Cog.listener()
     async def on_message(self, message):
         if message.author.bot or message.guild is None:
@@ -112,7 +160,27 @@ class Stats(commands.Cog, name = "Server Statistics"):
             json_cache = open('cache/stats.json', 'w')
             json_str = '{"guilds":'+ json.dumps(cache)
             json_cache.write(json_str + '}')
-    
+        try:
+            for word in message.clean_content.split():
+                word = word.lower()
+                if not self.filterwords(word):
+                    continue
+                if any(x for x in word_cache if x == message.guild.id) and any(x for x in word_cache[message.guild.id]['words'] if x == word): #see if cache already exists.
+                    print('here11212')
+                    word_cache[message.guild.id]['words'][word] += 1
+                else:
+                    if not any(x for x in word_cache if x == message.guild.id):
+                        print('hereadsdawdw')
+                        word_cache[message.guild.id] = {'words':{word:1}}
+                    else:
+                        word_cache[message.guild.id]['words'][word] = 1
+                json_cache = open('data/words.json', 'w')
+                json_str = '{"guilds":' + json.dumps(word_cache)
+                json_cache.write(json_str + '}')
+
+        except Exception as e:
+            print(e, "Exception")
+
     @commands.Cog.listener()
     async def on_member_join(self, member):
         if any(x for x in cache if x["guildID"] == member.guild.id):
@@ -563,6 +631,24 @@ class Stats(commands.Cog, name = "Server Statistics"):
         except Exception as e:
             print(e)
 
+    @commands.command()
+    async def topwords(self, ctx):
+        await ctx.trigger_typing()
+        db = cluster['WORDSTATS']
+        col = db['guilds']
+        res = col.find({"gid":ctx.guild.id}).sort("count", -1).limit(10)
+        embed = discord.Embed(color = discord.Color.red())
+        descarr = []
+        counter = 0
+        for i in res:
+            descarr.append(f"{counter + 1}. **{i['word']}** ({i['count']} time{'s' if i['count'] != 1 else ''})")
+            counter += 1
+        embed.description = "\n".join(descarr)
+        embed.title = f'Top words in {ctx.guild.name}'
+        embed.set_thumbnail(url=ctx.guild.icon_url)
+        embed.set_footer(text='Stats update every 30 minutes.')
+        await ctx.send(embed=embed)
+
 
 def cache_init():
     if path.exists("cache/stats.json"):
@@ -588,5 +674,21 @@ def cache_init():
 
 cache = cache_init()
 
+def word_cache_init():
+    if path.exists("data/words.json"):
+        cache = open("data/words.json", "w")
+        cache.write('{"guilds": {}}')
+        cache.close()
+        return {}
+    else:
+        print('Cache Does Not Exist, Creating Cache')
+        os.mkdir('data')
+        cache = open("data/words.json", "w")
+        cache.write('{"guilds": {}}')
+        cache.close()
+        return {}
+
+word_cache = word_cache_init()
+
 def setup(client):
-    client.add_cog(Stats(client, cache))
+    client.add_cog(Stats(client, cache, word_cache))

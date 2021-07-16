@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo, getGuildAuditLog } = require('../utils/api')
+const { getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo, getGuildAuditLog, getGuildMembers } = require('../utils/api')
 const User = require('../database/schemas/user')
 const { getMutualGuilds, checkUserGuildPerms, removeArrayItem } = require('../utils/utils')
 const GuildConfig = require('../database/schemas/GuildConfig')
@@ -170,8 +170,23 @@ router.get('/guilds/:guildId/stats', async (req, res) => {
                 } else {
                     const guildDB = guildDBO.db(`STATS`)
                     const guildStats = await guildDB.collection("data").find({guildID: Long.fromString(guildId)}).toArray()
+                    const totalGuildStats = await guildDB.collection("guilds").findOne({_id: Long.fromString(guildId)})
+                    const guildChannels = await getGuildChannels(guildId)
+                    const guildMembers = await getGuildMembers(guildId)
+                    const ghostPings = await guildDBO.db('CONFIGURATION').collection("guilds").findOne({_id: Long.fromString(guildId)})
+                    const result = {
+                        bihourlyData: guildStats,
+                        generalData: {
+                            messages: totalGuildStats.msgcount,
+                            vcTime: totalGuildStats.vcsecs,
+                            channels: guildChannels.length,
+                            members: guildMembers.length,
+                            creationDate: (guildId / 4194304) + 1420070400000,
+                            ghostPings: ghostPings.ghostcount
+                        }
+                    }
                     guildDBO.close()
-                    return guildStats ? res.status(200).send(guildStats) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })
+                    return result ? res.status(200).send(result) : res.status(404).send({ msg: "We could not find your Server Config, try again later. If this persists, contact us" })
                 }
             })
             return true

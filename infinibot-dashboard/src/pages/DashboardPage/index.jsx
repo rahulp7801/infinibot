@@ -22,27 +22,24 @@ export function DashboardPage(props) {
     const [welcomeMsg, setWelcomeMsg] = React.useState("")
     const [modInfo, setModInfo] = React.useState({ warns: [], bans: [], logs: [] })
     const [personInfoDict, setPersonInfoDict] = React.useState(new Map())
-    var [msgStatsData, setMsgStatsData] = React.useState({
-        labels: [],
-        datasets: [
-            {
-                label: 'Messages',
-                data: [],
-                fill: true,
-                backgroundColor: 'rgba(255, 99, 132, 0.4)',
-                borderColor: 'rgba(255, 99, 132, 0.8)',
-            },
-        ],
-    })
+    const [generalStats, setGeneralStats] = React.useState({creationDate: 0})
     var [vcStatsData, setVcStatsData] = React.useState({
         labels: [],
         datasets: [
             {
-                label: 'Messages',
+                label: 'Voice Chat Seconds',
                 data: [],
                 fill: true,
                 backgroundColor: 'rgba(255, 99, 132, 0.4)',
                 borderColor: 'rgba(255, 99, 132, 0.8)',
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        ticks: {
+                            beginAtZero: true   // minimum value will be 0.
+                        }
+                    }]
+                }
             },
         ],
     })
@@ -55,6 +52,14 @@ export function DashboardPage(props) {
                 fill: true,
                 backgroundColor: 'rgba(255, 99, 132, 0.4)',
                 borderColor: 'rgba(255, 99, 132, 0.8)',
+                scales: {
+                    yAxes: [{
+                        display: true,
+                        ticks: {
+                            beginAtZero: true   // minimum value will be 0.
+                        }
+                    }]
+                }
             },
         ],
     })
@@ -67,6 +72,37 @@ export function DashboardPage(props) {
     }
 
     const date = new Date()
+
+    function formatDate(date) {
+        var d = new Date(date);
+        var hh = d.getHours();
+        var m = d.getMinutes();
+        var s = d.getSeconds();
+        var dd = "AM";
+        var h = hh;
+        if (h >= 12) {
+          h = hh - 12;
+          dd = "PM";
+        }
+        if (h == 0) {
+          h = 12;
+        }
+        m = m < 10 ? "0" + m : m;
+      
+        s = s < 10 ? "0" + s : s;
+      
+        /* if you want 2 digit hours:
+        h = h<10?"0"+h:h; */
+      
+        var pattern = new RegExp("0?" + hh + ":" + m + ":" + s);
+      
+        var replacement = h;
+        /* if you want to add seconds
+        replacement += ":"+s;  */
+        replacement += " " + dd;
+      
+        return replacement;
+      }
 
     React.useEffect(() => {
         getUserDetails().then(({ data }) => {
@@ -97,16 +133,17 @@ export function DashboardPage(props) {
                 console.log(msgChart)
                 console.log(data)
                 console.log('Init Guild Stats');
-                data.forEach((stat) => {
+                setGeneralStats(data.generalData)
+                data.bihourlyData.forEach((stat) => {
                     var someDate = new Date(0);
                     someDate.setUTCSeconds(stat.timestamp)
                     var today = new Date();
                     if (someDate.getDate() == today.getDate() &&
                         someDate.getMonth() == today.getMonth() &&
                         someDate.getFullYear() == today.getFullYear()) {
-                        msgStatsData.labels.push(someDate.toLocaleTimeString('en-US'))
+                        msgStatsData.labels.push(formatDate(someDate.toString()))
                         msgStatsData.datasets[0].data.push(stat.messages)
-                        vcStatsData.labels.push(someDate.toLocaleTimeString('en-US'))
+                        vcStatsData.labels.push(formatDate(someDate.toString()))
                         vcStatsData.datasets[0].data.push(stat.vcsecdiff)
                         console.log(msgStatsData)
                         setMsgStatsData(msgStatsData)
@@ -834,7 +871,13 @@ export function DashboardPage(props) {
                                                 <fieldset className="form-group" id="__BVID__130">
                                                     <div tabIndex="-1" role="group">
                                                         <h4 className="smalltitle">General Stats</h4>
-                                                        <p>The following players have been warned, you can change the reason, revoke, or add a warn by pressing the designated buttons</p>                                                        </div>
+                                                        <p>Channels: <b>{generalStats.channels}</b></p>                                                        
+                                                        <p>Members: <b>{generalStats.members}</b></p>                                                        
+                                                        <p>Messages Sent: <b>{generalStats.messages} messages</b></p>                                                     
+                                                        <p>Voice Chat Seconds: <b>{generalStats.vcTime} seconds</b></p>                                                     
+                                                        <p>Server Creation Date: <b>{new Date(generalStats.creationDate).toString()}</b></p>                                                     
+                                                        <p>Ghost Pings: <b>{generalStats.ghostPings}</b></p>                                                     
+                                                        </div>
                                                 </fieldset>
 
                                             </div>

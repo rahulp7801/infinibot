@@ -60,5 +60,14 @@ async function getGuildAuditLog(guildID) {
     return response.json()
 }
 
+async function getGuildMembers(guildID) {
+    const response = await fetch('https://discordapp.com/api/v6/guilds/' + guildID + '/members', {
+        method: "GET",
+        headers: {
+            Authorization: `Bot ${process.env.BOT_TOKEN}`
+        }
+    })
+    return response.json()
+}
 
-module.exports =  {getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo, getGuildAuditLog}
+module.exports =  {getBotGuilds, getGuildInfo, getGuildChannels, getGuildBans, getUserInfo, getGuildAuditLog, getGuildMembers}

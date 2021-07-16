@@ -11,6 +11,7 @@ import math
 import pandas as pd
 from modules import utils
 import os
+from bot import prefgetter
 
 with open('mongourl.txt', 'r') as file:
     url = file.read()
@@ -133,6 +134,7 @@ class Events(commands.Cog):
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild):
+        prefgetter.update(guild, '%')
         for channel in guild.text_channels:
             if channel.permissions_for(guild.me).send_messages:
                 if channel.is_nsfw():

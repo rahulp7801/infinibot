@@ -441,7 +441,7 @@ class Events(commands.Cog):
         deletedchannel = self.client.get_channel(id=payload.channel_id)
         deletedem = discord.Embed(title=f"{len(list(payload.message_ids))} messages purged in #{deletedchannel.name}", color=discord.Color.red(),
                                   timestamp=datetime.datetime.utcnow())
-        embed.set_footer(text=f"Channel ID: {payload.channel_id}")
+        deletedem.set_footer(text=f"Channel ID: {payload.channel_id}")
         await channel.send(embed=deletedem)
         return
 

@@ -649,6 +649,43 @@ class Stats(commands.Cog, name = "Server Statistics"):
         embed.set_footer(text='Stats update every 30 minutes.')
         await ctx.send(embed=embed)
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.has_permissions(manage_messages = True)
+    @commands.cooldown(1, 12000, commands.BucketType.guild)
+    async def forceupdatewordstats(self, ctx):
+        if any(x for x in word_cache if x == ctx.guild.id):
+            print('yea it exists tho')
+        async with ctx.typing():
+            try:
+                name = "WORDSTATS"
+                db = cluster[name]
+                col = db['guilds']
+                for word in word_cache[(ctx.guild.id)]['words']:
+                    if col.count_documents({"gid": ctx.guild.id, "word": word}) == 0:
+                        payload = {
+                            'gid': ctx.guild.id,
+                            'word': word,
+                            'count': 1
+                        }
+                        col.insert_one(payload)
+                        continue
+                    if col.count_documents({"gid": ctx.guild.id, "word": word}) != 0:
+                        col.update_one({"gid": ctx.guild.id, 'word': word}, {"$inc": {'count': word_cache[(ctx.guild.id)]['words'][word]}})
+                del word_cache[(ctx.guild.id)]
+                json_cache = open('data/words.json', 'w')
+                json_str = '{"guilds":' + json.dumps(word_cache)
+                json_cache.write(json_str + '}')
+            except Exception as e:
+                return await ctx.send(f"Exception raised: {e}")
+
+        await ctx.send("The cache for word counts in this server has been cleared and uploaded to database.")
+
+    @forceupdatewordstats.error
+    async def err(self, ctx, error):
+        if ctx.author.id == 759245009693704213:
+            await ctx.reinvoke()
+
 
 def cache_init():
     if path.exists("cache/stats.json"):

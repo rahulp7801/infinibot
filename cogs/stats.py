@@ -48,7 +48,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self.description = 'See comprehensive server statistics for your server!'
         self._tracker = invitetrack.InviteTracker(self.client)
         self.uptime = time.time()
-        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in']
+        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its']
 
     def cog_unload(self):
         self.update_database_stats.cancel()

@@ -422,6 +422,29 @@ class Events(commands.Cog):
         return
 
     @commands.Cog.listener()
+    async def on_raw_bulk_message_delete(self, payload):
+        if payload.guild_id is None:
+            return
+        name = f"CONFIGURATION"
+        db = cluster[name]
+        collection = db['guilds']
+        res = collection.find({'_id': payload.guild_id})
+        for i in res:
+            logchannel = i['logchannel']
+            logging = i['logging']
+
+        if str(logging) == '':
+            return
+        if str(logchannel) == '':
+            return
+        channel = self.client.get_channel(id=int(logchannel))
+        deletedem = discord.Embed(title=f"{len(list(payload.message_ids))} messages purged in #{payload.channel_id}", color=discord.Color.red(),
+                                  timestamp=datetime.datetime.utcnow())
+        await channel.send(embed=deletedem)
+        return
+
+
+    @commands.Cog.listener()
     async def on_member_join(self, member):
         name = f"CONFIGURATION"
         db = cluster[name]

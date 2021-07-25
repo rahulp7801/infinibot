@@ -49,7 +49,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self.description = 'See comprehensive server statistics for your server!'
         self._tracker = invitetrack.InviteTracker(self.client)
         self.uptime = time.time()
-        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its']
+        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its', 'like', 'but', 'for', 'have', 'what', 'when', 'yeah', 'this', 'get', 'with']
         self._command_count = 0
         self._top_commands = {}
         self._message_count = 0
@@ -665,7 +665,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         embed.description = "\n".join(descarr)
         embed.title = f'Top words in {ctx.guild.name}'
         embed.set_thumbnail(url=ctx.guild.icon_url)
-        embed.set_footer(text='Stats update every 30 minutes.')
+        embed.set_footer(text='Stats update every 30 minutes, common words are filtered out.')
         await ctx.send(embed=embed)
 
     @commands.command()

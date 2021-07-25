@@ -154,6 +154,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
     async def on_message(self, message):
         if message.author.bot:
             self._bot_message_count += 1
+            self._message_count += 1
             return ''
         if message.guild is None:
             return ''

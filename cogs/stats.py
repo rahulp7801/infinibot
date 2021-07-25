@@ -27,6 +27,7 @@ mongo_url = url.strip()
 cluster = MongoClient(mongo_url)
 profanity.load_censor_words()
 
+
 def seconds_until(hours, minutes):
     given_time = datetime.time(hours, minutes)
     now = datetime.datetime.now()
@@ -49,6 +50,10 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self._tracker = invitetrack.InviteTracker(self.client)
         self.uptime = time.time()
         self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its']
+        self._command_count = 0
+        self._top_commands = {}
+        self._message_count = 0
+        self._bot_message_count = 0
 
     def cog_unload(self):
         self.update_database_stats.cancel()
@@ -136,10 +141,21 @@ class Stats(commands.Cog, name = "Server Statistics"):
     async def beforedbupate(self):
         await self.client.wait_until_ready()
 
+    @commands.Cog.listener()
+    async def on_command_completion(self, ctx):
+        self._command_count += 1
+        try:
+            self._top_commands[ctx.command.name] += 1
+        except KeyError:
+            self._top_commands[ctx.command.name] = 1
+
     #TODO (Developer), make the DO NOT TRACK GUILD THING PROPAGATE HERE, IF THE GUILD IS IN IT THEN DONT TRACK
     @commands.Cog.listener()
     async def on_message(self, message):
-        if message.author.bot or message.guild is None:
+        if message.author.bot:
+            self._bot_message_count += 1
+            return ''
+        if message.guild is None:
             return ''
         if any(x for x in cache if x["guildID"] == message.guild.id):
             for h in cache:
@@ -180,6 +196,8 @@ class Stats(commands.Cog, name = "Server Statistics"):
 
         except Exception as e:
             print(e, "Exception")
+        self._message_count += 1
+
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
@@ -686,6 +704,22 @@ class Stats(commands.Cog, name = "Server Statistics"):
         if ctx.author.id == 759245009693704213:
             await ctx.reinvoke()
 
+    @commands.command()
+    async def about(self, ctx):
+        uptime = (datetime.timedelta(seconds=int(round(time.time() - self.uptime)))).total_seconds()
+        uptime = utils.stringfromtime(int(uptime))
+        print(self._top_commands.items())
+        top_command = list(dict(sorted(self._top_commands.items(), key=lambda x: x[1], reverse = True)))[0]
+        print(top_command)
+        embed = discord.Embed(color = discord.Color.green())
+        embed.description = f"🟢 I have been online for {uptime}"
+        embed.description += f"\n🤖 I have seen {self._message_count} messages since then, with {self._bot_message_count} from bots."
+        embed.description += f"\n 📊 {self._command_count} commands have been executed (Top Command: `{top_command}`)\n"
+        embed.description += f"😎 Watching {len(self.client.guilds)} servers\n"
+        embed.description += f"📈 Totaling {len(self.client.users)} users ({len(set(self.client.users))} unique)"
+        embed.set_footer(text=self.client.user.name, icon_url=self.client.user.avatar_url)
+        embed.timestamp = datetime.datetime.utcnow()
+        await ctx.send(embed=embed)
 
 def cache_init():
     if path.exists("cache/stats.json"):

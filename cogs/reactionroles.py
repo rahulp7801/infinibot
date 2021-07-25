@@ -22,6 +22,7 @@ class rr(commands.Cog, name = "Reaction Roles"):
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
+        print(str(payload.emoji))
         name = f"RR"
         db = cluster[name]
         collection = db['guilds']
@@ -162,8 +163,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
 
             if settingup == 'reaction':
                 await ctx.send(f"Great. Now it is time to assign roles. The format is the name of the emoji"
-                               f" and then the role mention, and split the two by a `:`. Unfortunately, we are currently limited to default emojis, "
-                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: : @cool kid```\n"
+                               f" and then the role mention, and split the two by a `|`. Unfortunately, we are currently limited to default emojis, "
+                               f"not any custom ones. **CASE SENSITIVE!** Example:```:sunglasses: | @cool kid```\n"
                                f"Type `done` when you are finished.")
                 namearr = []
                 while True: #limit needs to be defined as the number of reaction role messages a server has, but for testing purposes i wont keep it
@@ -171,7 +172,8 @@ class rr(commands.Cog, name = "Reaction Roles"):
                     if message.content.lower().strip() == 'done':
                         break
                     try:
-                        args = message.content.split(':')
+                        args = message.content.split('|')
+                        print(args)
                         emoji = (args[0].replace(':', '').strip())
                         xz = discord.utils.get(ctx.guild.roles, id=int(f"{args[1].strip().replace('<@&', '').replace('>', '')}"))
                         res = utils.rolecheck(xz, ctx)

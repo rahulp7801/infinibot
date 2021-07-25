@@ -866,6 +866,24 @@ def remove_from_db(guild:discord.Guild):
     col.delete_many({"gid": guild.id})
     col.delete_one({"_id":guild.id})
 
+def realsecondstotime(seconds):
+    try:
+        m, s = divmod(seconds, 60)
+        h, m = divmod(m, 60)
+        d, h = divmod(h, 24)
+        timestr = []
+        if d > 0:
+            timestr.append(f"{int(d)}")
+        if h > 0:
+            timestr.append(f"{int(h)}")
+        if m > 0:
+            timestr.append(f"{int(m)}")
+        if s > 0:
+            timestr.append(f"{int(s)}")
+
+        return ":".join(timestr)
+    except Exception as e:
+        print(e)
 
 
 

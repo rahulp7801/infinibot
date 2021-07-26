@@ -139,7 +139,7 @@ class Leveling(commands.Cog):
             lvl += 1
         xp -= ((50 * ((lvl - 1)**2)) + (50 * (lvl - 1)))
         boxes = int((xp/(200*((1/2) * lvl)))*20)
-        rankings = collection.find().sort("xp", -1)
+        rankings = collection.find({'gid':ctx.guild.id}).sort("xp", -1)
         res = 625/20
         realres = int(boxes * res)
         rank = 0

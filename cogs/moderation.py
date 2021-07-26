@@ -887,6 +887,7 @@ class Moderation(commands.Cog):
 
     @commands.command(help='Clear only your messages.')
     @commands.bot_has_permissions(manage_messages = True)
+    @commands.cooldown(1, 300, commands.BucketType.member)
     async def clearmine(self, ctx, limit:int = 50):
         user = ctx.author
         check = lambda msg: msg.author == ctx.author and not msg.pinned

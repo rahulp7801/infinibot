@@ -927,7 +927,7 @@ class Moderation(commands.Cog):
             return await ctx.send(
                 f"I don\'t have permission to {'deafen' if mute else 'undeafen'} `{member.name}#{member.discriminator}`!")
 
-    @commands.command()
+    @commands.command(help='For those times you just want to mute yourself...')
     @commands.guild_only()
     @commands.cooldown(1, 300, commands.BucketType.member)
     async def selfmute(self, ctx, *, dur = None):
@@ -990,6 +990,22 @@ class Moderation(commands.Cog):
             await ctx.send(
                 "I do not have the `Manage Roles` permission. You can fix that by going into Server Settings and giving my role that permission.\nOr my role is not high enough.")
 
+    @commands.command(help='Helpful during raids', aliases = ['kicknorole', 'prune'])
+    @commands.has_permissions(manage_guild = True)
+    @commands.guild_only()
+    @commands.cooldown(1, 12000, commands.BucketType.guild)
+    async def knorole(self, ctx):
+        count = 0
+        await ctx.send("Please wait, this may take a few minutes.")
+        async with ctx.typing():
+            for member in ctx.guild.members:
+                if member.bot:
+                    continue
+                if len(member.roles) == 0:
+                    await ctx.guild.kick(member, reason='Prune')
+                    count += 1
+                    await asyncio.sleep(0.2)
+            await ctx.reply(f"I have kicked `{count}` members from this server.")
 
 def setup(client):
     client.add_cog(Moderation(client))

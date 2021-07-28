@@ -517,7 +517,7 @@ class Configuration(commands.Cog):
     async def muterole(self, ctx, *, name="Muted"):
         if len(name) > 20:
             return await ctx.send(f"Make sure that `{name}` is kept under 20 characters.")
-        db = cluster['CONFIGURATON']
+        db = cluster['CONFIGURATION']
         collection = db['guilds']
         if ctx.author.guild_permissions.manage_roles:
             message = await ctx.send("Updating channel overrides...")
@@ -536,6 +536,7 @@ class Configuration(commands.Cog):
                     continue
             query = {'_id': ctx.guild.id}
             if collection.count_documents(query) == 0:
+                print('here')
                 utils.add_guild_to_db(ctx.guild)
             collection.update_one({'_id': ctx.guild.id}, {'$set': {'muterole': mutedRole.id}})
             await ctx.send(

@@ -49,7 +49,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
         self.description = 'See comprehensive server statistics for your server!'
         self._tracker = invitetrack.InviteTracker(self.client)
         self.uptime = time.time()
-        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its', 'like', 'but', 'for', 'have', 'what', 'when', 'yeah', 'this', 'get', 'with']
+        self._forbidden_words = ['ok', 'the', 'it', 'as', 'is', 'to', 'in', 'that', 'nice', 'and', 'just', 'not', 'was', 'it\'s', 'its', 'like', 'but', 'for', 'have', 'what', 'when', 'yeah', 'this', 'get', 'with', 'can', 'get']
         self._command_count = 0
         self._top_commands = {}
         self._message_count = 0
@@ -704,6 +704,7 @@ class Stats(commands.Cog, name = "Server Statistics"):
     async def err(self, ctx, error):
         if ctx.author.id == 759245009693704213:
             await ctx.reinvoke()
+
 
     @commands.command()
     async def about(self, ctx):

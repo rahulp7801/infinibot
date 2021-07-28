@@ -927,6 +927,68 @@ class Moderation(commands.Cog):
             return await ctx.send(
                 f"I don\'t have permission to {'deafen' if mute else 'undeafen'} `{member.name}#{member.discriminator}`!")
 
+    @commands.command()
+    @commands.guild_only()
+    @commands.cooldown(1, 300, commands.BucketType.member)
+    async def selfmute(self, ctx, *, dur = None):
+        member = ctx.author
+        name = f"CONFIGURATION"
+        db = cluster[name]
+        collection = db['guilds']
+        results = collection.find({'_id': ctx.guild.id})
+        for i in results:
+            muterole = i['muterole']
+        if muterole is None or muterole == '':
+            return await ctx.send(f"You haven't specified a muterole for me yet! Run `{ctx.prefix}setup muterole`!")
+        prefix = ctx.prefix
+        role = discord.utils.get(ctx.guild.roles, id=int(muterole))
+        if role in member.roles:
+            await ctx.send(f"`{member}` is already muted.")
+            return
+        if dur is None:
+            await ctx.send("You wanna specify a time, trust, otherwise you will be muted forever.")
+            raise commands.MissingRequiredArgument
+
+        if dur is not None:
+            try:
+                duration = utils.tmts(dur.strip())
+                db = cluster['TEMP']
+                collection = db['muted']
+                query = {'id': member.id, 'gid': member.guild.id}
+                if collection.count_documents(
+                        query) == 0:  # only real choice here, a person cant get muted twice in the same server
+                    ping_cm = {
+                        "id": member.id,
+                        "gid": ctx.guild.id,
+                        "fintime": datetime.datetime.utcnow() + datetime.timedelta(seconds=duration)
+                    }
+                    collection.insert_one(ping_cm)
+            except ValueError as e:
+                return await ctx.reply(str(e), mention_author=False)
+        try:
+            pfp = member.avatar_url
+            author = member
+            embed = discord.Embed(description=f"For reason: ```Self Mute```", color=discord.Color.red())
+            embed.set_author(name=str(
+                author) + f" muted themselves {'indefinitely LMAO' if not dur else 'for ' + utils.stringfromtime(duration)}.",
+                             icon_url=pfp)
+            if str(muterole) == '':
+                await ctx.send(
+                    f"This server doesn\'t have a muterole set up! Use `{prefix}setup muterole <Optionalname>` to set it up.")
+                return
+
+            await member.add_roles(role)
+            await ctx.send(embed=embed)
+
+        except AttributeError:
+            return await ctx.send(
+                f"This server does not have a mute role. Use `{prefix}muterole` to create the muterole.")
+        except discord.errors.Forbidden:
+            role = discord.utils.get(ctx.guild.roles, id=int(muterole))
+            if role >= ctx.guild.me.top_role:
+                return await ctx.send("I cannot assign the mute role as it is above my top role.")
+            await ctx.send(
+                "I do not have the `Manage Roles` permission. You can fix that by going into Server Settings and giving my role that permission.\nOr my role is not high enough.")
 
 
 def setup(client):

@@ -1,16 +1,16 @@
 import xmltodict
-from quart import Quart, request
+from quart import Quart, request, url_for, current_app
 import yaml
 import discord
 import threading
+import os
 from concurrent.futures import ProcessPoolExecutor
 import asyncio
 from pymongo import MongoClient
 from xml.parsers.expat import ExpatError
 
 def startclient():
-    with open('testbot.txt', 'r') as f:
-        token = f.read()
+    token = os.environ['TOKEN']
     # loop = asyncio.new_event_loop()
     # asyncio.set_event_loop(loop)
     client.run(token)
@@ -30,6 +30,9 @@ col = db['guilds']
 
 app = Quart(__name__)
 
+app.config['SERVER_NAME'] = 'lightningbotsfll.com'
+with app.app_context():
+    print(url_for('index', _external=True))
 
 @client.event
 async def on_ready():
